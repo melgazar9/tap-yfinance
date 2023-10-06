@@ -10,21 +10,17 @@ plugins:
     namespace: "tap_yfinance"
     pip_url: -e .
     capabilities:
-    - state
-    - catalog
-    - discover
-    - about
-    - stream-maps
+      - state
+      - catalog
+      - discover
+      - about
+      - stream-maps
     config:
-      start_date: '2010-01-01T00:00:00Z'
+      start_date: '1950-01-01'
     settings:
-    # TODO: To configure using Meltano, declare settings and their types here:
-    - name: username
-    - name: password
-      kind: password
     - name: start_date
-      value: '2010-01-01T00:00:00Z'
+      value: '1950-01-01'
   loaders:
-  - name: target-jsonl
-    variant: andyh1203
-    pip_url: target-jsonl
+    - name: target-jsonl
+      variant: andyh1203
+      pip_url: target-jsonl
