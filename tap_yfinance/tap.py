@@ -16,11 +16,17 @@ class TapYFinance(Tap):
 
     # TODO: Update this section with the actual config values you expect:
     config_jsonschema = th.PropertiesList(
-        th.Property(
-            "start_date",
-            th.DateTimeType,
-            description="The earliest record date to sync",
-        )
+        th.Property("timestamp", th.DateTimeType, required=True),
+        th.Property("timestamp_tz_aware", th.StringType, required=True),
+        th.Property("timezone", th.StringType, required=True),
+        th.Property("yahoo_ticker", th.StringType, required=True),
+        th.Property("open", th.NumberType, required=True),
+        th.Property("high", th.NumberType, required=True),
+        th.Property("low", th.NumberType, required=True),
+        th.Property("close", th.NumberType, required=True),
+        th.Property("volume", th.NumberType, required=True),
+        th.Property("dividends", th.NumberType, required=True),
+        th.Property("stock_splits", th.NumberType, required=True)
     ).to_dict()
 
     def discover_streams(self) -> list[streams.YFinanceStream]:
@@ -29,9 +35,7 @@ class TapYFinance(Tap):
         Returns:
             A list of discovered streams.
         """
-        return [
-            streams.YFinanceStream(self),
-        ]
+        return [streams.YFinanceStream(self)]
 
 
 if __name__ == "__main__":
