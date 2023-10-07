@@ -17,6 +17,7 @@ plugins:
         - stream-maps
       config:
         start_date: '1950-01-01T00:00:00Z'
+        asset_class: 'stocks'
       settings:
       - name: start_date
         value: '1950-01-01T00:00:00Z'

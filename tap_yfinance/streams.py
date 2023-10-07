@@ -5,7 +5,7 @@ from singer_sdk import typing as th
 from tap_yfinance.client import YFinanceStream
 
 
-class YFinanceStream(YFinanceStream):
+class YFinanceCustomStream(YFinanceStream):
     """Define custom stream for your dataset."""
 
     name = "yfinance_stream"

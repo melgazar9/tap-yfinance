@@ -1,15 +1,31 @@
 """Custom client handling, including YFinanceStream base class."""
 
 from __future__ import annotations
-
+from singer_sdk import typing as th
 from typing import Iterable
 from singer_sdk.streams import Stream
-from price_utils import *
+from tap_yfinance.price_utils import *
 
 
 class YFinanceStream(Stream):
-    name = "tap-yfinance"
     """Stream class for YFinance streams."""
+
+    name = "tap-yfinance"
+
+    _schema = th.PropertiesList(  # Define the _schema attribute here
+        th.Property("replication_key", th.StringType),
+        th.Property("timestamp", th.DateTimeType),
+        th.Property("timestamp_tz_aware", th.StringType),
+        th.Property("timezone", th.StringType),
+        th.Property("yahoo_ticker", th.StringType),
+        th.Property("open", th.NumberType),
+        th.Property("high", th.NumberType),
+        th.Property("low", th.NumberType),
+        th.Property("close", th.NumberType),
+        th.Property("volume", th.NumberType),
+        th.Property("dividends", th.NumberType),
+        th.Property("stock_splits", th.NumberType)
+    ).to_dict()
 
     # def __init__(self):
     #     super().__init__(TapPrices)
@@ -42,5 +58,5 @@ class YFinanceStream(Stream):
         tickers = ['AAPL', 'AMZN']
         for ticker in tickers:
             df = price_tap.download_single_symbol_price_history(ticker=ticker, yf_history_params=yf_params)
-            for record in df.to_dict():
+            for record in df.to_dict(orient='records'):
                 yield record
