@@ -4,13 +4,13 @@ import typing as t
 from singer_sdk import typing as th
 from tap_yfinance.client import YFinanceStream
 
-class YFinanceCustomStream(YFinanceStream):
+
+class YFinanceStream(YFinanceStream):
     """Define custom stream for your dataset."""
 
-    name = "yfinance_custom"  # Choose a meaningful name for your stream
+    name = "yfinance_stream"
     primary_keys: t.ClassVar[list[str]] = ["timestamp", "yahoo_ticker"]  # Define your primary keys
     replication_key = 'replication_key'
-
 
     schema = th.PropertiesList(
         th.Property("replication_key", th.StringType),
