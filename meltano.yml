@@ -19,68 +19,72 @@ plugins:
         add_record_metadata: true
         default_start_date: '1950-01-01T00:00:00Z'
 
-        stock_prices_1m:
-          table_name: stock_prices_1m
-          tickers: '*'
-          yf_params: {'interval': '1m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        stock_prices_2m:
-          table_name: stock_prices_2m
-          tickers: '*'
-          yf_params: {'interval': '2m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        stock_prices_5m:
-          table_name: stock_prices_5m
-          tickers: '*'
-          yf_params: {'interval': '5m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        stock_prices_1h:
-          table_name: stock_prices_1h
-          tickers: '*'
-          yf_params: {'interval': '1h', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        stock_prices_1d:
-          table_name: stock_prices_1d
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+        asset_class:
+          stocks:
+            stock_prices_1m:
+              table_name: stock_prices_1m
+              tickers: '*'
+              yf_params: {'interval': '1m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            stock_prices_2m:
+              table_name: stock_prices_2m
+              tickers: '*'
+              yf_params: {'interval': '2m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            stock_prices_5m:
+              table_name: stock_prices_5m
+              tickers: '*'
+              yf_params: {'interval': '5m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            stock_prices_1h:
+              table_name: stock_prices_1h
+              tickers: '*'
+              yf_params: {'interval': '1h', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            stock_prices_1d:
+              table_name: stock_prices_1d
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
 
-        forex_prices_1m:
-          table_name: forex_prices_1m
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        forex_prices_2m:
-          table_name: forex_prices_2m
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        forex_prices_5m:
-          table_name: forex_prices_5m
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        forex_prices_1h:
-          table_name: forex_prices_1h
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        forex_prices_1d:
-          table_name: forex_prices_1d
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+          forex:
+            forex_prices_1m:
+              table_name: forex_prices_1m
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            forex_prices_2m:
+              table_name: forex_prices_2m
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            forex_prices_5m:
+              table_name: forex_prices_5m
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            forex_prices_1h:
+              table_name: forex_prices_1h
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            forex_prices_1d:
+              table_name: forex_prices_1d
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
 
-        crypto_prices_1m:
-          table_name: crypto_prices_1m
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        crypto_prices_2m:
-          table_name: crypto_prices_2m
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        crypto_prices_5m:
-          table_name: crypto_prices_5m
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        crypto_prices_1h:
-          table_name: crypto_prices_1h
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
-        crypto_prices_1d:
-          table_name: crypto_prices_1d
-          tickers: '*'
-          yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+          crypto:
+            crypto_prices_1m:
+              table_name: crypto_prices_1m
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            crypto_prices_2m:
+              table_name: crypto_prices_2m
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            crypto_prices_5m:
+              table_name: crypto_prices_5m
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            crypto_prices_1h:
+              table_name: crypto_prices_1h
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+            crypto_prices_1d:
+              table_name: crypto_prices_1d
+              tickers: '*'
+              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
 
       metadata:
         replication-method: INCREMENTAL
