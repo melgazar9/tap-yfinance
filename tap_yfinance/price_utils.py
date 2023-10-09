@@ -56,17 +56,16 @@ class YFinancePriceTap(YFinanceLogger):
             "self.asset_class must be set to either 'stocks', 'forex', or 'crypto'"
 
         if self.asset_class == 'stocks':
-            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'bloomberg_ticker',
-                                 'numerai_ticker', 'open', 'high', 'low', 'close', 'volume', 'dividends',
-                                 'stock_splits']
+            self.column_order = ['replication_key', 'timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker',
+                                 'open', 'high', 'low', 'close', 'volume', 'dividends', 'stock_splits', 'repaired']
 
         elif asset_class == 'forex':
-            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'bloomberg_ticker',
-                                 'open', 'high', 'low', 'close', 'volume']
+            self.column_order = ['replication_key', 'timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker',
+                                 'open', 'high', 'low', 'close', 'volume', 'repaired']
 
         elif asset_class == 'crypto':
-            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'yahoo_name',
-                                 'open', 'high', 'low', 'close', 'volume']
+            self.column_order = ['replication_key', 'timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker',
+                                 'yahoo_name', 'open', 'high', 'low', 'close', 'volume', 'repaired']
 
         self.n_requests = 0
         self.failed_ticker_downloads = {}
@@ -131,11 +130,13 @@ class YFinancePriceTap(YFinanceLogger):
                 self.failed_ticker_downloads[yf_history_params['interval']].append(ticker)
                 return pd.DataFrame(columns=self.column_order)
 
+            df = df[self.column_order]
+
             return df
 
         except:
             self.failed_ticker_downloads[yf_history_params['interval']].append(ticker)
-            return
+            return pd.DataFrame(columns=self.column_order)
 
 
 class TickerDownloader(YFinanceLogger):
