@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 from singer_sdk import typing as th
-from typing import Iterable
+from typing import Iterable, Optional
 from singer_sdk.streams import Stream
 from tap_yfinance.price_utils import *
 from singer_sdk.streams.core import REPLICATION_INCREMENTAL
 
 class YFinanceStream(Stream):
     """Stream class for YFinance streams."""
-
     name = "tap-yfinance"
     replication_key = "replication_key"
 
@@ -28,8 +27,9 @@ class YFinanceStream(Stream):
         th.Property("stock_splits", th.NumberType, required=True)
     ).to_dict()
 
+    # TODO: Need to know why I can't override with __init__ method, even when calling super().__init__()
     # def __init__(self):
-    #     super().__init__(TapPrices)
+    #     super().__init__()
 
 
     @property
@@ -94,5 +94,5 @@ class YFinanceStream(Stream):
 
                         for record in df.to_dict(orient='records'):
                             if add_record_metadata:
-                                record["_sdc_batched_at"] = datetime.utcnow()
+                                record["batch_timestamp"] = datetime.utcnow()
                             yield record
