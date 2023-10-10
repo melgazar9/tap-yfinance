@@ -7,7 +7,6 @@ from singer_sdk.streams import Stream
 from tap_yfinance.price_utils import *
 from singer_sdk.streams.core import REPLICATION_INCREMENTAL
 
-
 class YFinanceStream(Stream):
     """Stream class for YFinance streams."""
     name = "tap-yfinance"
@@ -24,8 +23,8 @@ class YFinanceStream(Stream):
         th.Property("low", th.NumberType, required=True),
         th.Property("close", th.NumberType, required=True),
         th.Property("volume", th.NumberType, required=True),
-        th.Property("dividends", th.NumberType, required=True),
-        th.Property("stock_splits", th.NumberType, required=True)
+        th.Property("dividends", th.NumberType),
+        th.Property("stock_splits", th.NumberType)
     ).to_dict()
 
     # TODO: Need to know why I can't override with __init__ method, even when calling super().__init__()
@@ -37,8 +36,6 @@ class YFinanceStream(Stream):
     # def is_sorted(self) -> bool:
     #     """Return a boolean indicating whether the replication key is alphanumerically sortable."""
     #     return self.replication_method == REPLICATION_INCREMENTAL
-
-
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """Return a generator of record-type dictionary objects.
@@ -87,6 +84,8 @@ class YFinanceStream(Stream):
                         self.logger.info(f"using existing bookmark: {bookmark}")
                         if table_name in bookmark.keys() and ticker in bookmark[table_name].keys():
                             start_date = bookmark[table_name][ticker]['last_timestamp']
+                        else:
+                            start_date = '1950-01-01'
 
                     else:
                         start_date = self.config.get("default_start_date", '1950-01-01')
@@ -101,6 +100,3 @@ class YFinanceStream(Stream):
 
                     for record in df.to_dict(orient='records'):
                         yield record
-
-                    # TODO: Integrate financials vs prices as data_category
-                    # self.write_bookmark()

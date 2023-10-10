@@ -130,6 +130,8 @@ class YFinancePriceTap(YFinanceLogger):
                 self.failed_ticker_downloads[yf_history_params['interval']].append(ticker)
                 return pd.DataFrame(columns=self.column_order)
 
+            # TODO: Remove this logic! Need to find a way to return data that has null values.
+            df = df.dropna(how='any')
             df = df[self.column_order]
 
             return df
