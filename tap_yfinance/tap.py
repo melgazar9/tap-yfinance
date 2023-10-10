@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from singer_sdk import Tap
-from singer_sdk import typing as th  # JSON schema typing helpers
+from singer_sdk import typing as th
 from tap_yfinance import streams
-
 
 class TapYFinance(Tap):
     """YFinance tap class."""

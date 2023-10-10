@@ -16,8 +16,7 @@ plugins:
         - about
         - stream-maps
       config:
-        add_record_metadata: true
-        default_start_date: '1950-01-01T00:00:00Z'
+        default_start_date: '1950-01-01'
 
         asset_class:
           stocks:
