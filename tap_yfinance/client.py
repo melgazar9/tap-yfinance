@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 from singer_sdk import Tap, typing as th
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Any
 from singer_sdk.streams import Stream
 from tap_yfinance.price_utils import *
 from singer_sdk.streams.core import REPLICATION_INCREMENTAL
 
 class YFinanceStream(Stream):
-    """Stream class for YFinance streams."""
-    name = "tap-yfinance"
+    """Stream class for yahoo finance price streams."""
+
     replication_key = "replication_key"
 
     _schema = th.PropertiesList(  # Define the _schema attribute here
@@ -18,24 +18,39 @@ class YFinanceStream(Stream):
         th.Property("timestamp_tz_aware", th.StringType, required=True),
         th.Property("timezone", th.StringType, required=True),
         th.Property("yahoo_ticker", th.StringType, required=True),
-        th.Property("open", th.NumberType, required=True),
-        th.Property("high", th.NumberType, required=True),
-        th.Property("low", th.NumberType, required=True),
-        th.Property("close", th.NumberType, required=True),
-        th.Property("volume", th.NumberType, required=True),
+        th.Property("open", th.NumberType),
+        th.Property("high", th.NumberType),
+        th.Property("low", th.NumberType),
+        th.Property("close", th.NumberType),
+        th.Property("volume", th.NumberType),
         th.Property("dividends", th.NumberType),
         th.Property("stock_splits", th.NumberType)
     ).to_dict()
 
-    # TODO: Need to know why I can't override with __init__ method, even when calling super().__init__()
-    # def __init__(self, tap: Tap):
-    #     super().__init__(tap=tap)
+    def __init__(self, tap: Tap, name: str, asset_class: str):
+        super().__init__(tap, name=name)
+        self.asset_class = asset_class
 
+    @property
+    def partitions(self):
+        state_data = {}
+        for ticker in self.config['asset_class'][self.asset_class][self.name]['tickers']:
+            state_data[ticker] = {
+                "replication_key": "replication_key",
+                "replication_key_value": f"{ticker}|{datetime.now()}"
+            }
 
-    # @property
-    # def is_sorted(self) -> bool:
-    #     """Return a boolean indicating whether the replication key is alphanumerically sortable."""
-    #     return self.replication_method == REPLICATION_INCREMENTAL
+        # for asset_class, asset_params in self.config['asset_class'].items():
+        #     for table_name, table_params in asset_params.items():
+        #         state_data[table_name] = {}
+        #         for ticker in table_params['tickers']:
+        #             state_data[table_name][ticker] = {
+        #                 "replication_key": "replication_key",
+        #                 "replication_key_value": f"{ticker}|{datetime.now()}"
+        #             }
+
+        return [state_data]
+
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """Return a generator of record-type dictionary objects.
@@ -51,52 +66,55 @@ class YFinanceStream(Stream):
             NotImplementedError: If the implementation is TODO
         """
 
-        bookmark = self.tap_state['bookmarks']
-
         ticker_downloader = TickerDownloader()
+        price_tap = YFinancePriceTap(asset_class=self.asset_class)
+        asset_params = self.config['asset_class'][self.asset_class]
 
-        for asset_class in self.config['asset_class'].keys():
-            price_tap = YFinancePriceTap(asset_class=asset_class)
+        print(f'\n\n\n{self.asset_class}\n\n\n')
+        print(f'\n\n\n{self.name}\n\n\n')
 
-            asset_params = self.config['asset_class'][asset_class]
+        if self.asset_class == 'stocks' and asset_params[self.name]['tickers'] == '*':
+            df_tickers = ticker_downloader.download_pts_stock_tickers()
+            tickers = df_tickers['yahoo_ticker'].tolist()
+        elif self.asset_class == 'forex' and asset_params[self.name]['tickers'] == '*':
+            df_tickers = ticker_downloader.download_forex_pairs()
+            tickers = df_tickers['yahoo_ticker'].tolist()
+        elif self.asset_class == 'crypto' and asset_params[self.name]['tickers'] == '*':
+            df_tickers = ticker_downloader.download_top_250_crypto_tickers()
+            tickers = df_tickers['yahoo_ticker'].tolist()
+        else:
+            tickers = asset_params[self.name]['tickers']
+            assert tickers != '*', "tickers = '*' but did not use TickerDownloader() class!"
 
-            for table_name in asset_params.keys():
-                if asset_class == 'stocks' and asset_params[table_name]['tickers'] == '*':
-                    df_tickers = ticker_downloader.download_pts_stock_tickers()
-                    tickers = df_tickers['yahoo_ticker'].tolist()
-                elif asset_class == 'forex' and asset_params[table_name]['tickers'] == '*':
-                    df_tickers = ticker_downloader.download_forex_pairs()
-                    tickers = df_tickers['yahoo_ticker'].tolist()
-                elif asset_class == 'crypto' and asset_params[table_name]['tickers'] == '*':
-                    df_tickers = ticker_downloader.download_top_250_crypto_tickers()
-                    tickers = df_tickers['yahoo_ticker'].tolist()
+        yf_params = asset_params[self.name]['yf_params'].copy()
+
+        for ticker in tickers:
+            print(f'\n\n\n{ticker}\n\n\n')
+            if self.replication_method == REPLICATION_INCREMENTAL:
+                state = self.get_context_state(context)
+                print(f'\n\n\nSTATE: {state}\n\n\n')
+                if 'context' in state.keys() and ticker in state['context'].keys():
+                    replication_key = state['context'][ticker]['replication_key_value']
+                    start_date = \
+                        datetime.strptime(replication_key.split('|')[1], '%Y-%m-%d %H:%M:%S.%f')\
+                                .strftime('%Y-%m-%d')
                 else:
-                    tickers = asset_params[table_name]['tickers']
-                    assert tickers != '*', 'tickers = * but did not use TickerDownloader() class!'
-
-                # TODO: Write the df_tickers dataframe to its own table
-
-                yf_params = asset_params[table_name]['yf_params'].copy()
-                # data_category = "prices"
-
-                for ticker in tickers:
-                    if self.replication_method == REPLICATION_INCREMENTAL and bookmark:
-                        self.logger.info(f"using existing bookmark: {bookmark}")
-                        if table_name in bookmark.keys() and ticker in bookmark[table_name].keys():
-                            start_date = bookmark[table_name][ticker]['last_timestamp']
-                        else:
-                            start_date = '1950-01-01'
-
-                    else:
-                        start_date = self.config.get("default_start_date", '1950-01-01')
-                        self.logger.debug(f"no bookmark - using start date: {start_date}")
-
+                    start_date = self.config.get("default_start_date", '1950-01-01')
                     start_date = pd.to_datetime(start_date).strftime('%Y-%m-%d')
-                    # TODO: Write each table_name to its own table
+                    self.logger.warning(f"Key 'context' is not in state.keys() - Using start date: {start_date}")
+            else:
+                start_date = self.config.get("default_start_date", '1950-01-01')
+                start_date = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+                self.logger.warning(f"replication_method is not set to {REPLICATION_INCREMENTAL}! - Using start date: {start_date}")
 
-                    yf_params['start'] = max(start_date, '1950-01-01')
+            yf_params['start'] = max(start_date, '1950-01-01')
 
-                    df = price_tap.download_single_symbol_price_history(ticker=ticker, yf_history_params=yf_params)
+            df = price_tap.download_single_symbol_price_history(ticker=ticker, yf_history_params=yf_params)
 
-                    for record in df.to_dict(orient='records'):
-                        yield record
+            for record in df.to_dict(orient='records'):
+                if self.config['add_record_metadata']:
+                    replication_key = state['context'][ticker]['replication_key_value']
+                    batch_timestamp = state['context'][ticker]['replication_key_value'].split('|')[1]
+                    record['replication_key'] = replication_key
+                    record['batch_timestamp'] = batch_timestamp
+                yield record

@@ -1,0 +1,29 @@
+{
+  "bookmark": {
+    "tap-yfinance": {
+      "stock_prices_1m": {
+        "AAPL": {
+        "replication_key": "replication_key",
+        "replication_key_value": "AAPL|2023-10-11T02:33:11.053658Z"
+      },
+
+    "NVDA": {
+      "replication_key": "replication_key",
+      "replication_key_value": "NVDA|2023-10-12T02:35:11.053658Z"
+      }
+    },
+
+    "stock_prices_2m": {
+      "AAPL": {
+      "replication_key": "replication_key",
+      "replication_key_value": "AAPL|2023-11-11T02:33:11.053658Z"
+      },
+
+    "NVDA": {
+      "replication_key": "replication_key",
+      "replication_key_value": "NVDA|2023-11-12T02:35:11.053658Z"
+        }
+      }
+    }
+  }
+}

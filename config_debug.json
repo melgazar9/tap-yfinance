@@ -1,0 +1,72 @@
+{
+  "default_start_date": "1950-01-01",
+  "add_record_metadata": true,
+  "asset_class": {
+    "stocks": {
+      "stock_prices_1m": {
+        "tickers": ["AAPL", "NVDA"],
+        "yf_params": {
+          "interval": "1m",
+          "prepost": true,
+          "repair": true,
+          "auto_adjust": true,
+          "back_adjust": false
+        }
+      },
+      "stock_prices_1d": {
+        "tickers": ["AAPL", "NVDA"],
+        "yf_params": {
+          "interval": "1d",
+          "prepost": true,
+          "repair": true,
+          "auto_adjust": true,
+          "back_adjust": false
+        }
+      }
+    },
+    "forex": {
+      "forex_prices_1m": {
+        "tickers": ["EURUSD=X"],
+        "yf_params": {
+          "interval": "1m",
+          "prepost": true,
+          "repair": true,
+          "auto_adjust": true,
+          "back_adjust": false
+        }
+      },
+      "forex_prices_1d": {
+        "tickers": ["EURUSD=X"],
+        "yf_params": {
+          "interval": "1d",
+          "prepost": true,
+          "repair": true,
+          "auto_adjust": true,
+          "back_adjust": false
+        }
+      }
+    },
+    "crypto": {
+      "crypto_prices_1m": {
+        "tickers": ["BTC-USD", "ETH-USD"],
+        "yf_params": {
+          "interval": "1m",
+          "prepost": true,
+          "repair": true,
+          "auto_adjust": true,
+          "back_adjust": false
+        }
+      },
+      "crypto_prices_1d": {
+        "tickers": ["BTC-USD", "ETH-USD"],
+        "yf_params": {
+          "interval": "1d",
+          "prepost": true,
+          "repair": true,
+          "auto_adjust": true,
+          "back_adjust": false
+        }
+      }
+    }
+  }
+}

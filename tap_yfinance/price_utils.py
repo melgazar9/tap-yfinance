@@ -41,6 +41,8 @@ class YFinancePriceTap(YFinanceLogger):
         self.yahoo_ticker_colname = yahoo_ticker_colname
         self.verbose = verbose
 
+        super().__init__()
+
         ### update yf_params ###
 
         if 'prepost' not in self.yf_params.keys():
@@ -56,16 +58,16 @@ class YFinancePriceTap(YFinanceLogger):
             "self.asset_class must be set to either 'stocks', 'forex', or 'crypto'"
 
         if self.asset_class == 'stocks':
-            self.column_order = ['replication_key', 'timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker',
+            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker',
                                  'open', 'high', 'low', 'close', 'volume', 'dividends', 'stock_splits', 'repaired']
 
         elif asset_class == 'forex':
-            self.column_order = ['replication_key', 'timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker',
-                                 'open', 'high', 'low', 'close', 'volume', 'repaired']
+            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'open', 'high', 'low',
+                                 'close', 'volume', 'repaired']
 
         elif asset_class == 'crypto':
-            self.column_order = ['replication_key', 'timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker',
-                                 'yahoo_name', 'open', 'high', 'low', 'close', 'volume', 'repaired']
+            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'open', 'high', 'low',
+                                 'close', 'volume', 'repaired']
 
         self.n_requests = 0
         self.failed_ticker_downloads = {}
@@ -112,6 +114,7 @@ class YFinancePriceTap(YFinanceLogger):
             get_valid_yfinance_start_timestamp(interval=yf_history_params['interval'], start=yf_history_params['start'])
 
         t = yf.Ticker(ticker)
+
         try:
             df = \
                 t.history(**yf_history_params) \
@@ -124,14 +127,13 @@ class YFinancePriceTap(YFinanceLogger):
             df['timestamp_tz_aware'] = df['timestamp'].copy()
             df.loc[:, 'timezone'] = str(df['timestamp_tz_aware'].dt.tz)
             df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
-            df['replication_key'] = df['timestamp'].astype(str) + '|' + df[self.yahoo_ticker_colname]
 
             if df is not None and not df.shape[0]:
                 self.failed_ticker_downloads[yf_history_params['interval']].append(ticker)
                 return pd.DataFrame(columns=self.column_order)
 
-            # TODO: Remove this logic! Need to find a way to return data that has null values.
-            df = df.dropna(how='any')
+            df = df.replace([np.inf, -np.inf, np.nan], None)  # None can be handled by json.dumps but inf and NaN can't be
+
             df = df[self.column_order]
 
             return df
@@ -367,11 +369,11 @@ def get_valid_yfinance_start_timestamp(interval, start='1950-01-01 00:00:00'):
     assert interval in valid_intervals, f'must pass a valid interval {valid_intervals}'
 
     if interval == '1m':
-        updated_start = max((datetime.today() - timedelta(days=5)), pd.to_datetime(start))
+        updated_start = max((datetime.today() - timedelta(days=5)).date(), pd.to_datetime(start).date())
     elif interval in ['2m', '5m', '15m', '30m', '90m']:
-        updated_start = (max((datetime.today() - timedelta(days=58)), pd.to_datetime(start)))
+        updated_start = (max((datetime.today() - timedelta(days=58)).date(), pd.to_datetime(start).date()))
     elif interval in ['60m', '1h']:
-        updated_start = max((datetime.today() - timedelta(days=728)), pd.to_datetime(start))
+        updated_start = max((datetime.today() - timedelta(days=728)).date(), pd.to_datetime(start).date())
     else:
         updated_start = pd.to_datetime(start)
 
