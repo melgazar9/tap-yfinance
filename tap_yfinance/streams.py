@@ -24,7 +24,8 @@ class YFinanceStream(Stream):
         th.Property("close", th.NumberType),
         th.Property("volume", th.NumberType),
         th.Property("dividends", th.NumberType),
-        th.Property("stock_splits", th.NumberType)
+        th.Property("stock_splits", th.NumberType),
+        th.Property("repaired", th.StringType)
     ).to_dict()
 
     def __init__(self, tap: Tap, name: str, asset_class: str):
@@ -117,4 +118,5 @@ class YFinanceStream(Stream):
                     batch_timestamp = state['context'][ticker]['replication_key_value'].split('|')[1]
                     record['replication_key'] = replication_key
                     record['batch_timestamp'] = batch_timestamp
+                    print(f"\n\n\n****** {record} ****** \n\n\n")
                 yield record

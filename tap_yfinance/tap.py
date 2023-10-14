@@ -30,3 +30,9 @@ class TapYFinance(Tap):
 
 if __name__ == "__main__":
     TapYFinance.cli()
+    # import subprocess
+    #
+    # # Run the `meltano elt` command with configuration and state files
+    # subprocess.run(
+    #     ["meltano", "el", "tap-yfinance", "target-jsonl"]
+    # )
