@@ -1,7 +1,6 @@
 from singer_sdk import typing as th
 
 def get_price_schema(asset_class):
-    asset_class = 'stocks'
     if asset_class in ['stocks', 'forex', 'crypto']:
         schema = th.PropertiesList(  # Define the _schema attribute here
             th.Property("replication_key", th.StringType, required=True),
