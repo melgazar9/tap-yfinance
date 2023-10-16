@@ -15,6 +15,11 @@ plugins:
         - discover
         - about
         - stream-maps
+      select:
+        - stock_prices_1m
+        - stock_prices_1d
+        - forex_prices_1m
+
 
       config:
         default_start_date: '1950-01-01'

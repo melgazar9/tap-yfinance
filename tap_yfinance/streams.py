@@ -1,57 +1,79 @@
 """Stream type classes for tap-yfinance."""
 
 from __future__ import annotations
-from singer_sdk import Tap, typing as th
+from singer_sdk import Tap
 from typing import Iterable, Optional, Any
 from singer_sdk.streams import Stream
 from tap_yfinance.price_utils import *
+from tap_yfinance.schema import *
 from singer_sdk.streams.core import REPLICATION_INCREMENTAL
+from singer_sdk.helpers._state import increment_state
 
-class YFinanceStream(Stream):
+class YFinancePriceStream(Stream):
     """Stream class for yahoo finance price streams."""
 
-    replication_key = "replication_key"
+    replication_key = "timestamp"
 
-    _schema = th.PropertiesList(  # Define the _schema attribute here
-        th.Property("replication_key", th.StringType, required=True),
-        th.Property("timestamp", th.DateTimeType, required=True),
-        th.Property("timestamp_tz_aware", th.StringType, required=True),
-        th.Property("timezone", th.StringType, required=True),
-        th.Property("yahoo_ticker", th.StringType, required=True),
-        th.Property("open", th.NumberType),
-        th.Property("high", th.NumberType),
-        th.Property("low", th.NumberType),
-        th.Property("close", th.NumberType),
-        th.Property("volume", th.NumberType),
-        th.Property("dividends", th.NumberType),
-        th.Property("stock_splits", th.NumberType),
-        th.Property("repaired", th.StringType)
-    ).to_dict()
+    def __init__(self, tap: Tap, catalog_entry: dict) -> None:
+        """Initialize the database stream.
+        Args:
+            tap: The parent tap object.
+            catalog_entry: Catalog entry dict.
+        """
 
-    def __init__(self, tap: Tap, name: str, asset_class: str):
-        super().__init__(tap, name=name)
-        self.asset_class = asset_class
+        self.asset_class = None
+        self.catalog_entry = catalog_entry
+        self._table_name: str = self.catalog_entry["table_name"]
 
-    @property
-    def partitions(self):
-        state_data = {}
-        for ticker in self.config['asset_class'][self.asset_class][self.name]['tickers']:
-            state_data[ticker] = {
-                "replication_key": "replication_key",
-                "replication_key_value": f"{ticker}|{datetime.now()}"
-            }
+        super().__init__(
+            tap=tap,
+            schema=self.catalog_entry["schema"],
+            name=self.catalog_entry["table_name"]
+        )
 
-        # for asset_class, asset_params in self.config['asset_class'].items():
-        #     for table_name, table_params in asset_params.items():
-        #         state_data[table_name] = {}
-        #         for ticker in table_params['tickers']:
-        #             state_data[table_name][ticker] = {
-        #                 "replication_key": "replication_key",
-        #                 "replication_key_value": f"{ticker}|{datetime.now()}"
-        #             }
 
-        return [state_data]
+    # @property
+    # def partitions(self):
+    #     # state_data = {}
+    #     # for ticker in self.config['asset_class'][self.asset_class][self.name]['tickers']:
+    #     #     state_data[ticker] = {
+    #     #         "replication_key": "replication_key",
+    #     #         "replication_key_value": f"{ticker}|{datetime.now()}"
+    #     #     }
+    #
+    #     # for asset_class, asset_params in self.config['asset_class'].items():
+    #     #     for table_name, table_params in asset_params.items():
+    #     #         state_data[table_name] = {}
+    #     #         for ticker in table_params['tickers']:
+    #     #             state_data[table_name][ticker] = {
+    #     #                 "replication_key": "replication_key",
+    #     #                 "replication_key_value": f"{ticker}|{datetime.now()}"
+    #     #             }
+    #
+    #     tables = self.config['asset_class'][self.asset_class].keys()
+    #     state_data = [{'ticker': t} for t in self.config['asset_class'][self.asset_class][list(tables)[0]]['tickers']]
+    #     return state_data
 
+    # def _increment_stream_state(self, latest_record: dict[str, Any], *, context: dict | None = None) -> None:
+    #     """Update state of stream or partition with data from the provided record.
+    #     Args:
+    #         latest_record: Dict of the latest record
+    #         context: Stream partition or context dictionary.
+    #     """
+    #
+    #     state = self.get_context_state(context)
+    #
+    #     if latest_record['yahoo_ticker'] == 'AAPL':
+    #         print('hi')
+    #     increment_state(
+    #         state,
+    #         replication_key=self.replication_key,
+    #         latest_record=latest_record,
+    #         is_sorted=self.is_sorted,
+    #         check_sorted=self.check_sorted
+    #     )
+    #
+    #     return self
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """Return a generator of record-type dictionary objects.
@@ -69,32 +91,27 @@ class YFinanceStream(Stream):
 
         ticker_downloader = TickerDownloader()
         price_tap = YFinancePriceTap(asset_class=self.asset_class)
-        asset_params = self.config['asset_class'][self.asset_class]
 
-        print(f'\n\n\n{self.asset_class}\n\n\n')
-        print(f'\n\n\n{self.name}\n\n\n')
+        stream_params: dict = self.config['asset_class'][self.asset_class][self.name]
+        tickers: list = stream_params['tickers'].copy()
+        yf_params: dict = stream_params['yf_params'].copy()
 
-        if self.asset_class == 'stocks' and asset_params[self.name]['tickers'] == '*':
+        if self.asset_class == 'stocks' and tickers == '*':
             df_tickers = ticker_downloader.download_pts_stock_tickers()
             tickers = df_tickers['yahoo_ticker'].tolist()
-        elif self.asset_class == 'forex' and asset_params[self.name]['tickers'] == '*':
+        elif self.asset_class == 'forex' and tickers == '*':
             df_tickers = ticker_downloader.download_forex_pairs()
             tickers = df_tickers['yahoo_ticker'].tolist()
-        elif self.asset_class == 'crypto' and asset_params[self.name]['tickers'] == '*':
+        elif self.asset_class == 'crypto' and tickers == '*':
             df_tickers = ticker_downloader.download_top_250_crypto_tickers()
             tickers = df_tickers['yahoo_ticker'].tolist()
         else:
-            tickers = asset_params[self.name]['tickers']
             assert tickers != '*', "tickers = '*' but did not use TickerDownloader() class!"
 
-        yf_params = asset_params[self.name]['yf_params'].copy()
-
         for ticker in tickers:
-            print(f'\n\n\n{ticker}\n\n\n')
             if self.replication_method == REPLICATION_INCREMENTAL:
-                state = self.get_context_state(context)
-                print(f'\n\n\nSTATE: {state}\n\n\n')
-                if 'context' in state.keys() and ticker in state['context'].keys():
+                state = self.get_starting_replication_key_value(context)
+                if state is not None and 'context' in state.keys() and ticker in state['context'].keys():
                     replication_key = state['context'][ticker]['replication_key_value']
                     start_date = \
                         datetime.strptime(replication_key.split('|')[1], '%Y-%m-%d %H:%M:%S.%f')\
@@ -113,9 +130,13 @@ class YFinanceStream(Stream):
             df = price_tap.download_single_symbol_price_history(ticker=ticker, yf_history_params=yf_params)
 
             for record in df.to_dict(orient='records'):
-                if self.config['add_record_metadata']:
-                    replication_key = state['context'][ticker]['replication_key_value']
-                    batch_timestamp = state['context'][ticker]['replication_key_value'].split('|')[1]
+                if self.config['add_record_metadata'] and record:
+                    if state is not None and 'progress_markers' in state.keys():
+                        replication_key = state['progress_markers']['replication_key_value']
+                        batch_timestamp = state['progress_markers']['replication_key_value'].split('|')[1]
+                    else:
+                        batch_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
+                        replication_key = ticker + '|' + batch_timestamp
                     record['replication_key'] = replication_key
                     record['batch_timestamp'] = batch_timestamp
                     print(f"\n\n\n****** {record} ****** \n\n\n")
