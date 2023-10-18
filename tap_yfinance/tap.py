@@ -13,9 +13,10 @@ class TapYFinance(Tap):
     name = "tap-yfinance"
 
     @staticmethod
-    def discover_catalog_entry(table_name: str, schema: dict) -> CatalogEntry:
+    def discover_catalog_entry(asset_class: str, table_name: str, schema: dict) -> CatalogEntry:
         """Create `CatalogEntry` object for the given collection."""
 
+        # If I set both tap_stream_id and stream to be asset_class + '|' + table_name it deselects ALL streams
         catalog_entry = \
             CatalogEntry(
                 tap_stream_id=table_name,
@@ -57,7 +58,7 @@ class TapYFinance(Tap):
             for table_name in asset_table_names:
                 # self.logger.info(f"Discovered table {table_name}")
                 catalog_entry: CatalogEntry = \
-                    self.discover_catalog_entry(table_name=table_name, schema=asset_schema)
+                    self.discover_catalog_entry(asset_class=asset_class, table_name=table_name, schema=asset_schema)
                 result["streams"].append(catalog_entry.to_dict())
 
         self._catalog_dict: dict = result  # pylint: disable=attribute-defined-outside-init
@@ -70,22 +71,11 @@ class TapYFinance(Tap):
             A list of discovered streams.
         """
 
+        catalog = self.catalog_dict["streams"]
+
         output_streams = []
-        for catalog_entry in self.catalog_dict["streams"]:
+        for catalog_entry in catalog:
             stream = YFinancePriceStream(self, catalog_entry=catalog_entry)
-            # stream.asset_class = catalog_entry['tap_stream_id'].split('|')[0]
-
-            if catalog_entry['table_name'].startswith('stock'):
-                stream.asset_class = 'stocks'
-            elif catalog_entry['table_name'].startswith('forex'):
-                stream.asset_class = 'forex'
-            elif catalog_entry['table_name'].startswith('crypto'):
-                stream.asset_class = 'crypto'
-            else:
-               raise ValueError('Could not parse asset class.')
-
-            schema = get_price_schema(asset_class=stream.asset_class)
-            stream._schema = schema
             output_streams.append(stream)
         return output_streams
 
