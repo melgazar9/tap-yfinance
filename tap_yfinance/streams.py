@@ -12,7 +12,7 @@ from singer_sdk.helpers._state import increment_state
 class YFinancePriceStream(Stream):
     """Stream class for yahoo finance price streams."""
 
-    replication_key = "timestamp"
+    replication_key = "replication_key"
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         """Initialize the database stream.
@@ -64,7 +64,7 @@ class YFinancePriceStream(Stream):
     #     state = self.get_context_state(context)
     #
     #     if latest_record['yahoo_ticker'] == 'AAPL':
-    #         print('hi')
+    #         self.logger.info('hi')
     #     increment_state(
     #         state,
     #         replication_key=self.replication_key,
@@ -84,11 +84,9 @@ class YFinancePriceStream(Stream):
 
         Args:
             context: Stream partition or context dictionary.
-
-        Raises:
-            NotImplementedError: If the implementation is TODO
         """
 
+        state = None
         ticker_downloader = TickerDownloader()
         price_tap = YFinancePriceTap(asset_class=self.asset_class)
 
@@ -111,7 +109,7 @@ class YFinancePriceStream(Stream):
         for ticker in tickers:
             if self.replication_method == REPLICATION_INCREMENTAL:
                 state = self.get_starting_replication_key_value(context)
-                if state is not None and 'context' in state.keys() and ticker in state['context'].keys():
+                if isinstance(state, dict) and 'context' in state.keys() and ticker in state['context'].keys():
                     replication_key = state['context'][ticker]['replication_key_value']
                     start_date = \
                         datetime.strptime(replication_key.split('|')[1], '%Y-%m-%d %H:%M:%S.%f')\
@@ -131,13 +129,13 @@ class YFinancePriceStream(Stream):
 
             for record in df.to_dict(orient='records'):
                 if self.config['add_record_metadata'] and record:
-                    if state is not None and 'progress_markers' in state.keys():
-                        replication_key = state['progress_markers']['replication_key_value']
+                    if isinstance(state, dict) and 'progress_markers' in state.keys():
                         batch_timestamp = state['progress_markers']['replication_key_value'].split('|')[1]
                     else:
                         batch_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
-                        replication_key = ticker + '|' + batch_timestamp
-                    record['replication_key'] = replication_key
+
+                    replication_key = ticker + '|' + batch_timestamp
                     record['batch_timestamp'] = batch_timestamp
-                    print(f"\n\n\n****** {record} ****** \n\n\n")
+                    record['replication_key'] = replication_key
+                self.logger.info(f'\n\n\n*** {record} ***\n\n\n')
                 yield record

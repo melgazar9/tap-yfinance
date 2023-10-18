@@ -58,8 +58,8 @@ class YFinancePriceTap(YFinanceLogger):
             "self.asset_class must be set to either 'stocks', 'forex', or 'crypto'"
 
         if self.asset_class == 'stocks':
-            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker',
-                                 'open', 'high', 'low', 'close', 'volume', 'dividends', 'stock_splits', 'repaired']
+            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'open', 'high', 'low',
+                                 'close', 'volume', 'dividends', 'stock_splits', 'repaired']
 
         elif asset_class == 'forex':
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'open', 'high', 'low',

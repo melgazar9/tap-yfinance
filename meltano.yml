@@ -17,9 +17,6 @@ plugins:
         - stream-maps
       select:
         - stock_prices_1m
-        - stock_prices_1d
-        - forex_prices_1m
-
 
       config:
         default_start_date: '1950-01-01'
@@ -58,3 +55,7 @@ plugins:
     - name: target-jsonl
       variant: andyh1203
       pip_url: target-jsonl
+
+    - name: target-csv
+      variant: hotgluexyz
+      pip_url: target-csv
