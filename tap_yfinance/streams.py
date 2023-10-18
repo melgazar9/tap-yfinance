@@ -12,7 +12,7 @@ from singer_sdk.helpers._state import increment_state
 class YFinancePriceStream(Stream):
     """Stream class for yahoo finance price streams."""
 
-    replication_key = "replication_key"
+    replication_key = "timestamp"
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         """Initialize the database stream.
@@ -128,7 +128,7 @@ class YFinancePriceStream(Stream):
             df = price_tap.download_single_symbol_price_history(ticker=ticker, yf_history_params=yf_params)
 
             for record in df.to_dict(orient='records'):
-                if self.config['add_record_metadata'] and record:
+                if self.config.get('add_record_metadata', False) and record:
                     if isinstance(state, dict) and 'progress_markers' in state.keys():
                         batch_timestamp = state['progress_markers']['replication_key_value'].split('|')[1]
                     else:
