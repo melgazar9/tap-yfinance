@@ -90,9 +90,9 @@ class YFinancePriceStream(Stream):
 
         for ticker in tickers:
             state = self.get_context_state(context)
-            if state and 'replication_key_value' in state.keys():
+            if state and 'progress_markers' in state.keys():
                 self.logger.info(f"\n\n\n{state}\n\n\n")
-                start_date = datetime.fromisoformat(state.get('replication_key_value')).strftime('%Y-%m-%d')
+                start_date = datetime.fromisoformat(state.get('progress_markers').get('replication_key_value')).strftime('%Y-%m-%d')
             else:
                 start_date = self.config.get('default_start_date')
 
@@ -101,23 +101,14 @@ class YFinancePriceStream(Stream):
             df = price_tap.download_single_symbol_price_history(ticker=ticker, yf_history_params=yf_params)
 
             for record in df.to_dict(orient='records'):
-                batch_timestamp = datetime.utcnow().strftime('%Y-%m-%d')
-                replication_key = ticker + '|' + batch_timestamp
+                replication_key = ticker + '|' + record['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')
                 record['replication_key'] = replication_key
-
-                if ticker == 'AAPL' and pd.to_datetime(record['timestamp'], utc=True) > pd.to_datetime('2023-10-01', utc=True):
-                    continue
-                elif ticker == 'NVDA' and pd.to_datetime(record['timestamp'], utc=True) > pd.to_datetime('2023-10-09', utc=True):
-                    continue
-                elif ticker == 'BTC-USD' and pd.to_datetime(record['timestamp'], utc=True) > pd.to_datetime('2023-10-07', utc=True):
-                    continue
-                else:
-                    increment_state(
-                        state,
-                        replication_key=self.replication_key,
-                        latest_record=record,
-                        is_sorted=True,
-                        check_sorted=self.check_sorted
-                    )
+                increment_state(
+                    state,
+                    replication_key=self.replication_key,
+                    latest_record=record,
+                    is_sorted=self.is_sorted,
+                    check_sorted=self.check_sorted
+                )
 
                 yield record
