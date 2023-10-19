@@ -17,6 +17,7 @@ plugins:
         - stream-maps
       select:
         - stock_prices_1m
+        - crypto_prices_1d
 
       config:
         default_start_date: '1950-01-01'
@@ -49,13 +50,9 @@ plugins:
       metadata:
         '*':
           replication-method: INCREMENTAL
-          replication-key: replication_key
+          replication-key: timestamp
 
   loaders:
     - name: target-jsonl
       variant: andyh1203
       pip_url: target-jsonl
-
-    - name: target-csv
-      variant: hotgluexyz
-      pip_url: target-csv

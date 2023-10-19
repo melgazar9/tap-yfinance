@@ -12,7 +12,7 @@ from singer_sdk.helpers._state import increment_state
 class YFinancePriceStream(Stream):
     """Stream class for yahoo finance price streams."""
 
-    replication_key = "replication_key"
+    replication_key = "timestamp"
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         """Initialize the database stream.
@@ -95,10 +95,11 @@ class YFinancePriceStream(Stream):
         for ticker in tickers:
             start_date = '1950-01-01'
             yf_params['start'] = max(start_date, '1950-01-01')
+
             df = price_tap.download_single_symbol_price_history(ticker=ticker, yf_history_params=yf_params)
+
             for record in df.to_dict(orient='records'):
                 batch_timestamp = datetime.utcnow().strftime('%Y-%m-%d')
                 replication_key = ticker + '|' + batch_timestamp
                 record['replication_key'] = replication_key
-                self.logger.info(f'\n\n\n*** {record} ***\n\n\n')
                 yield record
