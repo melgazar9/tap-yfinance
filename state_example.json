@@ -1,29 +1,40 @@
 {
-  "bookmark": {
-    "tap-yfinance": {
-      "stock_prices_1m": {
-        "AAPL": {
-        "replication_key": "replication_key",
-        "replication_key_value": "AAPL|2023-10-11T02:33:11.053658Z"
-      },
-
-    "NVDA": {
-      "replication_key": "replication_key",
-      "replication_key_value": "NVDA|2023-10-12T02:35:11.053658Z"
-      }
-    },
-
-    "stock_prices_2m": {
-      "AAPL": {
-      "replication_key": "replication_key",
-      "replication_key_value": "AAPL|2023-11-11T02:33:11.053658Z"
-      },
-
-    "NVDA": {
-      "replication_key": "replication_key",
-      "replication_key_value": "NVDA|2023-11-12T02:35:11.053658Z"
+  "bookmarks": {
+    "crypto_prices_1d": {
+      "partitions": [
+        {
+          "context": {
+            "ticker": "BTC-USD"
+          },
+          "replication_key": "timestamp",
+          "replication_key_value": "2023-10-09T00:00:00+00:00"
+        },
+        {
+          "context": {
+            "ticker": "ETH-USD"
+          },
+          "replication_key": "timestamp",
+          "replication_key_value": "2023-10-17T00:00:00+00:00"
         }
-      }
+      ]
+    },
+    "stock_prices_1m": {
+      "partitions": [
+        {
+          "context": {
+            "ticker": "AAPL"
+          },
+          "replication_key": "timestamp",
+          "replication_key_value": "2023-10-20T20:32:00+00:00"
+        },
+        {
+          "context": {
+            "ticker": "NVDA"
+          },
+          "replication_key": "timestamp",
+          "replication_key_value": "2023-10-15T20:31:00+00:00"
+        }
+      ]
     }
   }
 }

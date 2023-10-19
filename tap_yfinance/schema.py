@@ -6,7 +6,7 @@ def get_price_schema(asset_class):
             th.Property("timestamp", th.DateTimeType, required=True),
             th.Property("timestamp_tz_aware", th.StringType),
             th.Property("timezone", th.StringType),
-            th.Property("yahoo_ticker", th.StringType, required=True),
+            th.Property("ticker", th.StringType, required=True),
             th.Property("open", th.NumberType),
             th.Property("high", th.NumberType),
             th.Property("low", th.NumberType),

@@ -27,18 +27,18 @@ class YFinancePriceTap(YFinanceLogger):
     Parameters
     ----------
     yf_params: dict - passed to yf.Ticker(<ticker>).history(**yf_params) - see docs for yfinance ticker.history() params
-    yahoo_ticker_colname: str of column name to set of output yahoo ticker columns
+    ticker_colname: str of column name to set of output yahoo ticker columns
     verbose: bool whether to log most steps to stdout
     """
 
     def __init__(self,
                  asset_class,
                  yf_params=None,
-                 yahoo_ticker_colname='yahoo_ticker',
+                 ticker_colname='ticker',
                  verbose=False):
         self.asset_class = asset_class
         self.yf_params = {} if yf_params is None else yf_params
-        self.yahoo_ticker_colname = yahoo_ticker_colname
+        self.ticker_colname = ticker_colname
         self.verbose = verbose
 
         super().__init__()
@@ -58,15 +58,15 @@ class YFinancePriceTap(YFinanceLogger):
             "self.asset_class must be set to either 'stocks', 'forex', or 'crypto'"
 
         if self.asset_class == 'stocks':
-            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'open', 'high', 'low',
+            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'dividends', 'stock_splits', 'repaired']
 
         elif asset_class == 'forex':
-            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'open', 'high', 'low',
+            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'repaired']
 
         elif asset_class == 'crypto':
-            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'open', 'high', 'low',
+            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'repaired']
 
         self.n_requests = 0
@@ -95,7 +95,7 @@ class YFinancePriceTap(YFinanceLogger):
         -----------
         Download a single stock price ticker from the yfinance python library.
         Minor transformations happen:
-            - Add column yahoo_ticker to show which ticker has been pulled
+            - Add column ticker to show which ticker has been pulled
             - Set start date to the minimum start date allowed by yfinance for that ticker (passed in yf_history_params)
             - Clean column names
             - Set tz_aware timestamp column to be a string
@@ -122,7 +122,7 @@ class YFinancePriceTap(YFinanceLogger):
                     .pipe(lambda x: clean_columns(x))
 
             self.n_requests += 1
-            df.loc[:, self.yahoo_ticker_colname] = ticker
+            df.loc[:, self.ticker_colname] = ticker
             df.reset_index(inplace=True)
             df['timestamp_tz_aware'] = df['timestamp'].copy()
             df.loc[:, 'timezone'] = str(df['timestamp_tz_aware'].dt.tz)
@@ -164,28 +164,28 @@ class TickerDownloader(YFinanceLogger):
         pts = PyTickerSymbols()
         all_getters = list(filter(
             lambda x: (
-                    x.endswith('_yahoo_tickers') or x.endswith('_google_tickers')
+                    x.endswith('_tickers') or x.endswith('_google_tickers')
             ),
             dir(pts),
         ))
 
-        all_tickers = {'yahoo_tickers': [], 'google_tickers': []}
+        all_tickers = {'tickers': [], 'google_tickers': []}
         for t in all_getters:
             if t.endswith('google_tickers'):
                 all_tickers['google_tickers'].append((getattr(pts, t)()))
-            elif t.endswith('yahoo_tickers'):
-                all_tickers['yahoo_tickers'].append((getattr(pts, t)()))
+            elif t.endswith('tickers'):
+                all_tickers['tickers'].append((getattr(pts, t)()))
         all_tickers['google_tickers'] = flatten_list(all_tickers['google_tickers'])
-        all_tickers['yahoo_tickers'] = flatten_list(all_tickers['yahoo_tickers'])
-        if len(all_tickers['yahoo_tickers']) == len(all_tickers['google_tickers']):
+        all_tickers['tickers'] = flatten_list(all_tickers['tickers'])
+        if len(all_tickers['tickers']) == len(all_tickers['google_tickers']):
             all_tickers = pd.DataFrame(all_tickers)
         else:
             all_tickers = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in all_tickers.items()]))
 
         all_tickers = \
             all_tickers \
-                .rename(columns={'yahoo_tickers': 'yahoo_ticker', 'google_tickers': 'google_ticker'}) \
-                .sort_values(by=['yahoo_ticker', 'google_ticker']) \
+                .rename(columns={'tickers': 'ticker', 'google_tickers': 'google_ticker'}) \
+                .sort_values(by=['ticker', 'google_ticker']) \
                 .drop_duplicates()
         return all_tickers
 
@@ -206,14 +206,14 @@ class TickerDownloader(YFinanceLogger):
         session.close()
 
         df = clean_columns(tables[0].copy())
-        df.rename(columns={'symbol': 'yahoo_ticker', 'name': 'yahoo_name', '%_change': 'pct_change'}, inplace=True)
+        df.rename(columns={'symbol': 'ticker', 'name': 'yahoo_name', '%_change': 'pct_change'}, inplace=True)
 
         # Add Decentral-Games tickers
 
-        missing_dg_tickers = [i for i in ['ICE13133-USD', 'DG15478-USD', 'XDG-USD'] if i not in df['yahoo_ticker']]
+        missing_dg_tickers = [i for i in ['ICE13133-USD', 'DG15478-USD', 'XDG-USD'] if i not in df['ticker']]
         if len(missing_dg_tickers):
             df_dg = pd.DataFrame({
-                'yahoo_ticker': missing_dg_tickers,
+                'ticker': missing_dg_tickers,
                 'yahoo_name': missing_dg_tickers,
                 'price_intraday': np.nan,
                 'change': np.nan,
@@ -235,7 +235,7 @@ class TickerDownloader(YFinanceLogger):
     @staticmethod
     def download_forex_pairs():
         forex_pairs = dict(
-            yahoo_ticker=[
+            ticker=[
                 'EURUSD=X', 'JPY=X', 'GBPUSD=X', 'AUDUSD=X', 'NZDUSD=X', 'EURJPY=X', 'GBPJPY=X', 'EURGBP=X',
                 'EURCAD=X', 'EURSEK=X', 'EURCHF=X', 'EURHUF=X', 'CNY=X', 'HKD=X', 'SGD=X', 'INR=X', 'MXN=X',
                 'PHP=X', 'IDR=X', 'THB=X', 'MYR=X', 'ZAR=X', 'RUB=X'
@@ -257,7 +257,7 @@ class TickerDownloader(YFinanceLogger):
     def download_numerai_signals_ticker_map(
             napi=SignalsAPI(),
             numerai_ticker_link='https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/signals_ticker_map_w_bbg.csv',
-            yahoo_ticker_colname='yahoo',
+            ticker_colname='yahoo',
             verbose=True):
         """
         Description
@@ -272,7 +272,7 @@ class TickerDownloader(YFinanceLogger):
         print(f"Number of eligible tickers in map: {len(ticker_map)}") if verbose else None
 
         # Remove null / empty tickers from the yahoo tickers
-        valid_tickers = [i for i in ticker_map[yahoo_ticker_colname]
+        valid_tickers = [i for i in ticker_map[ticker_colname]
                          if not pd.isnull(i)
                          and not str(i).lower() == 'nan' \
                          and not str(i).lower() == 'null' \
@@ -281,7 +281,7 @@ class TickerDownloader(YFinanceLogger):
                          and len(i) > 0]
         print('tickers before cleaning:', ticker_map.shape) if verbose else None
 
-        ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
+        ticker_map = ticker_map[ticker_map[ticker_colname].isin(valid_tickers)]
 
         print('tickers after cleaning:', ticker_map.shape) if verbose else None
 
@@ -298,20 +298,20 @@ class TickerDownloader(YFinanceLogger):
 
         df_pts_tickers = cls.download_pts_stock_tickers()
 
-        numerai_yahoo_tickers = \
+        numerai_tickers = \
             cls.download_numerai_signals_ticker_map() \
-                .rename(columns={'yahoo': 'yahoo_ticker', 'ticker': 'numerai_ticker'})
+                .rename(columns={'yahoo': 'ticker', 'ticker': 'numerai_ticker'})
 
-        df1 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
-        df2 = pd.merge(numerai_yahoo_tickers, df_pts_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
-        df3 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='numerai_ticker',
+        df1 = pd.merge(df_pts_tickers, numerai_tickers, on='ticker', how='left').set_index('ticker')
+        df2 = pd.merge(numerai_tickers, df_pts_tickers, on='ticker', how='left').set_index('ticker')
+        df3 = pd.merge(df_pts_tickers, numerai_tickers, left_on='ticker', right_on='numerai_ticker',
                        how='left') \
-            .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
-            .set_index('yahoo_ticker')
-        df4 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='bloomberg_ticker',
+            .rename(columns={'ticker_x': 'ticker', 'ticker_y': 'ticker_old'}) \
+            .set_index('ticker')
+        df4 = pd.merge(df_pts_tickers, numerai_tickers, left_on='ticker', right_on='bloomberg_ticker',
                        how='left') \
-            .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
-            .set_index('yahoo_ticker')
+            .rename(columns={'ticker_x': 'ticker', 'ticker_y': 'ticker_old'}) \
+            .set_index('ticker')
 
         df_tickers_wide = clean_columns(pd.concat([df1, df2, df3, df4], axis=1))
 
@@ -323,19 +323,19 @@ class TickerDownloader(YFinanceLogger):
 
         df_tickers = \
             df_tickers_wide.reset_index() \
-                [['yahoo_ticker', 'google_ticker', 'bloomberg_ticker', 'numerai_ticker', 'yahoo_ticker_old']] \
+                [['ticker', 'google_ticker', 'bloomberg_ticker', 'numerai_ticker', 'ticker_old']] \
                 .sort_values(
-                by=['yahoo_ticker', 'google_ticker', 'bloomberg_ticker', 'numerai_ticker', 'yahoo_ticker_old']) \
+                by=['ticker', 'google_ticker', 'bloomberg_ticker', 'numerai_ticker', 'ticker_old']) \
                 .drop_duplicates()
 
         df_tickers.loc[:, 'yahoo_valid_pts'] = False
         df_tickers.loc[:, 'yahoo_valid_numerai'] = False
 
         df_tickers.loc[
-            df_tickers['yahoo_ticker'].isin(df_pts_tickers['yahoo_ticker'].tolist()), 'yahoo_valid_pts'] = True
+            df_tickers['ticker'].isin(df_pts_tickers['ticker'].tolist()), 'yahoo_valid_pts'] = True
 
         df_tickers.loc[
-            df_tickers['yahoo_ticker'].isin(numerai_yahoo_tickers['numerai_ticker'].tolist()), 'yahoo_valid_numerai'
+            df_tickers['ticker'].isin(numerai_tickers['numerai_ticker'].tolist()), 'yahoo_valid_numerai'
         ] = True
 
         return df_tickers

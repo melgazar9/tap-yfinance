@@ -25,7 +25,7 @@ class TapYFinance(Tap):
     ).to_dict()
 
     @staticmethod
-    def discover_catalog_entry(asset_class: str, table_name: str, schema: dict) -> CatalogEntry:
+    def discover_catalog_entry(table_name: str, schema: dict) -> CatalogEntry:
         """Create `CatalogEntry` object for the given collection."""
 
         # TODO: Why is it if I set both tap_stream_id and stream to be asset_class + '|' + table_name it deselects ALL streams?
@@ -33,14 +33,14 @@ class TapYFinance(Tap):
                 tap_stream_id=table_name,
                 stream=table_name,
                 table=table_name,
-                key_properties=["timestamp", "yahoo_ticker"],
+                key_properties=["timestamp", "ticker"],
                 schema=Schema.from_dict(schema),
                 replication_method=None,  # defined by user
                 metadata=MetadataMapping.get_standard_metadata(
                     schema=schema,
                     replication_method=None,  # defined by user
                     key_properties=[
-                        'timestamp', 'timestamp_tz_aware', 'timezone', 'yahoo_ticker', 'open', 'high', 'low', 'close',
+                        'timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low', 'close',
                         'volume', 'dividends', 'stock_splits', 'repaired'
                     ],
                     valid_replication_keys=None  # defined by user
@@ -70,7 +70,7 @@ class TapYFinance(Tap):
             asset_schema = get_price_schema(asset_class)
             for table_name in asset_classes[asset_class]:
                 catalog_entry: CatalogEntry = \
-                    self.discover_catalog_entry(asset_class=asset_class, table_name=table_name, schema=asset_schema)
+                    self.discover_catalog_entry(table_name=table_name, schema=asset_schema)
 
                 result["streams"].append(catalog_entry.to_dict())
 
