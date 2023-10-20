@@ -32,11 +32,11 @@ class YFinancePriceTap(YFinanceLogger):
     """
 
     def __init__(self,
-                 financial_group,
+                 schema_category,
                  yf_params=None,
                  ticker_colname='ticker',
                  verbose=False):
-        self.financial_group = financial_group
+        self.schema_category = schema_category
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
         self.verbose = verbose
@@ -54,18 +54,18 @@ class YFinancePriceTap(YFinanceLogger):
         self.start_date = self.yf_params['start']
         assert pd.Timestamp(self.start_date) <= datetime.today(), 'Start date cannot be after the current date!'
 
-        assert 'stock_prices' in self.financial_group or 'forex_prices' in self.financial_group or 'crypto_prices' in self.financial_group, \
-            "self.financial_group must be set to either 'stock_prices', 'forex_prices', or 'crypto_prices'"
+        assert 'stock_prices' in self.schema_category or 'forex_prices' in self.schema_category or 'crypto_prices' in self.schema_category, \
+            "self.schema_category must be set to either 'stock_prices', 'forex_prices', or 'crypto_prices'"
 
-        if self.financial_group == 'stock_prices':
+        if self.schema_category == 'stock_prices':
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'dividends', 'stock_splits', 'repaired']
 
-        elif financial_group == 'forex_prices':
+        elif schema_category == 'forex_prices':
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'repaired']
 
-        elif financial_group == 'crypto_prices':
+        elif schema_category == 'crypto_prices':
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'repaired']
 

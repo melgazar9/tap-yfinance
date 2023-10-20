@@ -1,7 +1,7 @@
 from singer_sdk import typing as th
 
-def get_price_schema(financial_group):
-    if financial_group in ['stock_prices', 'forex_prices', 'crypto_prices']:
+def get_price_schema(financial_category):
+    if financial_category in ['stock_prices', 'forex_prices', 'crypto_prices']:
         schema = th.PropertiesList(
             th.Property("timestamp", th.DateTimeType, required=True),
             th.Property("timestamp_tz_aware", th.StringType),
@@ -17,23 +17,23 @@ def get_price_schema(financial_group):
             th.Property("repaired", th.BooleanType),
             th.Property("replication_key", th.StringType)
         ).to_dict()
-    elif financial_group == 'stock_tickers':
+    elif financial_category == 'stock_tickers':
         schema = th.PropertiesList(
             th.Property("yahoo_ticker", th.StringType, required=True),
             th.Property("google_ticker", th.StringType),
             th.Property("bloomberg_ticker", th.StringType),
-            th.Property("numerai_ticker", th.StringType, required=True),
+            th.Property("numerai_ticker", th.StringType),
             th.Property("yahoo_ticker_old", th.StringType),
             th.Property("yahoo_valid_pts", th.BooleanType),
             th.Property("yahoo_valid_numerai", th.BooleanType)
         ).to_dict()
-    elif financial_group == 'forex_tickers':
+    elif financial_category == 'forex_tickers':
         schema = th.PropertiesList(
             th.Property("yahoo_ticker", th.StringType, required=True),
             th.Property("yahoo_name", th.StringType),
             th.Property("bloomberg_ticker", th.StringType)
         ).to_dict()
-    elif financial_group == 'crypto_tickers':
+    elif financial_category == 'crypto_tickers':
         schema = th.PropertiesList(
             th.Property("yahoo_ticker", th.StringType, required=True),
             th.Property("yahoo_name", th.StringType),

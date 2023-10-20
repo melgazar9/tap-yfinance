@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import singer_sdk.typing as th  # JSON Schema typing helpers
 from singer_sdk import Tap
-from singer_sdk._singerlib.catalog import CatalogEntry, MetadataMapping, Schema
-from tap_yfinance.streams import PriceStream
+from singer_sdk._singerlib.catalog import CatalogEntry, MetadataMapping, Schema, Metadata
+from tap_yfinance.streams import PriceStream, TickerStream
 from tap_yfinance.schema import get_price_schema
 
 
@@ -16,7 +16,7 @@ class TapYFinance(Tap):
 
     config_jsonschema = th.PropertiesList(
         th.Property(
-            "financial_group",
+            "financial_category",
             th.ObjectType(
                 additional_properties=th.ObjectType()
             ),
@@ -25,11 +25,15 @@ class TapYFinance(Tap):
     ).to_dict()
 
     @staticmethod
-    def discover_catalog_entry(table_name: str, schema: dict) -> CatalogEntry:
+    def discover_catalog_entry(financial_category: str, table_name: str, schema: dict) -> CatalogEntry:
         """Create `CatalogEntry` object for the given collection."""
 
-        # TODO: Why is it if I set both tap_stream_id and stream to be financial_group + '|' + table_name it deselects ALL streams?
-        return CatalogEntry(
+        # TODO: Why is it if I set both tap_stream_id and stream to be financial_category + '|' + table_name it deselects ALL streams?
+        # Need to figure out how to pass financial_category into the CatalogEntry object.
+
+        key_property_fields = list(Schema.from_dict(schema).to_dict().get('properties').keys())
+
+        category_entry = CatalogEntry(
                 tap_stream_id=table_name,
                 stream=table_name,
                 table=table_name,
@@ -38,15 +42,15 @@ class TapYFinance(Tap):
                 replication_method=None,  # defined by user
                 metadata=MetadataMapping.get_standard_metadata(
                     schema=schema,
+                    schema_name=financial_category,  # TODO: Fix this! This is just a placeholder.
                     replication_method=None,  # defined by user
-                    key_properties=[
-                        'timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low', 'close',
-                        'volume', 'dividends', 'stock_splits', 'repaired'
-                    ],
+                    key_properties=key_property_fields,
                     valid_replication_keys=None  # defined by user
                 ),
                 replication_key=None  # defined by user
             )
+
+        return category_entry
 
     @property
     def catalog_dict(self) -> dict:
@@ -62,19 +66,20 @@ class TapYFinance(Tap):
         if self.input_catalog:
             return self.input_catalog.to_dict()
 
-        financial_groups: dict[str, dict[str, dict]] = self.config.get('financial_group', {})
+        financial_categories: dict[str, dict[str, dict]] = self.config.get('financial_category', {})
 
         result: dict[str, list[dict]] = {"streams": []}
 
-        for fg in financial_groups:
-            schema = get_price_schema(fg)
-            for table_name in financial_groups[fg]:
+        for fc in financial_categories.keys():
+            for table_name in financial_categories[fc].keys():
+                schema = get_price_schema(financial_categories[fc][table_name]['schema_category'])
                 catalog_entry: CatalogEntry = \
-                    self.discover_catalog_entry(table_name=table_name, schema=schema)
+                    self.discover_catalog_entry(financial_category=fc, table_name=table_name, schema=schema)
 
                 result["streams"].append(catalog_entry.to_dict())
 
-        self._catalog_dict: dict = result  # pylint: disable=attribute-defined-outside-init
+        self._catalog_dict: dict = result
+
         return self._catalog_dict
 
     def discover_streams(self) -> list[PriceStream]:
@@ -84,9 +89,17 @@ class TapYFinance(Tap):
             A list of discovered streams.
         """
 
-        return [
-            PriceStream(self, catalog_entry=catalog_entry) for catalog_entry in self.catalog_dict["streams"]
-        ]
+        streams = []
+        for catalog_entry in self.catalog_dict["streams"]:
+            if 'price' in catalog_entry['tap_stream_id']:
+                stream = PriceStream(self, catalog_entry=catalog_entry)
+            elif 'tickers' in catalog_entry['tap_stream_id']:
+                stream = TickerStream(self, catalog_entry=catalog_entry)
+            else:
+                raise ValueError('Could not set the proper stream.')
+            streams.append(stream)
+
+        return streams
 
 
 if __name__ == "__main__":
