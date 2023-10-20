@@ -9,7 +9,7 @@ from tap_yfinance.schema import *
 from singer_sdk.streams.core import REPLICATION_INCREMENTAL
 from singer_sdk.helpers._state import increment_state
 
-class YFinancePriceStream(Stream):
+class PriceStream(Stream):
     """Stream class for yahoo finance price streams."""
 
     replication_key = "timestamp"
@@ -34,26 +34,26 @@ class YFinancePriceStream(Stream):
 
         self.ticker_downloader = TickerDownloader()
 
-        # Define a dictionary to map asset class prefixes to ticker sources
-        asset_class_mapping = {
-            'stock': ('stocks', 'download_valid_stock_tickers'),
-            'forex': ('forex', 'download_forex_pairs'),
-            'crypto': ('crypto', 'download_top_250_crypto_tickers')
+        # Define a dictionary to map financial group prefixes to ticker sources
+        financial_group_mapping = {
+            'stock': ('stock_prices', 'download_valid_stock_tickers'),
+            'forex': ('forex_prices', 'download_forex_pairs'),
+            'crypto': ('crypto_prices', 'download_top_250_crypto_tickers')
         }
 
-        asset_class_prefix = catalog_entry['table_name'].split('_')[0]
+        financial_group_prefix = catalog_entry['table_name'].split('_')[0]
 
-        if asset_class_prefix in asset_class_mapping:
-            asset_class, ticker_source = asset_class_mapping[asset_class_prefix]
-            self.asset_class = asset_class
-            self.stream_params: dict = self.config['asset_class'][self.asset_class][self.name]
+        if financial_group_prefix in financial_group_mapping:
+            financial_group, ticker_source = financial_group_mapping[financial_group_prefix]
+            self.financial_group = financial_group
+            self.stream_params: dict = self.config.get('financial_group').get(self.financial_group).get(self.name)
 
-            if self.stream_params['tickers'] != '*':
+            if self.stream_params.get('tickers') != '*':
                 self.tickers: list = self.stream_params['tickers'].copy()
             else:
                 self.tickers: list = getattr(self.ticker_downloader, ticker_source)()['yahoo_ticker'].tolist()
         else:
-            raise ValueError('Could not parse asset class.')
+            raise ValueError('Could not parse financial group.')
 
         self.yf_params: dict = self.stream_params.get('yf_params').copy()
         assert isinstance(self.yf_params, dict)
@@ -82,7 +82,7 @@ class YFinancePriceStream(Stream):
 
         """
 
-        price_tap = YFinancePriceTap(asset_class=self.asset_class)
+        price_tap = YFinancePriceTap(financial_group=self.financial_group)
         yf_params = self.yf_params.copy()
 
         for ticker in self.tickers:

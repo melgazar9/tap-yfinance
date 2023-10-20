@@ -5,7 +5,7 @@ from __future__ import annotations
 import singer_sdk.typing as th  # JSON Schema typing helpers
 from singer_sdk import Tap
 from singer_sdk._singerlib.catalog import CatalogEntry, MetadataMapping, Schema
-from tap_yfinance.streams import YFinancePriceStream
+from tap_yfinance.streams import PriceStream
 from tap_yfinance.schema import get_price_schema
 
 
@@ -16,7 +16,7 @@ class TapYFinance(Tap):
 
     config_jsonschema = th.PropertiesList(
         th.Property(
-            "asset_class",
+            "financial_group",
             th.ObjectType(
                 additional_properties=th.ObjectType()
             ),
@@ -28,7 +28,7 @@ class TapYFinance(Tap):
     def discover_catalog_entry(table_name: str, schema: dict) -> CatalogEntry:
         """Create `CatalogEntry` object for the given collection."""
 
-        # TODO: Why is it if I set both tap_stream_id and stream to be asset_class + '|' + table_name it deselects ALL streams?
+        # TODO: Why is it if I set both tap_stream_id and stream to be financial_group + '|' + table_name it deselects ALL streams?
         return CatalogEntry(
                 tap_stream_id=table_name,
                 stream=table_name,
@@ -62,22 +62,22 @@ class TapYFinance(Tap):
         if self.input_catalog:
             return self.input_catalog.to_dict()
 
-        asset_classes: dict[str, dict[str, dict]] = self.config.get('asset_class', {})
+        financial_groups: dict[str, dict[str, dict]] = self.config.get('financial_group', {})
 
         result: dict[str, list[dict]] = {"streams": []}
 
-        for asset_class in asset_classes:
-            asset_schema = get_price_schema(asset_class)
-            for table_name in asset_classes[asset_class]:
+        for fg in financial_groups:
+            schema = get_price_schema(fg)
+            for table_name in financial_groups[fg]:
                 catalog_entry: CatalogEntry = \
-                    self.discover_catalog_entry(table_name=table_name, schema=asset_schema)
+                    self.discover_catalog_entry(table_name=table_name, schema=schema)
 
                 result["streams"].append(catalog_entry.to_dict())
 
         self._catalog_dict: dict = result  # pylint: disable=attribute-defined-outside-init
         return self._catalog_dict
 
-    def discover_streams(self) -> list[YFinancePriceStream]:
+    def discover_streams(self) -> list[PriceStream]:
         """Return a list of discovered streams.
 
         Returns:
@@ -85,7 +85,7 @@ class TapYFinance(Tap):
         """
 
         return [
-            YFinancePriceStream(self, catalog_entry=catalog_entry) for catalog_entry in self.catalog_dict["streams"]
+            PriceStream(self, catalog_entry=catalog_entry) for catalog_entry in self.catalog_dict["streams"]
         ]
 
 

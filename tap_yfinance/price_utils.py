@@ -32,11 +32,11 @@ class YFinancePriceTap(YFinanceLogger):
     """
 
     def __init__(self,
-                 asset_class,
+                 financial_group,
                  yf_params=None,
                  ticker_colname='ticker',
                  verbose=False):
-        self.asset_class = asset_class
+        self.financial_group = financial_group
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
         self.verbose = verbose
@@ -54,18 +54,18 @@ class YFinancePriceTap(YFinanceLogger):
         self.start_date = self.yf_params['start']
         assert pd.Timestamp(self.start_date) <= datetime.today(), 'Start date cannot be after the current date!'
 
-        assert 'stocks' in self.asset_class or 'forex' in self.asset_class or 'crypto' in self.asset_class, \
-            "self.asset_class must be set to either 'stocks', 'forex', or 'crypto'"
+        assert 'stock_prices' in self.financial_group or 'forex_prices' in self.financial_group or 'crypto_prices' in self.financial_group, \
+            "self.financial_group must be set to either 'stock_prices', 'forex_prices', or 'crypto_prices'"
 
-        if self.asset_class == 'stocks':
+        if self.financial_group == 'stock_prices':
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'dividends', 'stock_splits', 'repaired']
 
-        elif asset_class == 'forex':
+        elif financial_group == 'forex_prices':
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'repaired']
 
-        elif asset_class == 'crypto':
+        elif financial_group == 'crypto_prices':
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'repaired']
 

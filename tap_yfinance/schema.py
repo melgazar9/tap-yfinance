@@ -1,7 +1,7 @@
 from singer_sdk import typing as th
 
-def get_price_schema(asset_class):
-    if asset_class in ['stocks', 'forex', 'crypto']:
+def get_price_schema(financial_group):
+    if financial_group in ['stock_prices', 'forex_prices', 'crypto_prices']:
         schema = th.PropertiesList(
             th.Property("timestamp", th.DateTimeType, required=True),
             th.Property("timestamp_tz_aware", th.StringType),
@@ -16,6 +16,35 @@ def get_price_schema(asset_class):
             th.Property("stock_splits", th.NumberType),
             th.Property("repaired", th.BooleanType),
             th.Property("replication_key", th.StringType)
+        ).to_dict()
+    elif financial_group == 'stock_tickers':
+        schema = th.PropertiesList(
+            th.Property("yahoo_ticker", th.StringType, required=True),
+            th.Property("google_ticker", th.StringType),
+            th.Property("bloomberg_ticker", th.StringType),
+            th.Property("numerai_ticker", th.StringType, required=True),
+            th.Property("yahoo_ticker_old", th.StringType),
+            th.Property("yahoo_valid_pts", th.BooleanType),
+            th.Property("yahoo_valid_numerai", th.BooleanType)
+        ).to_dict()
+    elif financial_group == 'forex_tickers':
+        schema = th.PropertiesList(
+            th.Property("yahoo_ticker", th.StringType, required=True),
+            th.Property("yahoo_name", th.StringType),
+            th.Property("bloomberg_ticker", th.StringType)
+        ).to_dict()
+    elif financial_group == 'crypto_tickers':
+        schema = th.PropertiesList(
+            th.Property("yahoo_ticker", th.StringType, required=True),
+            th.Property("yahoo_name", th.StringType),
+            th.Property("price_intraday", th.NumberType),
+            th.Property("change", th.NumberType),
+            th.Property("pct_change", th.StringType),
+            th.Property("market_cap", th.StringType),
+            th.Property("volume_in_currency_since_0_00_utc", th.StringType),
+            th.Property("volume_in_currency_24_hr", th.StringType),
+            th.Property("total_volume_all_currencies_24_hr", th.StringType),
+            th.Property("circulating_supply", th.StringType)
         ).to_dict()
     else:
         raise NotImplementedError('Only price streams are currently supported.')

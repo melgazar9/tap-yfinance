@@ -23,8 +23,21 @@ plugins:
       config:
         default_start_date: '1950-01-01'
         add_record_metadata: true
-        asset_class:
-          stocks:
+
+        financial_group:
+
+          ### tickers ###
+
+#          stock_tickers:
+#            tickers: "*"
+#          forex_tickers:
+#            tickers: "*"
+#          crypto_tickers:
+#            tickers: "*"
+
+          ### prices ###
+
+          stock_prices:
             stock_prices_1m:
               tickers: ["AAPL", "META"]
               yf_params: {'interval': '1m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
@@ -32,7 +45,7 @@ plugins:
               tickers: ["AAPL", "META"]
               yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
 
-          forex:
+          forex_prices:
             forex_prices_1m:
               tickers: ["EURUSD=X"]
               yf_params: {'interval': '1m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
@@ -40,7 +53,7 @@ plugins:
               tickers: ["EURUSD=X"]
               yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
 
-          crypto:
+          crypto_prices:
             crypto_prices_1m:
               tickers: ["BTC-USD", "ETH-USD"]
               yf_params: {'interval': '1m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}

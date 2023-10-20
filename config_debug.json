@@ -1,10 +1,22 @@
 {
   "default_start_date": "1950-01-01",
   "add_record_metadata": true,
-  "asset_class": {
-    "stocks": {
+  "financial_group": {
+    "stock_tickers": {
+      "tickers": "*"
+    },
+    "forex_tickers": {
+      "tickers": "*"
+    },
+    "crypto_tickers": {
+      "tickers": "*"
+    },
+    "stock_prices": {
       "stock_prices_1m": {
-        "tickers": "*",
+        "tickers": [
+          "AAPL",
+          "META"
+        ],
         "yf_params": {
           "interval": "1m",
           "prepost": true,
@@ -14,7 +26,10 @@
         }
       },
       "stock_prices_1d": {
-        "tickers": ["AAPL", "MSFT"],
+        "tickers": [
+          "AAPL",
+          "META"
+        ],
         "yf_params": {
           "interval": "1d",
           "prepost": true,
@@ -24,9 +39,11 @@
         }
       }
     },
-    "forex": {
+    "forex_prices": {
       "forex_prices_1m": {
-        "tickers": ["EURUSD=X"],
+        "tickers": [
+          "EURUSD=X"
+        ],
         "yf_params": {
           "interval": "1m",
           "prepost": true,
@@ -36,7 +53,9 @@
         }
       },
       "forex_prices_1d": {
-        "tickers": ["EURUSD=X"],
+        "tickers": [
+          "EURUSD=X"
+        ],
         "yf_params": {
           "interval": "1d",
           "prepost": true,
@@ -46,9 +65,12 @@
         }
       }
     },
-    "crypto": {
+    "crypto_prices": {
       "crypto_prices_1m": {
-        "tickers": ["BTC-USD"],
+        "tickers": [
+          "BTC-USD",
+          "ETH-USD"
+        ],
         "yf_params": {
           "interval": "1m",
           "prepost": true,
@@ -58,7 +80,10 @@
         }
       },
       "crypto_prices_1d": {
-        "tickers": ["ETH-USD"],
+        "tickers": [
+          "BTC-USD",
+          "ETH-USD"
+        ],
         "yf_params": {
           "interval": "1d",
           "prepost": true,
@@ -67,6 +92,12 @@
           "back_adjust": false
         }
       }
+    }
+  },
+  "metadata": {
+    "*": {
+      "replication-method": "INCREMENTAL",
+      "replication-key": "timestamp"
     }
   }
 }
