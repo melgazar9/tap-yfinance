@@ -11,7 +11,7 @@ def get_price_schema(asset_class):
             th.Property("high", th.NumberType),
             th.Property("low", th.NumberType),
             th.Property("close", th.NumberType),
-            th.Property("volume", th.IntegerType),
+            th.Property("volume", th.NumberType),
             th.Property("dividends", th.NumberType),
             th.Property("stock_splits", th.NumberType),
             th.Property("repaired", th.BooleanType),

@@ -24,18 +24,7 @@ class YFinancePriceStream(Stream):
         """
 
         self.catalog_entry = catalog_entry
-
-        if catalog_entry['table_name'].startswith('stock'):
-            self.asset_class = 'stocks'
-        elif catalog_entry['table_name'].startswith('forex'):
-            self.asset_class = 'forex'
-        elif catalog_entry['table_name'].startswith('crypto'):
-            self.asset_class = 'crypto'
-        else:
-            raise ValueError('Could not parse asset class.')
-
         self.table_name = self.catalog_entry['table_name']
-        self.schema = get_price_schema(asset_class=self.asset_class)
 
         super().__init__(
             tap=tap,
@@ -43,9 +32,31 @@ class YFinancePriceStream(Stream):
             name=self.catalog_entry["table_name"]
         )
 
-        self.stream_params: dict = self.config['asset_class'][self.asset_class][self.name]
-        self.tickers: list = self.stream_params['tickers'].copy()
-        self.yf_params: dict = self.stream_params['yf_params'].copy()
+        self.ticker_downloader = TickerDownloader()
+
+        # Define a dictionary to map asset class prefixes to ticker sources
+        asset_class_mapping = {
+            'stock': ('stocks', 'download_valid_stock_tickers'),
+            'forex': ('forex', 'download_forex_pairs'),
+            'crypto': ('crypto', 'download_top_250_crypto_tickers')
+        }
+
+        asset_class_prefix = catalog_entry['table_name'].split('_')[0]
+
+        if asset_class_prefix in asset_class_mapping:
+            asset_class, ticker_source = asset_class_mapping[asset_class_prefix]
+            self.asset_class = asset_class
+            self.stream_params: dict = self.config['asset_class'][self.asset_class][self.name]
+
+            if self.stream_params['tickers'] != '*':
+                self.tickers: list = self.stream_params['tickers'].copy()
+            else:
+                self.tickers: list = getattr(self.ticker_downloader, ticker_source)()['yahoo_ticker'].tolist()
+        else:
+            raise ValueError('Could not parse asset class.')
+
+        self.yf_params: dict = self.stream_params.get('yf_params').copy()
+        assert isinstance(self.yf_params, dict)
 
     @property
     def schema(self):
@@ -57,7 +68,7 @@ class YFinancePriceStream(Stream):
 
     @property
     def partitions(self) -> list[dict]:
-        return [{'ticker': t} for t in self.stream_params['tickers']]
+        return [{'ticker': t} for t in self.tickers]
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """Return a generator of record-type dictionary objects.
@@ -71,24 +82,10 @@ class YFinancePriceStream(Stream):
 
         """
 
-        ticker_downloader = TickerDownloader()
         price_tap = YFinancePriceTap(asset_class=self.asset_class)
         yf_params = self.yf_params.copy()
 
-        if self.asset_class == 'stocks' and self.tickers == '*':
-            df_tickers = ticker_downloader.download_pts_stock_tickers()
-            tickers = df_tickers['ticker'].tolist()
-        elif self.asset_class == 'forex' and self.tickers == '*':
-            df_tickers = ticker_downloader.download_forex_pairs()
-            tickers = df_tickers['ticker'].tolist()
-        elif self.asset_class == 'crypto' and self.tickers == '*':
-            df_tickers = ticker_downloader.download_top_250_crypto_tickers()
-            tickers = df_tickers['ticker'].tolist()
-        else:
-            assert self.tickers != '*', "tickers = '*' but did not use TickerDownloader() class!"
-            tickers = self.tickers
-
-        for ticker in tickers:
+        for ticker in self.tickers:
             state = self.get_context_state(context)
             if state and 'progress_markers' in state.keys():
                 self.logger.info(f"\n\n\n{state}\n\n\n")
