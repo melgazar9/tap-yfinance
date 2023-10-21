@@ -43,7 +43,7 @@ class YFinancePriceTap(YFinanceLogger):
         if 'prepost' not in self.yf_params.keys():
             self.yf_params['prepost'] = True
         if 'start' not in self.yf_params.keys():
-            self.logger.info('*** YF params start set to 1950-01-01! ***')
+            self.logger.info('YF params start set to 1950-01-01!')
             self.yf_params['start'] = '1950-01-01'
 
         self.start_date = self.yf_params['start']
@@ -104,6 +104,7 @@ class YFinancePriceTap(YFinanceLogger):
 
         if 'start' not in yf_history_params.keys():
             yf_history_params['start'] = '1950-01-01 00:00:00'
+            self.logger.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
 
         yf_history_params['start'] = \
             get_valid_yfinance_start_timestamp(interval=yf_history_params['interval'], start=yf_history_params['start'])

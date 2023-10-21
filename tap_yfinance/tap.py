@@ -6,7 +6,7 @@ import singer_sdk.typing as th
 from singer_sdk import Tap
 from singer_sdk._singerlib.catalog import CatalogEntry, MetadataMapping, Schema, Metadata
 from tap_yfinance.streams import PriceStream, TickerStream
-from tap_yfinance.schema import get_price_schema
+from tap_yfinance.schema import get_schema
 
 
 class TapYFinance(Tap):
@@ -72,7 +72,7 @@ class TapYFinance(Tap):
 
         for fc in financial_categories.keys():
             for table_name in financial_categories[fc].keys():
-                schema = get_price_schema(financial_categories[fc][table_name]['schema_category'])
+                schema = get_schema(financial_categories[fc][table_name]['schema_category'])
                 catalog_entry: CatalogEntry = \
                     self.discover_catalog_entry(financial_category=fc, table_name=table_name, schema=schema)
 

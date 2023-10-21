@@ -1,6 +1,6 @@
 from singer_sdk import typing as th
 
-def get_price_schema(financial_category):
+def get_schema(financial_category):
     if financial_category in ['stock_prices', 'forex_prices', 'crypto_prices']:
         schema = th.PropertiesList(
             th.Property("timestamp", th.DateTimeType, required=True),
