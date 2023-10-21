@@ -28,32 +28,27 @@ class YFinancePriceTap(YFinanceLogger):
     ----------
     yf_params: dict - passed to yf.Ticker(<ticker>).history(**yf_params) - see docs for yfinance ticker.history() params
     ticker_colname: str of column name to set of output yahoo ticker columns
-    verbose: bool whether to log most steps to stdout
     """
 
     def __init__(self,
                  schema_category,
                  yf_params=None,
-                 ticker_colname='ticker',
-                 verbose=False):
+                 ticker_colname='ticker'):
         self.schema_category = schema_category
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
-        self.verbose = verbose
 
         super().__init__()
-
-        ### update yf_params ###
 
         if 'prepost' not in self.yf_params.keys():
             self.yf_params['prepost'] = True
         if 'start' not in self.yf_params.keys():
-            print('*** YF params start set to 1950-01-01! ***') if self.verbose else None
+            self.logger.info('*** YF params start set to 1950-01-01! ***')
             self.yf_params['start'] = '1950-01-01'
 
         self.start_date = self.yf_params['start']
-        assert pd.Timestamp(self.start_date) <= datetime.today(), 'Start date cannot be after the current date!'
 
+        assert pd.Timestamp(self.start_date) <= datetime.today(), 'Start date cannot be after the current date!'
         assert 'stock_prices' in self.schema_category or 'forex_prices' in self.schema_category or 'crypto_prices' in self.schema_category, \
             "self.schema_category must be set to either 'stock_prices', 'forex_prices', or 'crypto_prices'"
 
@@ -144,7 +139,7 @@ class YFinancePriceTap(YFinanceLogger):
             return pd.DataFrame(columns=self.column_order)
 
 
-class TickerDownloader:
+class TickerDownloader(YFinanceLogger):
     """
     Description
     -----------
@@ -232,7 +227,6 @@ class TickerDownloader:
             df = pd.concat([df, df_dg], axis=0).reset_index(drop=True)
 
         df = df.dropna(how='all', axis=1)
-
         df = df.replace([np.inf, -np.inf, np.nan], None)
         return df
 
@@ -250,21 +244,19 @@ class TickerDownloader:
                 'USD/PHP', 'USD/IDR', 'USD/THB', 'USD/MYR', 'USD/ZAR', 'USD/RUB'
             ]
         )
-        # TODO
-        # Difficulty downloading forex pairs so just returning the forex_pairs input for now.
+
+        # TODO: Download a list of all relevant forex pairs
         df_forex_pairs = pd.DataFrame(forex_pairs)
         df_forex_pairs.loc[:, 'bloomberg_ticker'] = df_forex_pairs['yahoo_name'].apply(lambda x: f"{x[4:]}-{x[0:3]}")
-
         df_forex_pairs = df_forex_pairs.replace([np.inf, -np.inf, np.nan], None)
 
         return df_forex_pairs
 
-    @staticmethod
     def download_numerai_signals_ticker_map(
+            self,
             napi=SignalsAPI(),
             numerai_ticker_link='https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/signals_ticker_map_w_bbg.csv',
-            yahoo_ticker_colname='yahoo',
-            verbose=True):
+            yahoo_ticker_colname='yahoo'):
         """
         Description
         -----------
@@ -275,22 +267,14 @@ class TickerDownloader:
         eligible_tickers = pd.Series(napi.ticker_universe(), name='bloomberg_ticker')
         ticker_map = pd.merge(ticker_map, eligible_tickers, on='bloomberg_ticker', how='right')
 
-        print(f"Number of eligible tickers in map: {len(ticker_map)}") if verbose else None
+        self.logger.info('Number of eligible tickers in map: %s', str(ticker_map.shape[0]))
 
-        # Remove null / empty tickers from the yahoo tickers
-        valid_tickers = [i for i in ticker_map[yahoo_ticker_colname]
-                         if not pd.isnull(i)
-                         and not str(i).lower() == 'nan' \
-                         and not str(i).lower() == 'null' \
-                         and i is not None \
-                         and not str(i).lower() == '' \
-                         and len(i) > 0]
-        print('tickers before cleaning:', ticker_map.shape) if verbose else None
-
-        ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
         ticker_map = ticker_map.replace([np.inf, -np.inf, np.nan], None)
+        valid_tickers = [i for i in ticker_map[yahoo_ticker_colname] if i is not None and len(i) > 0]
 
-        print('tickers after cleaning:', ticker_map.shape) if verbose else None
+        self.logger.info(f'tickers before cleaning: %s', ticker_map.shape)
+        ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
+        self.logger.info(f'tickers after cleaning: %s', ticker_map.shape)
 
         return ticker_map
 
@@ -301,20 +285,23 @@ class TickerDownloader:
         -----------
         Download the valid tickers from py-ticker-symbols
         """
+
         # napi = numerapi.SignalsAPI(os.environ.get('NUMERAI_PUBLIC_KEY'), os.environ.get('NUMERAI_PRIVATE_KEY'))
 
         df_pts_tickers = cls.download_pts_stock_tickers()
 
         numerai_yahoo_tickers = \
-            cls.download_numerai_signals_ticker_map() \
+            cls().download_numerai_signals_ticker_map() \
                 .rename(columns={'yahoo': 'yahoo_ticker', 'ticker': 'numerai_ticker'})
 
         df1 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
         df2 = pd.merge(numerai_yahoo_tickers, df_pts_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
+
         df3 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='numerai_ticker',
                        how='left') \
             .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
             .set_index('yahoo_ticker')
+
         df4 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='bloomberg_ticker',
                        how='left') \
             .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
@@ -372,6 +359,7 @@ def get_valid_yfinance_start_timestamp(interval, start='1950-01-01 00:00:00'):
 
     Note: Often times yfinance returns an error even when looking back maximum number of days - 1,
         by default, return a date 2 days closer to the current date than the maximum specified in the yfinance docs
+
     """
 
     valid_intervals = ['1m', '2m', '5m', '15m', '30m', '60m', '1h', '90m', '1d', '5d', '1wk', '1mo', '3mo']
