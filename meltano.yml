@@ -16,6 +16,9 @@ plugins:
         - about
         - stream-maps
       select:
+        - stock_tickers
+        - forex_tickers
+        - crypto_tickers
         - stock_prices_1m
         - forex_prices_1m
         - crypto_prices_1m
@@ -70,9 +73,37 @@ plugins:
               schema_category: crypto_prices
 
       metadata:
-        '*':
+        stock_prices_1m:
           replication-method: INCREMENTAL
           replication-key: timestamp
+        stock_prices_1d:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        forex_prices_1m:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        forex_prices_1d:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        crypto_prices_1m:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        crypto_prices_1d:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        stock_tickers:
+          replication-method: INCREMENTAL
+          replication-key: yahoo_ticker
+        forex_tickers:
+          replication-method: INCREMENTAL
+          replication-key: yahoo_ticker
+        crypto_tickers:
+          replication-method: INCREMENTAL
+          replication-key: yahoo_ticker
+
 
   loaders:
     - name: target-jsonl

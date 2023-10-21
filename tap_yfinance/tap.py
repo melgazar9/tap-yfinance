@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import singer_sdk.typing as th  # JSON Schema typing helpers
+import singer_sdk.typing as th
 from singer_sdk import Tap
 from singer_sdk._singerlib.catalog import CatalogEntry, MetadataMapping, Schema, Metadata
 from tap_yfinance.streams import PriceStream, TickerStream
@@ -29,27 +29,27 @@ class TapYFinance(Tap):
         """Create `CatalogEntry` object for the given collection."""
 
         # TODO: Why is it if I set both tap_stream_id and stream to be financial_category + '|' + table_name it deselects ALL streams?
-        # Need to figure out how to pass financial_category into the CatalogEntry object.
 
-        key_property_fields = list(Schema.from_dict(schema).to_dict().get('properties').keys())
+        required_fields = Schema.from_dict(schema).to_dict().get('required')
+        
+        key_fields = list(Schema.from_dict(schema).to_dict().get('properties').keys())
 
         category_entry = CatalogEntry(
                 tap_stream_id=table_name,
                 stream=table_name,
                 table=table_name,
-                key_properties=["timestamp", "ticker"],
+                key_properties=required_fields,
                 schema=Schema.from_dict(schema),
                 replication_method=None,  # defined by user
                 metadata=MetadataMapping.get_standard_metadata(
                     schema=schema,
                     schema_name=financial_category,  # TODO: Fix this! This is just a placeholder.
                     replication_method=None,  # defined by user
-                    key_properties=key_property_fields,
+                    key_properties=key_fields,
                     valid_replication_keys=None  # defined by user
                 ),
                 replication_key=None  # defined by user
             )
-
         return category_entry
 
     @property
@@ -91,9 +91,10 @@ class TapYFinance(Tap):
 
         streams = []
         for catalog_entry in self.catalog_dict["streams"]:
-            if 'price' in catalog_entry['tap_stream_id']:
+            financial_category = catalog_entry['metadata'][-1]['metadata']['schema-name']
+            if financial_category == 'prices':
                 stream = PriceStream(self, catalog_entry=catalog_entry)
-            elif 'tickers' in catalog_entry['tap_stream_id']:
+            elif financial_category == 'tickers':
                 stream = TickerStream(self, catalog_entry=catalog_entry)
             else:
                 raise ValueError('Could not set the proper stream.')

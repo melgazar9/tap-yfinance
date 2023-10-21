@@ -14,11 +14,13 @@ from singer_sdk.helpers._state import increment_state
 
 class TickerStream(Stream):
     """Stream class for yahoo tickers."""
+
     replication_key = "yahoo_ticker"
     is_timestamp_replication_key = False
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
-        """Initialize the database stream.
+        """
+        Initialize the database stream.
 
         Args:
             tap: The parent tap object.
@@ -38,7 +40,6 @@ class TickerStream(Stream):
 
         self.ticker_downloader = TickerDownloader()
 
-        # Define a dictionary to map financial category prefixes to ticker sources
         self.ticker_downloader_mappings = {
             'stock_tickers': 'download_valid_stock_tickers',
             'forex_tickers': 'download_forex_pairs',
@@ -76,10 +77,8 @@ class TickerStream(Stream):
 
         Args:
             context: Stream partition or context dictionary.
-
         """
         state = self.get_context_state(context)
-
         for record in self.df_tickers.to_dict(orient='records'):
             increment_state(
                 state,
@@ -88,9 +87,7 @@ class TickerStream(Stream):
                 is_sorted=self.is_sorted,
                 check_sorted=self.check_sorted
             )
-
             yield record
-
 
 class PriceStream(Stream):
     """Stream class for yahoo finance price streams."""
@@ -99,7 +96,8 @@ class PriceStream(Stream):
     is_timestamp_replication_key = True
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
-        """Initialize the database stream.
+        """
+        Initialize the stream.
 
         Args:
             tap: The parent tap object.
@@ -108,7 +106,6 @@ class PriceStream(Stream):
 
         self.catalog_entry = catalog_entry
         self.table_name = self.catalog_entry['table_name']
-
         super().__init__(
             tap=tap,
             schema=self.catalog_entry["schema"],
@@ -132,7 +129,9 @@ class PriceStream(Stream):
             else:
                 raise ValueError('Could not determine ticker download method.')
 
-            self.tickers: list = getattr(self.ticker_downloader, self.ticker_download_method)()['yahoo_ticker'].unique().tolist()
+            self.tickers: list = \
+                getattr(self.ticker_downloader, self.ticker_download_method)()['yahoo_ticker'].unique().tolist()
+
         else:
             self.tickers = self.stream_params['tickers'].copy()
 
@@ -159,14 +158,15 @@ class PriceStream(Stream):
 
         Args:
             context: Stream partition or context dictionary.
-
         """
 
         price_tap = YFinancePriceTap(schema_category=self.schema_category)
+
         yf_params = self.yf_params.copy()
 
         for ticker in self.tickers:
             state = self.get_context_state(context)
+
             if state and 'progress_markers' in state.keys():
                 start_date = datetime.fromisoformat(state.get('progress_markers').get('replication_key_value')).strftime('%Y-%m-%d')
             else:

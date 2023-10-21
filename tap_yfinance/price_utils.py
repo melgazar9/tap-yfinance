@@ -188,6 +188,7 @@ class TickerDownloader:
                 .rename(columns={'yahoo_tickers': 'yahoo_ticker', 'google_tickers': 'google_ticker'}) \
                 .sort_values(by=['yahoo_ticker', 'google_ticker']) \
                 .drop_duplicates()
+        all_tickers = all_tickers.replace([-np.inf, np.inf, np.nan], None)
         return all_tickers
 
     @staticmethod
@@ -231,6 +232,8 @@ class TickerDownloader:
             df = pd.concat([df, df_dg], axis=0).reset_index(drop=True)
 
         df = df.dropna(how='all', axis=1)
+
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         return df
 
     @staticmethod
@@ -251,6 +254,8 @@ class TickerDownloader:
         # Difficulty downloading forex pairs so just returning the forex_pairs input for now.
         df_forex_pairs = pd.DataFrame(forex_pairs)
         df_forex_pairs.loc[:, 'bloomberg_ticker'] = df_forex_pairs['yahoo_name'].apply(lambda x: f"{x[4:]}-{x[0:3]}")
+
+        df_forex_pairs = df_forex_pairs.replace([np.inf, -np.inf, np.nan], None)
 
         return df_forex_pairs
 
@@ -283,6 +288,7 @@ class TickerDownloader:
         print('tickers before cleaning:', ticker_map.shape) if verbose else None
 
         ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
+        ticker_map = ticker_map.replace([np.inf, -np.inf, np.nan], None)
 
         print('tickers after cleaning:', ticker_map.shape) if verbose else None
 
@@ -338,6 +344,8 @@ class TickerDownloader:
         df_tickers.loc[
             df_tickers['yahoo_ticker'].isin(numerai_yahoo_tickers['numerai_ticker'].tolist()), 'yahoo_valid_numerai'
         ] = True
+
+        df_tickers = df_tickers.replace([np.inf, -np.inf, np.nan], None)
 
         return df_tickers
 
