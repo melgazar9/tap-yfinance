@@ -69,7 +69,8 @@ class TickerStream(Stream):
         return [{'ticker': t} for t in self.df_tickers['yahoo_ticker'].unique().tolist()]
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
-        """Return a generator of record-type dictionary objects.
+        """
+        Return a generator of record-type dictionary objects.
 
         The optional `context` argument is used to identify a specific slice of the
         stream if partitioning is required for the stream. Most implementations do not
@@ -79,7 +80,9 @@ class TickerStream(Stream):
             context: Stream partition or context dictionary.
         """
         state = self.get_context_state(context)
-        for record in self.df_tickers.to_dict(orient='records'):
+        df = self.df_tickers[self.df_tickers['yahoo_ticker'] == context['ticker']]
+
+        for record in df.to_dict(orient='records'):
             increment_state(
                 state,
                 replication_key=self.replication_key,
@@ -106,6 +109,7 @@ class PriceStream(Stream):
 
         self.catalog_entry = catalog_entry
         self.table_name = self.catalog_entry['table_name']
+
         super().__init__(
             tap=tap,
             schema=self.catalog_entry["schema"],
@@ -115,6 +119,7 @@ class PriceStream(Stream):
         self.financial_category = self.catalog_entry['metadata'][-1]['metadata']['schema-name']
         self.stream_params: dict = self.config.get('financial_category').get(self.financial_category).get(self.name)
         self.schema_category = self.stream_params.get('schema_category')
+
         self.yf_params = self.stream_params.get('yf_params')
 
         self.ticker_downloader = TickerDownloader()
@@ -150,7 +155,8 @@ class PriceStream(Stream):
         return [{'ticker': t} for t in self.tickers]
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
-        """Return a generator of record-type dictionary objects.
+        """
+        Return a generator of record-type dictionary objects.
 
         The optional `context` argument is used to identify a specific slice of the
         stream if partitioning is required for the stream. Most implementations do not
@@ -161,30 +167,27 @@ class PriceStream(Stream):
         """
 
         price_tap = YFinancePriceTap(schema_category=self.schema_category)
-
         yf_params = self.yf_params.copy()
+        state = self.get_context_state(context)
 
-        for ticker in self.tickers:
-            state = self.get_context_state(context)
+        if state and 'progress_markers' in state.keys():
+            start_date = datetime.fromisoformat(state.get('progress_markers').get('replication_key_value')).strftime('%Y-%m-%d')
+        else:
+            start_date = self.config.get('default_start_date')
 
-            if state and 'progress_markers' in state.keys():
-                start_date = datetime.fromisoformat(state.get('progress_markers').get('replication_key_value')).strftime('%Y-%m-%d')
-            else:
-                start_date = self.config.get('default_start_date')
+        yf_params['start'] = start_date
 
-            yf_params['start'] = start_date
+        df = price_tap.download_single_symbol_price_history(ticker=context['ticker'], yf_history_params=yf_params)
 
-            df = price_tap.download_single_symbol_price_history(ticker=ticker, yf_history_params=yf_params)
+        for record in df.to_dict(orient='records'):
+            replication_key = context['ticker'] + '|' + record['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')
+            record['replication_key'] = replication_key
+            increment_state(
+                state,
+                replication_key=self.replication_key,
+                latest_record=record,
+                is_sorted=self.is_sorted,
+                check_sorted=self.check_sorted
+            )
 
-            for record in df.to_dict(orient='records'):
-                replication_key = ticker + '|' + record['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')
-                record['replication_key'] = replication_key
-                increment_state(
-                    state,
-                    replication_key=self.replication_key,
-                    latest_record=record,
-                    is_sorted=self.is_sorted,
-                    check_sorted=self.check_sorted
-                )
-
-                yield record
+            yield record
