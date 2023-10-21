@@ -26,7 +26,7 @@ class TickerStream(Stream):
             tap: The parent tap object.
             catalog_entry: Catalog entry dict.
         """
-
+        # TODO: Refactor this code so tickers aren't downloaded twice
         self.catalog_entry = catalog_entry
         self.table_name = self.catalog_entry['table_name']
 
@@ -106,7 +106,7 @@ class PriceStream(Stream):
             tap: The parent tap object.
             catalog_entry: Catalog entry dict.
         """
-
+        # TODO: Refactor this code so tickers aren't downloaded twice
         self.catalog_entry = catalog_entry
         self.table_name = self.catalog_entry['table_name']
 

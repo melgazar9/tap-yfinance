@@ -1,20 +1,24 @@
 version: 1
 send_anonymous_usage_stats: true
-project_id: "tap-yfinance"
+project_id: tap-yfinance
+
 default_environment: test
 environments:
   - name: test
+
 plugins:
   extractors:
     - name: "tap-yfinance"
       namespace: "tap_yfinance"
       pip_url: -e .
+
       capabilities:
         - state
         - catalog
         - discover
         - about
         - stream-maps
+
       select:
         - stock_tickers
         - forex_tickers
@@ -24,22 +28,21 @@ plugins:
         - crypto_prices_1m
 
       config:
-        default_start_date: '1950-01-01'
+        default_start_date: "1950-01-01"
         add_record_metadata: true
-
         financial_category:
 
           ### tickers ###
 
           tickers:
             stock_tickers:
-              tickers: ["AAPL", "META"]
+              tickers: "*"
               schema_category: stock_tickers
             forex_tickers:
-              tickers: ["EURUSD=X"]
+              tickers: "*"
               schema_category: forex_tickers
             crypto_tickers:
-              tickers: ["BTC-USD", "ETH-USD"]
+              tickers: "*"
               schema_category: crypto_tickers
 
           ### prices ###
@@ -47,29 +50,65 @@ plugins:
           prices:
             stock_prices_1m:
               tickers: ["AAPL", "META"]
-              yf_params: {'interval': '1m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+              yf_params: { "interval": "1m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: stock_prices
+            stock_prices_2m:
+              tickers: "*"
+              yf_params: { "interval": "2m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: stock_prices
+            stock_prices_5m:
+              tickers: "*"
+              yf_params: { "interval": "5m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: stock_prices
+            stock_prices_1h:
+              tickers: "*"
+              yf_params: { "interval": "1h", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: stock_prices
             stock_prices_1d:
-              tickers: ["AAPL", "META"]
-              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+              tickers: "*"
+              yf_params: { "interval": "1d", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: stock_prices
 
             forex_prices_1m:
               tickers: ["EURUSD=X"]
-              yf_params: {'interval': '1m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+              yf_params: { "interval": "1m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: forex_prices
+            forex_prices_2m:
+              tickers: "*"
+              yf_params: { "interval": "2m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: forex_prices
+            forex_prices_5m:
+              tickers: "*"
+              yf_params: { "interval": "5m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: forex_prices
+            forex_prices_1h:
+              tickers: "*"
+              yf_params: { "interval": "1h", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: forex_prices
             forex_prices_1d:
-              tickers: ["EURUSD=X"]
-              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+              tickers: "*"
+              yf_params: { "interval": "1d", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: forex_prices
 
             crypto_prices_1m:
-              tickers: ["BTC-USD", "ETH-USD"]
-              yf_params: {'interval': '1m', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+              tickers: ["ETH-USD"]
+              yf_params: { "interval": "1m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: crypto_prices
+            crypto_prices_2m:
+              tickers: "*"
+              yf_params: { "interval": "2m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: crypto_prices
+            crypto_prices_5m:
+              tickers: "*"
+              yf_params: { "interval": "5m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: crypto_prices
+            crypto_prices_1h:
+              tickers: "*"
+              yf_params: { "interval": "1h", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: crypto_prices
             crypto_prices_1d:
-              tickers: ["BTC-USD", "ETH-USD"]
-              yf_params: {'interval': '1d', 'prepost': True, 'repair': True, 'auto_adjust': True, 'back_adjust': False}
+              tickers: "*"
+              yf_params: { "interval": "1d", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: crypto_prices
 
       metadata:
@@ -103,7 +142,6 @@ plugins:
         crypto_tickers:
           replication-method: INCREMENTAL
           replication-key: yahoo_ticker
-
 
   loaders:
     - name: target-jsonl
