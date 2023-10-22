@@ -117,14 +117,14 @@ class PriceStream(BaseStream):
         Args:
             context: Stream partition or context dictionary.
         """
-
+        self.logger.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
         price_tap = YFinancePriceTap(schema_category=self.schema_category)
         yf_params = self.yf_params.copy()
         state = self.get_context_state(context)
 
         if state and 'progress_markers' in state.keys():
-            start_date = datetime.fromisoformat(state.get('progress_markers').get('replication_key_value')).strftime(
-                '%Y-%m-%d')
+            start_date = \
+                datetime.fromisoformat(state.get('progress_markers').get('replication_key_value')).strftime('%Y-%m-%d')
         else:
             start_date = self.config.get('default_start_date')
 
