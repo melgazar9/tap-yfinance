@@ -5,7 +5,7 @@ from __future__ import annotations
 import singer_sdk.typing as th
 from singer_sdk import Tap
 from singer_sdk._singerlib.catalog import CatalogEntry, MetadataMapping, Schema, Metadata
-from tap_yfinance.streams import PriceStream, TickerStream
+from tap_yfinance.streams import TickerStream, PriceStream, PriceStreamWide
 from tap_yfinance.schema import get_schema
 
 
@@ -31,7 +31,8 @@ class TapYFinance(Tap):
         # TODO: Why is it if I set both tap_stream_id and stream to be financial_category + '|' + table_name it deselects ALL streams?
 
         required_fields = Schema.from_dict(schema).to_dict().get('required')
-        
+
+        required_fields = [] if required_fields is None else required_fields
         key_fields = list(Schema.from_dict(schema).to_dict().get('properties').keys())
 
         category_entry = CatalogEntry(
@@ -50,6 +51,7 @@ class TapYFinance(Tap):
                 ),
                 replication_key=None  # defined by user
             )
+
         return category_entry
 
     @property
@@ -82,8 +84,9 @@ class TapYFinance(Tap):
 
         return self._catalog_dict
 
-    def discover_streams(self) -> list[PriceStream]:
-        """Return a list of discovered streams.
+    def discover_streams(self) -> list:
+        """
+        Return a list of discovered streams.
 
         Returns:
             A list of discovered streams.
@@ -92,8 +95,10 @@ class TapYFinance(Tap):
         streams = []
         for catalog_entry in self.catalog_dict["streams"]:
             financial_category = catalog_entry['metadata'][-1]['metadata']['schema-name']
-            if financial_category == 'prices':
+            if financial_category == 'prices' and not catalog_entry['tap_stream_id'].endswith('wide'):
                 stream = PriceStream(self, catalog_entry=catalog_entry)
+            elif financial_category == 'prices' and catalog_entry['tap_stream_id'].endswith('wide'):
+                stream = PriceStreamWide(self, catalog_entry=catalog_entry)
             elif financial_category == 'tickers':
                 stream = TickerStream(self, catalog_entry=catalog_entry)
             else:

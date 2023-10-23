@@ -20,24 +20,8 @@ plugins:
         - stream-maps
 
       select:
-        - stock_tickers
-        - forex_tickers
-        - crypto_tickers
-        - stock_prices_1m
-        - stock_prices_2m
-        - stock_prices_5m
-        - stock_prices_1h
-        - stock_prices_1d
         - forex_prices_1m
-        - forex_prices_2m
-        - forex_prices_5m
-        - forex_prices_1h
-        - forex_prices_1d
-        - crypto_prices_1m
-        - crypto_prices_2m
-        - crypto_prices_5m
-        - crypto_prices_1h
-        - crypto_prices_1d
+        - forex_tickers
 
       config:
         default_start_date: "1950-01-01"
@@ -60,8 +44,10 @@ plugins:
           ### prices ###
 
           prices:
+            ### long ###
+
             stock_prices_1m:
-              tickers: '*'
+              tickers: ["AAPL", "META"]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: stock_prices
             stock_prices_2m:
@@ -82,7 +68,7 @@ plugins:
               schema_category: stock_prices
 
             forex_prices_1m:
-              tickers: '*'
+              tickers: ["EURUSD=X", "RUB=X"]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: forex_prices
             forex_prices_2m:
@@ -122,6 +108,72 @@ plugins:
               tickers: '*'
               yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: crypto_prices
+
+            ### wide ###
+
+            stock_prices_1m_wide:
+              tickers: ["AAPL", "META"]
+              yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: stock_prices_wide
+            stock_prices_2m_wide:
+              tickers: '*'
+              yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: stock_prices_wide
+            stock_prices_5m_wide:
+              tickers: '*'
+              yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: stock_prices_wide
+            stock_prices_1h_wide:
+              tickers: '*'
+              yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: stock_prices_wide
+            stock_prices_1d_wide:
+              tickers: '*'
+              yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: stock_prices_wide
+
+            forex_prices_1m_wide:
+              tickers: ["EURUSD=X", "RUB=X"]
+              yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: forex_prices_wide
+            forex_prices_2m_wide:
+              tickers: '*'
+              yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: forex_prices_wide
+            forex_prices_5m_wide:
+              tickers: '*'
+              yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: forex_prices_wide
+            forex_prices_1h_wide:
+              tickers: '*'
+              yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: forex_prices_wide
+            forex_prices_1d_wide:
+              tickers: '*'
+              yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: forex_prices_wide
+
+            crypto_prices_1m_wide:
+              tickers: '*'
+              yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: crypto_prices_wide
+            crypto_prices_2m_wide:
+              tickers: '*'
+              yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: crypto_prices_wide
+            crypto_prices_5m_wide:
+              tickers: '*'
+              yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: crypto_prices_wide
+            crypto_prices_1h_wide:
+              tickers: '*'
+              yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: crypto_prices_wide
+            crypto_prices_1d_wide:
+              tickers: '*'
+              yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: crypto_prices_wide
+
 
       metadata:
         ### tickers ###
@@ -186,7 +238,62 @@ plugins:
           replication-method: INCREMENTAL
           replication-key: timestamp
 
+        ### prices wide ###
+
+        stock_prices_1m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        stock_prices_2m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        stock_prices_5m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        stock_prices_1h_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        stock_prices_1d_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        forex_prices_1m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        forex_prices_2m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        forex_prices_5m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        forex_prices_1h_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        forex_prices_1d_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        crypto_prices_1m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        crypto_prices_2m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        crypto_prices_5m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        crypto_prices_1h_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+        crypto_prices_1d_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+
   loaders:
     - name: target-jsonl
       variant: andyh1203
       pip_url: target-jsonl
+
+    - name: target-csv
+      variant: hotgluexyz
+      pip_url: git+https://github.com/hotgluexyz/target-csv.git

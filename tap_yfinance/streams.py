@@ -62,7 +62,7 @@ class BaseStream(Stream, ABC):
             return 'download_top_250_crypto_tickers'
         else:
             raise ValueError('Could not determine ticker_download_method')
-
+        return self
 
 class TickerStream(BaseStream):
     replication_key = "yahoo_ticker"
@@ -85,17 +85,15 @@ class TickerStream(BaseStream):
         """
 
         state = self.get_context_state(context)
-        df = self.df_tickers[self.df_tickers['yahoo_ticker'] == context['ticker']]
-
-        for record in df.to_dict(orient='records'):
-            increment_state(
-                state,
-                replication_key=self.replication_key,
-                latest_record=record,
-                is_sorted=self.is_sorted,
-                check_sorted=self.check_sorted
-            )
-            yield record
+        record = self.df_tickers[self.df_tickers['yahoo_ticker'] == context['ticker']].to_dict(orient='records')[0]
+        increment_state(
+            state,
+            replication_key=self.replication_key,
+            latest_record=record,
+            is_sorted=self.is_sorted,
+            check_sorted=self.check_sorted
+        )
+        yield record
 
 class PriceStream(BaseStream):
     replication_key = "timestamp"
@@ -105,6 +103,7 @@ class PriceStream(BaseStream):
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
         self.download_tickers(self.stream_params)
+        self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """
@@ -118,7 +117,6 @@ class PriceStream(BaseStream):
             context: Stream partition or context dictionary.
         """
         self.logger.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
-        price_tap = YFinancePriceTap(schema_category=self.schema_category)
         yf_params = self.yf_params.copy()
         state = self.get_context_state(context)
 
@@ -130,11 +128,12 @@ class PriceStream(BaseStream):
 
         yf_params['start'] = start_date
 
-        df = price_tap.download_single_symbol_price_history(ticker=context['ticker'], yf_history_params=yf_params)
+        df = self.price_tap.download_price_history(ticker=context['ticker'], yf_params=yf_params)
 
         for record in df.to_dict(orient='records'):
             replication_key = context['ticker'] + '|' + record['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')
             record['replication_key'] = replication_key
+
             increment_state(
                 state,
                 replication_key=self.replication_key,
@@ -142,5 +141,64 @@ class PriceStream(BaseStream):
                 is_sorted=self.is_sorted,
                 check_sorted=self.check_sorted
             )
+
+            yield record
+
+class PriceStreamWide(BaseStream):
+    replication_key = "timestamp"
+    is_timestamp_replication_key = True
+
+    def __init__(self, tap: Tap, catalog_entry: dict) -> None:
+        super().__init__(tap, catalog_entry)
+        self.yf_params = self.stream_params.get('yf_params')
+        self.download_tickers(self.stream_params)
+        self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
+
+    @property
+    def partitions(self):
+        """
+          No partitions when running wide stream. Performance will increase because all relevant tickers are batch
+          downloaded at once, but data integrity will be likely be sacrificed (see yfinance docs).
+        """
+        return None
+
+    def get_records(self, context: dict | None) -> Iterable[dict]:
+        """
+        Return a generator of record-type dictionary objects.
+
+        The optional `context` argument is used to identify a specific slice of the
+        stream if partitioning is required for the stream. Most implementations do not
+        require partitioning and should ignore the `context` argument.
+
+        Args:
+            context: Stream partition or context dictionary.
+        """
+        yf_params = self.yf_params.copy()
+        state = self.get_context_state(context)
+
+        if state and 'progress_markers' in state.keys():
+            start_date = \
+                datetime.fromisoformat(state.get('progress_markers').get('replication_key_value')).strftime('%Y-%m-%d')
+        else:
+            start_date = self.config.get('default_start_date')
+
+        yf_params['start'] = start_date
+
+        df = self.price_tap.download_price_history_wide(tickers=self.tickers, yf_params=yf_params)
+        df.sort_values(by='timestamp', inplace=True)
+
+        for record in df.to_dict(orient='records'):
+            # record['timestamp'] = record['timestamp'].strftime('%Y-%m-%d %H:%M:%S%z')
+            record['replication_key'] = record['timestamp']
+
+            increment_state(
+                state,
+                replication_key=self.replication_key,
+                latest_record=record,
+                is_sorted=self.is_sorted,
+                check_sorted=self.check_sorted
+            )
+
+            self.logger.info(f"\n\n\n *** {record} *** \n\n\n")
 
             yield record

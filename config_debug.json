@@ -2,102 +2,17 @@
    "default_start_date":"1950-01-01",
    "add_record_metadata":true,
    "financial_category":{
-      "tickers":{
-         "stock_tickers":{
-            "tickers":"*",
-            "schema_category":"stock_tickers"
-         },
-         "forex_tickers":{
-            "tickers":"*",
-            "schema_category":"forex_tickers"
-         },
-         "crypto_tickers":{
-            "tickers":"*",
-            "schema_category":"crypto_tickers"
-         }
-      },
-      "prices":{
-         "stock_prices_1m":{
-            "tickers":[
-               "AAPL",
-               "META"
-            ],
-            "yf_params":{
-               "interval":"1m",
-               "prepost":true,
-               "repair":true,
-               "auto_adjust":true,
-               "back_adjust":false
-            },
-            "schema_category":"stock_prices"
-         },
-         "stock_prices_1d":{
-            "tickers":[
-               "AAPL",
-               "META"
-            ],
-            "yf_params":{
-               "interval":"1d",
-               "prepost":true,
-               "repair":true,
-               "auto_adjust":true,
-               "back_adjust":false
-            },
-            "schema_category":"stock_prices"
-         },
-         "forex_prices_1m":{
-            "tickers":[
-               "EURUSD=X"
-            ],
-            "yf_params":{
-               "interval":"1m",
-               "prepost":true,
-               "repair":true,
-               "auto_adjust":true,
-               "back_adjust":false
-            },
-            "schema_category":"forex_prices"
-         },
-         "forex_prices_1d":{
-            "tickers":[
-               "EURUSD=X"
-            ],
-            "yf_params":{
-               "interval":"1d",
-               "prepost":true,
-               "repair":true,
-               "auto_adjust":true,
-               "back_adjust":false
-            },
-            "schema_category":"forex_prices"
-         },
-         "crypto_prices_1m":{
-            "tickers":[
-               "BTC-USD",
-               "ETH-USD"
-            ],
-            "yf_params":{
-               "interval":"1m",
-               "prepost":true,
-               "repair":true,
-               "auto_adjust":true,
-               "back_adjust":false
-            },
-            "schema_category":"crypto_prices"
-         },
-         "crypto_prices_1d":{
-            "tickers":[
-               "BTC-USD",
-               "ETH-USD"
-            ],
-            "yf_params":{
-               "interval":"1d",
-               "prepost":true,
-               "repair":true,
-               "auto_adjust":true,
-               "back_adjust":false
-            },
-            "schema_category":"crypto_prices"
+      "prices": {
+         "forex_prices_1m_wide": {
+                "tickers": "*",
+                "yf_params": {
+                  "interval": "1m",
+                  "prepost": true,
+                  "repair": true,
+                  "auto_adjust": true,
+                  "back_adjust": false
+                },
+                "schema_category": "forex_prices_wide"
          }
       }
    }

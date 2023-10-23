@@ -7,6 +7,7 @@ import yfinance as yf
 from skimpy import clean_columns
 from pytickersymbols import PyTickerSymbols
 from numerapi import SignalsAPI
+from pandas_datareader import data as pdr
 
 
 class YFinanceLogger:
@@ -43,7 +44,6 @@ class YFinancePriceTap(YFinanceLogger):
         if 'prepost' not in self.yf_params.keys():
             self.yf_params['prepost'] = True
         if 'start' not in self.yf_params.keys():
-            self.logger.info('YF params start set to 1950-01-01!')
             self.yf_params['start'] = '1950-01-01'
 
         self.start_date = self.yf_params['start']
@@ -63,6 +63,10 @@ class YFinancePriceTap(YFinanceLogger):
         elif schema_category == 'crypto_prices':
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'repaired']
+        elif schema_category.endswith('wide'):
+            self.column_order = None
+        else:
+            raise ValueError('Could not determine price column order.')
 
         self.n_requests = 0
         self.failed_ticker_downloads = {}
@@ -84,49 +88,49 @@ class YFinancePriceTap(YFinanceLogger):
             time.sleep(np.abs(86400 - self.current_runtime_seconds))
         return
 
-    def download_single_symbol_price_history(self, ticker, yf_history_params=None) -> pd.DataFrame():
+    def download_price_history(self, ticker, yf_params=None) -> pd.DataFrame():
         """
         Description
         -----------
         Download a single stock price ticker from the yfinance python library.
         Minor transformations happen:
             - Add column ticker to show which ticker has been pulled
-            - Set start date to the minimum start date allowed by yfinance for that ticker (passed in yf_history_params)
+            - Set start date to the minimum start date allowed by yfinance for that ticker (passed in yf_params)
             - Clean column names
             - Set tz_aware timestamp column to be a string
         """
-        yf_history_params = self.yf_params.copy() if yf_history_params is None else yf_history_params.copy()
+        yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
 
-        assert 'interval' in yf_history_params.keys(), 'must pass interval parameter to yf_history_params'
+        assert 'interval' in yf_params.keys(), 'must pass interval parameter to yf_params'
 
-        if yf_history_params['interval'] not in self.failed_ticker_downloads.keys():
-            self.failed_ticker_downloads[yf_history_params['interval']] = []
+        if yf_params['interval'] not in self.failed_ticker_downloads.keys():
+            self.failed_ticker_downloads[yf_params['interval']] = []
 
-        if 'start' not in yf_history_params.keys():
-            yf_history_params['start'] = '1950-01-01 00:00:00'
+        if 'start' not in yf_params.keys():
+            yf_params['start'] = '1950-01-01 00:00:00'
             self.logger.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
 
-        yf_history_params['start'] = \
-            get_valid_yfinance_start_timestamp(interval=yf_history_params['interval'], start=yf_history_params['start'])
+        yf_params['start'] = \
+            get_valid_yfinance_start_timestamp(interval=yf_params['interval'], start=yf_params['start'])
 
         t = yf.Ticker(ticker)
 
         try:
             df = \
-                t.history(**yf_history_params) \
+                t.history(**yf_params) \
                     .rename_axis(index='timestamp') \
                     .pipe(lambda x: clean_columns(x))
 
             self.n_requests += 1
             df.loc[:, self.ticker_colname] = ticker
-            df.reset_index(inplace=True)
-            df['timestamp_tz_aware'] = df['timestamp'].copy()
+            df = df.reset_index()
+            df.loc[:, 'timestamp_tz_aware'] = df['timestamp'].copy()
             df.loc[:, 'timezone'] = str(df['timestamp_tz_aware'].dt.tz)
             df['timestamp_tz_aware'] = df['timestamp_tz_aware'].dt.strftime('%Y-%m-%d %H:%M:%S%z')
             df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
 
             if df is not None and not df.shape[0]:
-                self.failed_ticker_downloads[yf_history_params['interval']].append(ticker)
+                self.failed_ticker_downloads[yf_params['interval']].append(ticker)
                 return pd.DataFrame(columns=self.column_order)
 
             df = df.replace([np.inf, -np.inf, np.nan], None)  # None can be handled by json.dumps but inf and NaN can't be
@@ -136,8 +140,40 @@ class YFinancePriceTap(YFinanceLogger):
             return df
 
         except:
-            self.failed_ticker_downloads[yf_history_params['interval']].append(ticker)
+            self.failed_ticker_downloads[yf_params['interval']].append(ticker)
             return pd.DataFrame(columns=self.column_order)
+
+    def download_price_history_wide(self, tickers, yf_params):
+        yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
+
+        assert 'interval' in yf_params.keys(), 'must pass interval parameter to yf_params'
+
+        if yf_params['interval'] not in self.failed_ticker_downloads.keys():
+            self.failed_ticker_downloads[yf_params['interval']] = []
+
+        if 'start' not in yf_params.keys():
+            yf_params['start'] = '1950-01-01 00:00:00'
+            self.logger.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
+
+        yf_params['start'] = \
+            get_valid_yfinance_start_timestamp(interval=yf_params['interval'], start=yf_params['start'])
+
+        yf.pdr_override()
+        df = pdr.get_data_yahoo(tickers, **yf_params).rename_axis(index='timestamp').reset_index()
+        self.n_requests += 1
+
+        df.columns = flatten_multindex_columns(df, clean_columns_names=True)
+        df.loc[:, 'timestamp_tz_aware'] = df['timestamp'].copy()
+        df.loc[:, 'timezone'] = str(df['timestamp_tz_aware'].dt.tz)
+        df['timestamp_tz_aware'] = df['timestamp_tz_aware'].dt.strftime('%Y-%m-%d %H:%M:%S%z')
+        df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
+
+        if df is not None and not df.shape[0]:
+            self.failed_ticker_downloads[yf_params['interval']].append(ticker)
+            return pd.DataFrame(columns=self.column_order)
+
+        df = df.replace([np.inf, -np.inf, np.nan], None)
+        return df
 
 
 class TickerDownloader(YFinanceLogger):
@@ -314,7 +350,7 @@ class TickerDownloader(YFinanceLogger):
             suffix = col[-1]
             if suffix.isdigit():
                 root_col = col.strip('_' + suffix)
-                df_tickers_wide[root_col] = df_tickers_wide[root_col].fillna(df_tickers_wide[col])
+                df_tickers_wide.loc[:, root_col] = df_tickers_wide[root_col].fillna(df_tickers_wide[col])
 
         df_tickers = \
             df_tickers_wide.reset_index() \
@@ -381,3 +417,13 @@ def get_valid_yfinance_start_timestamp(interval, start='1950-01-01 00:00:00'):
 
 def flatten_list(lst):
     return [v for item in lst for v in (item if isinstance(item, list) else [item])]
+
+def flatten_multindex_columns(df, clean_columns_names=False):
+    new_cols = list(
+        pd.Index([str(e[0]).lower() + '_' + str(e[1]).lower() for e in df.columns.tolist()]).str.replace(' ', '_')
+    )
+
+    if clean_columns_names:
+        return list(clean_columns(pd.DataFrame(columns=new_cols)))
+
+    return new_cols

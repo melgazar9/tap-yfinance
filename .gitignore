@@ -12,6 +12,8 @@ plugins/
 *.py[cod]
 *$py.class
 .idea/
+*.json.gz
+
 
 # C extensions
 *.so
