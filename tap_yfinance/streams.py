@@ -29,7 +29,7 @@ class BaseStream(Stream, ABC):
 
         self.tickers = None
         self.df_tickers = None
-        self._tickers_downloaded = False
+        self._ticker_download_calls = 0
 
     def get_schema(self):
         return get_schema(self.schema_category)
@@ -44,10 +44,20 @@ class BaseStream(Stream, ABC):
 
     @property
     def partitions(self) -> list[dict]:
+        if self._ticker_download_calls == 0:
+            self.logger.info(f"Tickers have not been downloaded yet. Downloading now...")
+            self.download_tickers(self.stream_params)
+
+        assert isinstance(self.tickers, list), f'self.tickers must be a list, but it is of type {type(self.tickers)}.'
+
         return [{'ticker': t} for t in self.tickers]
 
     def download_tickers(self, stream_params):
+        assert self._ticker_download_calls == 0, \
+            f"self._ticker_download_calls should be set to 0 but is {self._ticker_download_calls}."
+
         ticker_downloader = TickerDownloader()
+
         if stream_params['tickers'] == '*':
             ticker_download_method = self.get_ticker_download_method()
             self.df_tickers = getattr(ticker_downloader, ticker_download_method)()
@@ -55,8 +65,16 @@ class BaseStream(Stream, ABC):
         else:
             self.df_tickers = pd.DataFrame({'yahoo_ticker': stream_params['tickers']})
             self.tickers = stream_params['tickers']
+
+        self._ticker_download_calls += 1
+
+        assert self._ticker_download_calls == 1, \
+            f"""
+                self.download_tickers has been called too many times.
+                It should only be called once but has been called {self._ticker_download_calls} times.
+            """
+
         assert isinstance(self.tickers, list)
-        self._tickers_downloaded = True
         return self
 
     def get_ticker_download_method(self):
@@ -68,7 +86,6 @@ class BaseStream(Stream, ABC):
             return 'download_top_250_crypto_tickers'
         else:
             raise ValueError('Could not determine ticker_download_method')
-        return self
 
 class TickerStream(BaseStream):
     replication_key = "yahoo_ticker"
@@ -76,8 +93,6 @@ class TickerStream(BaseStream):
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
-        if not self._tickers_downloaded:
-            self.download_tickers(self.stream_params)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """
@@ -109,8 +124,6 @@ class PriceStream(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        if not self._tickers_downloaded:
-            self.download_tickers(self.stream_params)
         self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
@@ -123,7 +136,9 @@ class PriceStream(BaseStream):
 
         Args:
             context: Stream partition or context dictionary.
+
         """
+
         self.logger.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
         yf_params = self.yf_params.copy()
         state = self.get_context_state(context)
@@ -159,8 +174,6 @@ class PriceStreamWide(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        if not self._tickers_downloaded:
-            self.download_tickers(self.stream_params)
         self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
 
     @property
@@ -169,6 +182,7 @@ class PriceStreamWide(BaseStream):
           No partitions when running wide stream. Performance will increase because all relevant tickers are batch
           downloaded at once, but data integrity will be likely be sacrificed (see yfinance docs).
         """
+
         return None
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
@@ -182,6 +196,13 @@ class PriceStreamWide(BaseStream):
         Args:
             context: Stream partition or context dictionary.
         """
+
+        if self._ticker_download_calls == 0:
+            self.logger.info(f"Tickers have not been downloaded yet. Downloading now...")
+            self.download_tickers(self.stream_params)
+
+        assert isinstance(self.tickers, list), f'self.tickers must be a list, but it is of type {type(self.tickers)}.'
+
         yf_params = self.yf_params.copy()
         state = self.get_context_state(context)
 
