@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC
 
 import pandas as pd
+
 from singer_sdk import Tap
 from typing import Iterable, Optional, Any
 from singer_sdk.streams import Stream
@@ -10,8 +11,8 @@ from tap_yfinance.price_utils import *
 from tap_yfinance.schema import *
 from singer_sdk.helpers._state import increment_state
 
-class BaseStream(Stream, ABC):
 
+class BaseStream(Stream, ABC):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         self.catalog_entry = catalog_entry
         self.table_name = self.catalog_entry['table_name']
@@ -25,6 +26,10 @@ class BaseStream(Stream, ABC):
 
         self.stream_params = self.config.get('financial_category').get(self.financial_category).get(self.name)
         self.schema_category = self.stream_params.get('schema_category')
+
+        self.tickers = None
+        self.df_tickers = None
+        self._tickers_downloaded = False
 
     def get_schema(self):
         return get_schema(self.schema_category)
@@ -51,6 +56,7 @@ class BaseStream(Stream, ABC):
             self.df_tickers = pd.DataFrame({'yahoo_ticker': stream_params['tickers']})
             self.tickers = stream_params['tickers']
         assert isinstance(self.tickers, list)
+        self._tickers_downloaded = True
         return self
 
     def get_ticker_download_method(self):
@@ -70,7 +76,8 @@ class TickerStream(BaseStream):
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
-        self.download_tickers(self.stream_params)
+        if not self._tickers_downloaded:
+            self.download_tickers(self.stream_params)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """
@@ -102,7 +109,8 @@ class PriceStream(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.download_tickers(self.stream_params)
+        if not self._tickers_downloaded:
+            self.download_tickers(self.stream_params)
         self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
@@ -151,7 +159,8 @@ class PriceStreamWide(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.download_tickers(self.stream_params)
+        if not self._tickers_downloaded:
+            self.download_tickers(self.stream_params)
         self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
 
     @property
