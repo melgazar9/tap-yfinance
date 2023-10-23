@@ -218,7 +218,6 @@ class PriceStreamWide(BaseStream):
         df.sort_values(by='timestamp', inplace=True)
 
         for record in df.to_dict(orient='records'):
-            # record['timestamp'] = record['timestamp'].strftime('%Y-%m-%d %H:%M:%S%z')
             record['replication_key'] = record['timestamp']
 
             increment_state(
@@ -229,6 +228,4 @@ class PriceStreamWide(BaseStream):
                 check_sorted=self.check_sorted
             )
 
-            self.logger.info(f"\n\n\n *** {record} *** \n\n\n")
-
-            yield record
+            yield {'data': record, self.replication_key: record['replication_key']}

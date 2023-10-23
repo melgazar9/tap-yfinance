@@ -19,7 +19,10 @@ def get_schema(schema_category):
         ).to_dict()
 
     elif schema_category in ['stock_prices_wide', 'forex_prices_wide', 'crypto_prices_wide']:
-        schema = th.PropertiesList(th.Property("timestamp", th.DateTimeType)).to_dict()  # arbitrary number of columns based on input tickers
+        schema = th.PropertiesList(  # potentially a dynamic number of columns
+            th.Property("timestamp", th.DateTimeType, required=True),
+            th.Property("data", th.AnyType, required=True)
+        ).to_dict()
 
     elif schema_category == 'stock_tickers':
         schema = th.PropertiesList(

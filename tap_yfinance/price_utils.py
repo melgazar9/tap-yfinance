@@ -9,7 +9,6 @@ from pytickersymbols import PyTickerSymbols
 from numerapi import SignalsAPI
 from pandas_datareader import data as pdr
 
-
 class YFinanceLogger:
     """ Logger inherited by all YFinanceTap classes """
 
@@ -49,6 +48,7 @@ class YFinancePriceTap(YFinanceLogger):
         self.start_date = self.yf_params['start']
 
         assert pd.Timestamp(self.start_date) <= datetime.today(), 'Start date cannot be after the current date!'
+
         assert 'stock_prices' in self.schema_category or 'forex_prices' in self.schema_category or 'crypto_prices' in self.schema_category, \
             "self.schema_category must be set to either 'stock_prices', 'forex_prices', or 'crypto_prices'"
 
@@ -69,6 +69,7 @@ class YFinancePriceTap(YFinanceLogger):
             raise ValueError('Could not determine price column order.')
 
         self.n_requests = 0
+
         self.failed_ticker_downloads = {}
 
     def _request_limit_check(self):
@@ -77,6 +78,7 @@ class YFinancePriceTap(YFinanceLogger):
         -----------
         Check if too many requests were made to yfinance within their allowed number of requests.
         """
+
         self.request_start_timestamp = datetime.now()
         self.current_runtime_seconds = (datetime.now() - self.request_start_timestamp).seconds
 
@@ -86,7 +88,7 @@ class YFinancePriceTap(YFinanceLogger):
         if self.n_requests > 45000 and self.current_runtime_seconds > 85000:
             self.logger.info(f'\nToo many requests per day. Pausing requests for {self.current_runtime_seconds} seconds.\n')
             time.sleep(np.abs(86400 - self.current_runtime_seconds))
-        return
+        return self
 
     def download_price_history(self, ticker, yf_params=None) -> pd.DataFrame():
         """
@@ -114,7 +116,6 @@ class YFinancePriceTap(YFinanceLogger):
             get_valid_yfinance_start_timestamp(interval=yf_params['interval'], start=yf_params['start'])
 
         t = yf.Ticker(ticker)
-
         try:
             df = \
                 t.history(**yf_params) \
@@ -134,9 +135,7 @@ class YFinancePriceTap(YFinanceLogger):
                 return pd.DataFrame(columns=self.column_order)
 
             df = df.replace([np.inf, -np.inf, np.nan], None)  # None can be handled by json.dumps but inf and NaN can't be
-
             df = df[self.column_order]
-
             return df
 
         except:
@@ -159,7 +158,8 @@ class YFinancePriceTap(YFinanceLogger):
             get_valid_yfinance_start_timestamp(interval=yf_params['interval'], start=yf_params['start'])
 
         yf.pdr_override()
-        df = pdr.get_data_yahoo(tickers, **yf_params).rename_axis(index='timestamp').reset_index()
+
+        df = pdr.get_data_yahoo(tickers, progress=False, **yf_params).rename_axis(index='timestamp').reset_index()
         self.n_requests += 1
 
         df.columns = flatten_multindex_columns(df, clean_columns_names=True)
@@ -221,6 +221,7 @@ class TickerDownloader(YFinanceLogger):
                 .sort_values(by=['yahoo_ticker', 'google_ticker']) \
                 .drop_duplicates()
         all_tickers = all_tickers.replace([-np.inf, np.inf, np.nan], None)
+
         return all_tickers
 
     @staticmethod
@@ -294,11 +295,8 @@ class TickerDownloader(YFinanceLogger):
             napi=SignalsAPI(),
             numerai_ticker_link='https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/signals_ticker_map_w_bbg.csv',
             yahoo_ticker_colname='yahoo'):
-        """
-        Description
-        -----------
-        Download numerai to yahoo ticker mapping
-        """
+
+        """  Download numerai to yahoo ticker mapping  """
 
         ticker_map = pd.read_csv(numerai_ticker_link)
         eligible_tickers = pd.Series(napi.ticker_universe(), name='bloomberg_ticker')
@@ -312,7 +310,6 @@ class TickerDownloader(YFinanceLogger):
         self.logger.info(f'tickers before cleaning: %s', ticker_map.shape)
         ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
         self.logger.info(f'tickers after cleaning: %s', ticker_map.shape)
-
         return ticker_map
 
     @classmethod
@@ -333,7 +330,6 @@ class TickerDownloader(YFinanceLogger):
 
         df1 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
         df2 = pd.merge(numerai_yahoo_tickers, df_pts_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
-
         df3 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='numerai_ticker',
                        how='left') \
             .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
@@ -410,9 +406,7 @@ def get_valid_yfinance_start_timestamp(interval, start='1950-01-01 00:00:00'):
         updated_start = max((datetime.today() - timedelta(days=728)).date(), pd.to_datetime(start).date())
     else:
         updated_start = pd.to_datetime(start)
-
     updated_start = updated_start.strftime('%Y-%m-%d')  # yfinance doesn't like strftime with hours, minutes, or seconds
-
     return updated_start
 
 def flatten_list(lst):
