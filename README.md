@@ -4,45 +4,31 @@
 
 Built with the [Meltano Tap SDK](https://sdk.meltano.com) for Singer Taps.
 
-<!--
-
-Developer TODO: Update the below as needed to correctly describe the install procedure. For instance, if you do not have a PyPi repo, or if you want users to directly install from your git repo, you can modify this step as appropriate.
-
 ## Installation
 
-Install from PyPi:
+Install from GitHub (not on PyPi yet):
 
 ```bash
-pipx install tap-yfinance
+pipx install git+https://github.com/melgazar9/tap-yfinance.git
 ```
-
-Install from GitHub:
-
-```bash
-pipx install git+https://github.com/ORG_NAME/tap-yfinance.git@main
-```
-
--->
 
 ## Configuration
 
 ### Accepted Config Options
 
-<!--
-Developer TODO: Provide a list of config options accepted by the tap.
 
-This section can be created by copy-pasting the CLI output from:
-
-```
-tap-yfinance --about --format=markdown
-```
--->
+* catalog
+* state
+* discover
+* about
+* stream-maps
+* schema-flattening
+* batch
 
 A full list of supported settings and capabilities for this
 tap is available by running:
-
-```bash
-tap-yfinance --about
+```
+tap-yfinance --about --format=markdown
 ```
 
 ### Configure using environment variables
@@ -51,15 +37,9 @@ This Singer tap will automatically import any environment variables within the w
 `.env` if the `--config=ENV` is provided, such that config values will be considered if a matching
 environment variable is set either in the terminal context or in the `.env` file.
 
-### Source Authentication and Authorization
-
-<!--
-Developer TODO: If your tap requires special access on the source system, or any special authentication requirements, provide those here.
--->
-
 ## Usage
 
-You can easily run `tap-yfinance` by itself or in a pipeline using [Meltano](https://meltano.com/).
+You can run `tap-yfinance` by itself or in a pipeline using [Meltano](https://meltano.com/).
 
 ### Executing the Tap Directly
 
@@ -100,11 +80,6 @@ poetry run tap-yfinance --help
 _**Note:** This tap will work in any Singer environment and does not require Meltano.
 Examples here are for convenience and to streamline end-to-end orchestration scenarios._
 
-<!--
-Developer TODO:
-Your project comes with a custom `meltano.yml` project file already created. Open the `meltano.yml` and follow any "TODO" items listed in
-the file.
--->
 
 Next, install Meltano (if you haven't already) and any needed plugins:
 
@@ -121,8 +96,8 @@ Now you can test and orchestrate using Meltano:
 ```bash
 # Test invocation:
 meltano invoke tap-yfinance --version
-# OR run a test `elt` pipeline:
-meltano elt tap-yfinance target-jsonl
+# OR run a test extract and load `el` pipeline:
+meltano el tap-yfinance target-jsonl
 ```
 
 ### SDK Dev Guide
