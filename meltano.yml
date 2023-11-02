@@ -20,7 +20,9 @@ plugins:
         - stream-maps
 
       select:
-        - stock_prices_1m_wide
+        - stock_prices_1m
+        - forex_prices_1m
+        - crypto_prices_1m
 
       config:
         default_start_date: "1950-01-01"
@@ -56,7 +58,7 @@ plugins:
               schema_category: forex_prices
 
             crypto_prices_1m:
-              tickers: '*'
+              tickers: ["BTC-USD", "ETH-USD"]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: crypto_prices
 
@@ -124,7 +126,3 @@ plugins:
     - name: target-jsonl
       variant: andyh1203
       pip_url: target-jsonl
-
-    - name: target-csv
-      variant: hotgluexyz
-      pip_url: git+https://github.com/hotgluexyz/target-csv.git
