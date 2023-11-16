@@ -238,8 +238,9 @@ class TickerDownloader(YFinanceLogger):
         session.close()
 
         df = tables[0].copy()
-        df.rename(columns={'symbol': 'yahoo_ticker', 'name': 'yahoo_name', '%_change': 'pct_change'}, inplace=True)
+        df.rename(columns={'% Change': 'pct_change'}, inplace=True)
         df.columns = clean_strings(df.columns)
+        df.rename(columns={'symbol': 'yahoo_ticker', 'name': 'yahoo_name', '%_change': 'pct_change'}, inplace=True)
 
         # Add Decentral-Games tickers
 
