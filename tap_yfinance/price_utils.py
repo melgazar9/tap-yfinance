@@ -192,6 +192,7 @@ class TickerDownloader(YFinanceLogger):
         Download py-ticker-symbols tickers
         """
         pts = PyTickerSymbols()
+
         all_getters = list(filter(
             lambda x: (
                     x.endswith('_yahoo_tickers') or x.endswith('_google_tickers')
@@ -323,24 +324,23 @@ class TickerDownloader(YFinanceLogger):
 
         df1 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
         df2 = pd.merge(numerai_yahoo_tickers, df_pts_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
-        df3 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='numerai_ticker',
-                       how='left') \
-            .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
-            .set_index('yahoo_ticker')
+        df3 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='numerai_ticker', how='left') \
+                .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
+                .set_index('yahoo_ticker')
 
-        df4 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='bloomberg_ticker',
-                       how='left') \
-            .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
-            .set_index('yahoo_ticker')
+        df4 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='bloomberg_ticker', how='left') \
+                .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
+                .set_index('yahoo_ticker')
 
         df_tickers_wide = pd.concat([df1, df2, df3, df4], axis=1)
-        df_tickers_wide.columns = clean_strings(df_tickers_wide.columns)
+        col_identifier = df_tickers_wide.columns.to_series().groupby(level=0).transform('cumcount').replace(0, '')
+        df_tickers_wide.columns = df_tickers_wide.columns.astype('string') + col_identifier.astype('string')
 
         for col in df_tickers_wide.columns:
             suffix = col[-1]
             if suffix.isdigit():
                 root_col = col.strip('_' + suffix)
-                df_tickers_wide.loc[:, root_col] = df_tickers_wide[root_col].fillna(df_tickers_wide[col])
+                df_tickers_wide[root_col] = df_tickers_wide[root_col].fillna(df_tickers_wide[col])
 
         df_tickers = \
             df_tickers_wide.reset_index() \
