@@ -124,7 +124,7 @@ class PriceStream(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
+        self.price_tap = PriceTap(schema_category=self.schema_category)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """
@@ -174,7 +174,7 @@ class PriceStreamWide(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
+        self.price_tap = PriceTap(schema_category=self.schema_category)
 
     @property
     def partitions(self):
@@ -229,3 +229,46 @@ class PriceStreamWide(BaseStream):
             )
 
             yield {'data': record, self.replication_key: record['replication_key']}
+
+class FinancialStream(BaseStream):
+    replication_key = "replication_key"
+    is_timestamp_replication_key = False
+
+    def __init__(self, tap: Tap, catalog_entry: dict) -> None:
+        super().__init__(tap, catalog_entry)
+        self.yf_params = self.stream_params.get('yf_params')
+        self.price_tap = YFinanceFinancialTap(schema_category=self.schema_category)
+
+    def get_records(self, context: dict | None) -> Iterable[dict]:
+        """
+        Return a generator of record-type dictionary objects.
+
+        The optional `context` argument is used to identify a specific slice of the
+        stream if partitioning is required for the stream. Most implementations do not
+        require partitioning and should ignore the `context` argument.
+
+        Args:
+            context: Stream partition or context dictionary.
+
+        """
+
+        self.logger.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
+        state = self.get_context_state(context)
+
+        yf_params['start'] = start_date
+
+        df = self.financials_tap(ticker=context['ticker'], yf_params=yf_params)
+
+        for record in df.to_dict(orient='records'):
+            replication_key = context['ticker'] + '|' + record['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')
+            record['replication_key'] = replication_key
+
+            increment_state(
+                state,
+                replication_key=self.replication_key,
+                latest_record=record,
+                is_sorted=self.is_sorted,
+                check_sorted=self.check_sorted
+            )
+
+            yield record

@@ -22,7 +22,7 @@ class YFinanceLogger:
         ch.setFormatter(formatter)
         self.logger.addHandler(ch)
 
-class YFinancePriceTap(YFinanceLogger):
+class PriceTap(YFinanceLogger):
     """
     Parameters
     ----------
@@ -407,7 +407,11 @@ def flatten_list(lst):
     return [v for item in lst for v in (item if isinstance(item, list) else [item])]
 
 def clean_strings(lst):
-    cleaned_list = [re.sub(r'[^a-zA-Z0-9_]', '_', s) for s in lst]  # remove special characters
+    assert isinstance(lst, (list, pd.core.indexes.base.Index))
+    snake_case_lst = []
+    for s in lst:
+        snake_case_lst.append(''.join(['_' + i.lower() if i.isupper() else i for i in s]).lstrip('_'))
+    cleaned_list = [re.sub(r'[^a-zA-Z0-9_]', '_', s) for s in snake_case_lst]  # remove special characters
     cleaned_list = [re.sub(r'_+', '_', s).strip('_').lower() for s in cleaned_list]  # clean leading and trailing underscores
     return cleaned_list
 
