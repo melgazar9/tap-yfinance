@@ -5,7 +5,7 @@ from __future__ import annotations
 import singer_sdk.typing as th
 from singer_sdk import Tap
 from singer_sdk._singerlib.catalog import CatalogEntry, MetadataMapping, Schema, Metadata
-from tap_yfinance.streams import TickerStream, PriceStream, PriceStreamWide
+from tap_yfinance.streams import TickerStream, PriceStream, PriceStreamWide, FinancialStream
 from tap_yfinance.schema import get_schema
 
 
@@ -101,6 +101,8 @@ class TapYFinance(Tap):
                 stream = PriceStreamWide(self, catalog_entry=catalog_entry)
             elif financial_category == 'tickers':
                 stream = TickerStream(self, catalog_entry=catalog_entry)
+            elif financial_category == 'financials':
+                stream = FinancialStream(self, catalog_entry=catalog_entry)
             else:
                 raise ValueError('Could not set the proper stream.')
             streams.append(stream)

@@ -8,6 +8,7 @@ from singer_sdk import Tap
 from typing import Iterable, Optional, Any
 from singer_sdk.streams import Stream
 from tap_yfinance.price_utils import *
+from tap_yfinance.financial_utils import *
 from tap_yfinance.schema import *
 from singer_sdk.helpers._state import increment_state
 
@@ -237,7 +238,7 @@ class FinancialStream(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.price_tap = YFinanceFinancialTap(schema_category=self.schema_category)
+        self.financial_tap = FinancialTap(schema_category=self.schema_category)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """
@@ -255,9 +256,7 @@ class FinancialStream(BaseStream):
         self.logger.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
         state = self.get_context_state(context)
 
-        yf_params['start'] = start_date
-
-        df = self.financials_tap(ticker=context['ticker'], yf_params=yf_params)
+        df = getattr(self.financial_tap, self.schema_category)(ticker=context['ticker'])
 
         for record in df.to_dict(orient='records'):
             replication_key = context['ticker'] + '|' + record['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')

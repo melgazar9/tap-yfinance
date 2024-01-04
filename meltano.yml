@@ -20,9 +20,8 @@ plugins:
         - stream-maps
 
       select:
-        - stock_prices_1m
-        - forex_prices_1m
-        - crypto_prices_1m
+        - actions
+        - balance_sheet
 
       config:
         default_start_date: "1950-01-01"
@@ -80,6 +79,20 @@ plugins:
               schema_category: crypto_prices_wide
 
 
+          ### financials ###
+
+          financials:
+            actions:
+              tickers: [ "AAPL", "META" ]
+              yf_params: {}
+              schema_category: get_actions
+
+            balance_sheet:
+              tickers: [ "AAPL", "META" ]
+              yf_params: {}
+              schema_category: get_balance_sheet
+
+
       metadata:
         ### tickers ###
 
@@ -118,6 +131,92 @@ plugins:
           replication-key: timestamp
 
         crypto_prices_1m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        ### financials ###
+
+        actions:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        balance_sheet:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        cash_flow:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        dividends:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        earnings_dates:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        fast_info:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        financials:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        history_metadata:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        income_stmt:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        institutional_holders:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        major_holders:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        mutualfund_holders:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        news:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        shares_full:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        splits:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        option_chain:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        options:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        quarterly_balance_sheet:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        quarterly_cash_flow:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        quarterly_financials:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        quarterly_income_stmt:
           replication-method: INCREMENTAL
           replication-key: timestamp
 

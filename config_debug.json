@@ -2,11 +2,11 @@
    "default_start_date":"1950-01-01",
    "add_record_metadata":true,
    "financial_category":{
-      "tickers": {
-         "stock_tickers": {
-                "tickers": "*",
-                "schema_category": "stock_tickers"
-         }
-      }
+     "financials": {
+       "balance_sheet": {
+         "tickers": ["META"],
+         "schema_category": "get_balance_sheet"
+       }
+     }
    }
 }
