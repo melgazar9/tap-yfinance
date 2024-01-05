@@ -149,6 +149,87 @@ def get_schema(schema_category):
             th.Property('cash_financial', th.NumberType)
         ).to_dict()
 
+    elif schema_category == 'get_cash_flow':
+        schema = th.PropertiesList(
+            th.Property("date", th.DateTimeType, required=True),
+            th.Property("ticker", th.StringType),
+            th.Property("beginning_cash_position", th.NumberType),
+            th.Property("capital_expenditure", th.NumberType),
+            th.Property("cash_dividends_paid", th.NumberType),
+            th.Property("cash_flow_from_continuing_financing_activities", th.NumberType),
+            th.Property("cash_flow_from_continuing_investing_activities", th.NumberType),
+            th.Property("cash_flow_from_continuing_operating_activities", th.NumberType),
+            th.Property("change_in_account_payable", th.NumberType),
+            th.Property("change_in_inventory", th.NumberType),
+            th.Property("change_in_other_current_assets", th.NumberType),
+            th.Property("change_in_other_current_liabilities", th.NumberType),
+            th.Property("change_in_other_working_capital", th.NumberType),
+            th.Property("change_in_payable", th.NumberType),
+            th.Property("change_in_payables_and_accrued_expense", th.NumberType),
+            th.Property("change_in_receivables", th.NumberType),
+            th.Property("change_in_working_capital", th.NumberType),
+            th.Property("changes_in_account_receivables", th.NumberType),
+            th.Property("changes_in_cash", th.NumberType),
+            th.Property("common_stock_dividend_paid", th.NumberType),
+            th.Property("common_stock_issuance", th.NumberType),
+            th.Property("common_stock_payments", th.NumberType),
+            th.Property("deferred_income_tax", th.NumberType),
+            th.Property("deferred_tax", th.NumberType),
+            th.Property("depreciation_amortization_depletion", th.NumberType),
+            th.Property("depreciation_and_amortization", th.NumberType),
+            th.Property("end_cash_position", th.NumberType),
+            th.Property("financing_cash_flow", th.NumberType),
+            th.Property("free_cash_flow", th.NumberType),
+            th.Property("income_tax_paid_supplemental_data", th.NumberType),
+            th.Property("interest_paid_supplemental_data", th.NumberType),
+            th.Property("investing_cash_flow", th.NumberType),
+            th.Property("issuance_of_capital_stock", th.NumberType),
+            th.Property("issuance_of_debt", th.NumberType),
+            th.Property("long_term_debt_issuance", th.NumberType),
+            th.Property("long_term_debt_payments", th.NumberType),
+            th.Property("net_business_purchase_and_sale", th.NumberType),
+            th.Property("net_common_stock_issuance", th.NumberType),
+            th.Property("net_income_from_continuing_operations", th.NumberType),
+            th.Property("net_investment_purchase_and_sale", th.NumberType),
+            th.Property("net_issuance_payments_of_debt", th.NumberType),
+            th.Property("net_long_term_debt_issuance", th.NumberType),
+            th.Property("net_other_financing_charges", th.NumberType),
+            th.Property("net_other_investing_changes", th.NumberType),
+            th.Property("net_ppe_purchase_and_sale", th.NumberType),
+            th.Property("net_short_term_debt_issuance", th.NumberType),
+            th.Property("operating_cash_flow", th.NumberType),
+            th.Property("other_non_cash_items", th.NumberType),
+            th.Property("purchase_of_business", th.NumberType),
+            th.Property("purchase_of_investment", th.NumberType),
+            th.Property("purchase_of_ppe", th.NumberType),
+            th.Property("repayment_of_debt", th.NumberType),
+            th.Property("repurchase_of_capital_stock", th.NumberType),
+            th.Property("sale_of_investment", th.NumberType),
+            th.Property("short_term_debt_issuance", th.NumberType),
+            th.Property("short_term_debt_payments", th.NumberType),
+            th.Property("stock_based_compensation", th.NumberType)
+        ).to_dict()
+
+    elif schema_category == 'get_dividends':
+        schema = th.PropertiesList(
+            th.Property("timestamp", th.DateTimeType, required=True),
+            th.Property("timestamp_tz_aware", th.StringType),
+            th.Property("timezone", th.StringType),
+            th.Property("ticker", th.StringType),
+            th.Property("dividends", th.NumberType)
+        ).to_dict()
+
+    elif schema_category == 'get_earnings_dates':
+        schema = th.PropertiesList(
+            th.Property("timestamp", th.DateTimeType, required=True),
+            th.Property("timestamp_tz_aware", th.StringType),
+            th.Property("timezone", th.StringType),
+            th.Property("ticker", th.StringType),
+            th.Property("eps_estimate", th.NumberType),
+            th.Property("reported_eps", th.NumberType),
+            th.Property("pct_surprise", th.NumberType)
+        ).to_dict()
+
     else:
         raise NotImplementedError(f'Specified schema_category {schema_category} is not supported.')
 

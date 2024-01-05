@@ -20,9 +20,11 @@ plugins:
         - stream-maps
 
       select:
-        - futures_prices_1m
-        - futures_prices_1m_wide
-        - futures_tickers
+        - actions
+        - balance_sheet
+        - cash_flow
+        - dividends
+        - earnings_dates
 
       config:
         default_start_date: "1950-01-01"
@@ -106,6 +108,21 @@ plugins:
               yf_params: {}
               schema_category: get_balance_sheet
 
+            cash_flow:
+              tickers: [ "AAPL", "META" ]
+              yf_params: { }
+              schema_category: get_cash_flow
+
+            dividends:
+              tickers: [ "AAPL", "META" ]
+              yf_params: { }
+              schema_category: get_dividends
+
+            earnings_dates:
+              tickers: [ "AAPL", "META" ]
+              yf_params: { }
+              schema_category: get_earnings_dates
+
 
       metadata:
         ### tickers ###
@@ -167,11 +184,11 @@ plugins:
 
         balance_sheet:
           replication-method: INCREMENTAL
-          replication-key: timestamp
+          replication-key: date
 
         cash_flow:
           replication-method: INCREMENTAL
-          replication-key: timestamp
+          replication-key: date
 
         dividends:
           replication-method: INCREMENTAL

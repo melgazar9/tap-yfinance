@@ -47,8 +47,7 @@ class FinancialTap(YFinanceLogger):
         self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
         df = df.replace([np.inf, -np.inf, np.nan], None)
         column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'dividends', 'stock_splits']
-        df = df[column_order]
-        return df
+        return df[column_order]
 
     def get_analyst_price_target(self, ticker):
         """ yfinance.exceptions.YFNotImplementedError """
@@ -56,7 +55,6 @@ class FinancialTap(YFinanceLogger):
 
     def get_balance_sheet(self, ticker):
         df = yf.Ticker(ticker).get_balance_sheet().T.rename_axis('date').reset_index()
-        df['timestamp'] = datetime.utcnow()
         df['ticker'] = ticker
         df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = clean_strings(df.columns)
@@ -84,6 +82,8 @@ class FinancialTap(YFinanceLogger):
         df = yf.Ticker(ticker).get_cash_flow().T.rename_axis('date').reset_index()
         df['ticker'] = ticker
         df.columns = clean_strings(df.columns)
+        df.columns = [i.replace('p_p_e', 'ppe') for i in df.columns]
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         column_order = ['date', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
         return df[column_order]
 
@@ -92,23 +92,25 @@ class FinancialTap(YFinanceLogger):
         return
 
     def get_dividends(self, ticker):
-        df = yf.Ticker(ticker).get_dividends().reset_index()
+        df = yf.Ticker(ticker).get_dividends().rename_axis('timestamp').reset_index()
         df['ticker'] = ticker
-        self.extract_ticker_tz_aware_timestamp(df, 'date', ticker)
+        self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = clean_strings(df.columns)
-        return df[['date', 'date_tz_aware', 'timezone', 'ticker', 'dividends']]
+        return df[['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'dividends']]
 
     def get_earnings(self, ticker):
         """ yfinance.exceptions.YFNotImplementedError """
         return
 
     def get_earnings_dates(self, ticker):
-        df = yf.Ticker(ticker).get_earnings_dates().rename_axis('date').reset_index()
+        df = yf.Ticker(ticker).get_earnings_dates().rename_axis('timestamp').reset_index()
         df['ticker'] = ticker
-        self.extract_ticker_tz_aware_timestamp(df, 'date', ticker)
+        self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = [i.replace('e_p_s', 'eps') for i in clean_strings(df.columns)]
         df.rename(columns={'surprise': 'pct_surprise'}, inplace=True)
-        column_order = ['date', 'date_tz_aware', 'timezone', 'ticker', 'eps_estimate', 'reported_eps', 'pct_surprise']
+        column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'eps_estimate', 'reported_eps', 'pct_surprise']
         return df[column_order]
 
     def get_earnings_forecast(self, ticker):
@@ -129,6 +131,9 @@ class FinancialTap(YFinanceLogger):
             lambda row: row['timestamp_extracted'].tz_localize(row['extracted_timezone']),
             axis=1
         )
+
+        df = df.replace([np.inf, -np.inf, np.nan], None)
+
         df.columns = clean_strings(df.columns)
         return df
 
@@ -136,6 +141,7 @@ class FinancialTap(YFinanceLogger):
         df = yf.Ticker(ticker).get_financials().T.rename_axis('date').reset_index()
         df['ticker'] = ticker
         self.extract_ticker_tz_aware_timestamp(df, 'date', ticker)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = [i.replace('e_b_i_t_d_a', 'ebitda').replace('e_p_s', 'eps').replace('e_b_i_t', 'ebit') \
                           .replace('diluted_n_i_availto_com_stockholders', 'diluted_ni_availto_com_stockholders')
                       for i in clean_strings(df.columns)]
@@ -147,6 +153,7 @@ class FinancialTap(YFinanceLogger):
         data['tradingPeriods'] = data['tradingPeriods'].to_dict()
         df = pd.Series({key: data[key] for key in data.keys()}).to_frame().T
         df.columns = clean_strings(df.columns)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
 
         column_order = \
             ['symbol', 'timezone', 'currency'] + \
@@ -159,6 +166,7 @@ class FinancialTap(YFinanceLogger):
         df = yf.Ticker(ticker).get_income_stmt().T.rename_axis('date').reset_index()
         df['ticker'] = ticker
         self.extract_ticker_tz_aware_timestamp(df, 'date', ticker)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = [i.replace('e_b_i_t_d_a', 'ebitda').replace('e_p_s', 'eps').replace('e_b_i_t', 'ebit')\
                        .replace('diluted_n_i_availto_com_stockholders', 'diluted_ni_availto_com_stockholders')
                       for i in clean_strings(df.columns)]
@@ -176,6 +184,7 @@ class FinancialTap(YFinanceLogger):
     def get_institutional_holders(self, ticker):
         df = yf.Ticker(ticker).get_institutional_holders()
         df['ticker'] = ticker
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = clean_strings(df.columns)
         column_order = ['date_reported', 'ticker'] + sorted([i for i in df.columns if i not in ['date_reported', 'ticker']])
         return df[column_order]
@@ -189,6 +198,7 @@ class FinancialTap(YFinanceLogger):
         df.columns = ['pct', 'category']
         df['ticker'] = ticker
         df['timestamp_extracted'] = datetime.utcnow()
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         return df[['timestamp_extracted', 'ticker', 'category', 'pct']]
 
     def get_mutualfund_holders(self, ticker):
@@ -196,6 +206,7 @@ class FinancialTap(YFinanceLogger):
         df.rename(columns={'% Out': 'pct_out'}, inplace=True)
         df.columns = clean_strings(df.columns)
         df['ticker'] = ticker
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         column_order = ['date_reported', 'ticker'] + sorted([i for i in df.columns if i not in ['date_reported', 'ticker']])
         return df[column_order]
 
@@ -203,6 +214,7 @@ class FinancialTap(YFinanceLogger):
         df = pd.DataFrame(yf.Ticker(ticker).get_news())
         df['ticker'] = ticker
         df['timestamp_extracted'] = datetime.utcnow()
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         column_order = ['timestamp_extracted', 'ticker'] + sorted([i for i in df.columns if i not in ['timestamp_extracted', 'ticker']])
         return df[column_order]
 
@@ -227,6 +239,7 @@ class FinancialTap(YFinanceLogger):
         df.columns = ['timestamp', 'amount']
         df['ticker'] = ticker
         self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         return df[['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'amount']]
 
     def get_splits(self, ticker):
@@ -234,6 +247,7 @@ class FinancialTap(YFinanceLogger):
         df['ticker'] = ticker
         self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
         df.columns = clean_strings(df.columns)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         return df[['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'stock_splits']]
 
     def get_sustainability(self, ticker):
@@ -260,6 +274,7 @@ class FinancialTap(YFinanceLogger):
 
         df.columns = clean_strings(df.columns)
         self.extract_ticker_tz_aware_timestamp(df, 'last_trade_date', ticker)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
 
         column_order = ['last_trade_date', 'last_trade_date_tz_aware', 'timezone', 'timestamp_extracted', 'ticker'] + \
             [i for i in df.columns if i not in ['last_trade_date', 'last_trade_date_tz_aware', 'timezone',
@@ -271,6 +286,7 @@ class FinancialTap(YFinanceLogger):
         option_expiration_dates = pd.DataFrame(yf.Ticker(ticker).options, columns=['expiration_date'])
         option_expiration_dates['ticker'] = ticker
         option_expiration_dates['timestamp_extracted'] = datetime.utcnow()
+        option_expiration_dates = option_expiration_dates.replace([np.inf, -np.inf, np.nan], None)
         return option_expiration_dates[['timestamp_extracted', 'ticker', 'expiration_date']]
 
 
@@ -278,6 +294,7 @@ class FinancialTap(YFinanceLogger):
         df = yf.Ticker(ticker).quarterly_balance_sheet.T.rename_axis('date').reset_index()
         df['ticker'] = ticker
         df.columns = [i.replace('p_p_e', 'ppe') for i in clean_strings(df.columns)]
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         column_order = ['date', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
         return df[column_order]
 
@@ -288,6 +305,7 @@ class FinancialTap(YFinanceLogger):
     def quarterly_cash_flow(self, ticker):
         df = yf.Ticker(ticker).quarterly_cash_flow.T.rename_axis('date').reset_index()
         df['ticker'] = ticker
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = [i.replace('p_p_e', 'ppe') for i in clean_strings(df.columns)]
         column_order = ['date', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
         return df[column_order]
@@ -299,6 +317,7 @@ class FinancialTap(YFinanceLogger):
     def quarterly_financials(self, ticker):
         df = yf.Ticker(ticker).quarterly_financials.T.rename_axis('date').reset_index()
         df['ticker'] = ticker
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = [i.replace('e_b_i_t_d_a', 'ebitda').replace('e_p_s', 'eps').replace('e_b_i_t', 'ebit') \
                           .replace('diluted_n_i_availto_com_stockholders', 'diluted_ni_availto_com_stockholders')
                       for i in clean_strings(df.columns)]
@@ -308,6 +327,7 @@ class FinancialTap(YFinanceLogger):
     def quarterly_income_stmt(self, ticker):
         df = yf.Ticker(ticker).quarterly_income_stmt.T.rename_axis('date').reset_index()
         df['ticker'] = ticker
+        df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = [i.replace('e_b_i_t_d_a', 'ebitda').replace('e_p_s', 'eps').replace('e_b_i_t', 'ebit') \
                        .replace('diluted_n_i_availto_com_stockholders', 'diluted_ni_availto_com_stockholders')
                       for i in clean_strings(df.columns)]

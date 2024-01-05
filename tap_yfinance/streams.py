@@ -261,9 +261,6 @@ class FinancialStream(BaseStream):
         df = getattr(self.financial_tap, self.schema_category)(ticker=context['ticker'])
 
         for record in df.to_dict(orient='records'):
-            replication_key = context['ticker'] + '|' + record['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')
-            record['replication_key'] = replication_key
-
             increment_state(
                 state,
                 replication_key=self.replication_key,

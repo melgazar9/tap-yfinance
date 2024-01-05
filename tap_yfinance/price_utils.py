@@ -441,6 +441,7 @@ def flatten_list(lst):
 
 def clean_strings(lst):
     cleaned_list = [re.sub(r'[^a-zA-Z0-9_]', '_', s) for s in lst]  # remove special characters
+    cleaned_list = [re.sub(r'(?<!^)(?=[A-Z])', '_', s).lower() for s in cleaned_list]  # camel case -> snake case
     cleaned_list = [re.sub(r'_+', '_', s).strip('_').lower() for s in cleaned_list]  # clean leading and trailing underscores
     return cleaned_list
 
