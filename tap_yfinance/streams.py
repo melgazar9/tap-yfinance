@@ -81,6 +81,8 @@ class BaseStream(Stream, ABC):
     def get_ticker_download_method(self):
         if self.catalog_entry['tap_stream_id'].startswith('stock'):
             return 'download_valid_stock_tickers'
+        elif self.catalog_entry['tap_stream_id'].startswith('futures'):
+            return 'download_futures_tickers'
         elif self.catalog_entry['tap_stream_id'].startswith('forex'):
             return 'download_forex_pairs'
         elif self.catalog_entry['tap_stream_id'].startswith('crypto'):

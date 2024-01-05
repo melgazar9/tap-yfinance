@@ -1,7 +1,7 @@
 from singer_sdk import typing as th
 
 def get_schema(schema_category):
-    if schema_category in ['stock_prices', 'forex_prices', 'crypto_prices']:
+    if schema_category in ['stock_prices', 'futures_prices', 'forex_prices', 'crypto_prices']:
         schema = th.PropertiesList(
             th.Property("timestamp", th.DateTimeType, required=True),
             th.Property("timestamp_tz_aware", th.StringType),
@@ -18,7 +18,7 @@ def get_schema(schema_category):
             th.Property("replication_key", th.StringType)
         ).to_dict()
 
-    elif schema_category in ['stock_prices_wide', 'forex_prices_wide', 'crypto_prices_wide']:
+    elif schema_category in ['stock_prices_wide', 'futures_prices_wide', 'forex_prices_wide', 'crypto_prices_wide']:
         schema = th.PropertiesList(  # potentially a dynamic number of columns
             th.Property("timestamp", th.DateTimeType, required=True),
             th.Property("data", th.AnyType, required=True)
@@ -35,11 +35,26 @@ def get_schema(schema_category):
             th.Property("yahoo_valid_numerai", th.BooleanType)
         ).to_dict()
 
+    elif schema_category == 'futures_tickers':
+        schema = th.PropertiesList(
+            th.Property("yahoo_ticker", th.StringType, required=True),
+            th.Property("name", th.StringType),
+            th.Property("last_price", th.NumberType),
+            th.Property("market_time", th.StringType),
+            th.Property("change", th.NumberType),
+            th.Property("pct_change", th.StringType),
+            th.Property("volume", th.StringType),
+            th.Property("open_interest", th.StringType)
+        ).to_dict()
+
     elif schema_category == 'forex_tickers':
         schema = th.PropertiesList(
             th.Property("yahoo_ticker", th.StringType, required=True),
-            th.Property("yahoo_name", th.StringType),
-            th.Property("bloomberg_ticker", th.StringType)
+            th.Property("name", th.StringType),
+            th.Property("bloomberg_ticker", th.StringType),
+            th.Property("last_price", th.StringType),
+            th.Property("change", th.StringType),
+            th.Property("pct_change", th.StringType)
         ).to_dict()
 
     elif schema_category == 'crypto_tickers':

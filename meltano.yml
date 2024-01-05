@@ -20,8 +20,9 @@ plugins:
         - stream-maps
 
       select:
-        - actions
-        - balance_sheet
+        - futures_prices_1m
+        - futures_prices_1m_wide
+        - futures_tickers
 
       config:
         default_start_date: "1950-01-01"
@@ -34,6 +35,9 @@ plugins:
             stock_tickers:
               tickers: '*'
               schema_category: stock_tickers
+            futures_tickers:
+              tickers: '*'
+              schema_category: futures_tickers
             forex_tickers:
               tickers: '*'
               schema_category: forex_tickers
@@ -51,6 +55,11 @@ plugins:
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: stock_prices
 
+            futures_prices_1m:
+              tickers: [ "ES=F", "CL=F" ]
+              yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: futures_prices
+
             forex_prices_1m:
               tickers: ["EURUSD=X", "RUB=X"]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
@@ -67,6 +76,11 @@ plugins:
               tickers: ["AAPL", "META"]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: stock_prices_wide
+
+            futures_prices_1m_wide:
+              tickers: [ "ES=F", "CL=F" ]
+              yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: futures_prices_wide
 
             forex_prices_1m_wide:
               tickers: ["EURUSD=X", "RUB=X"]
@@ -99,6 +113,9 @@ plugins:
         stock_tickers:
           replication-method: INCREMENTAL
           replication-key: yahoo_ticker
+        futures_tickers:
+          replication-method: INCREMENTAL
+          replication-key: yahoo_ticker
         forex_tickers:
           replication-method: INCREMENTAL
           replication-key: yahoo_ticker
@@ -109,6 +126,10 @@ plugins:
         ### prices ###
 
         stock_prices_1m:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        futures_prices_1m:
           replication-method: INCREMENTAL
           replication-key: timestamp
 
@@ -123,6 +144,10 @@ plugins:
         ### prices wide ###
 
         stock_prices_1m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        futures_prices_1m_wide:
           replication-method: INCREMENTAL
           replication-key: timestamp
 
