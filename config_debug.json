@@ -2,11 +2,10 @@
    "default_start_date":"1950-01-01",
    "add_record_metadata":true,
    "financial_category":{
-     "prices": {
-       "futures_prices_1m": {
-         "tickers": ["CL=F"],
-         "yf_params": {"interval": "1m"},
-         "schema_category": "futures_prices"
+     "financials": {
+       "history_metadata": {
+         "tickers": "*",
+         "schema_category": "get_history_metadata"
        }
      }
    }

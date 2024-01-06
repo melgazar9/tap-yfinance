@@ -122,7 +122,7 @@ class FinancialTap(YFinanceLogger):
         return
 
     def get_fast_info(self, ticker):
-        df = pd.DataFrame.from_dict(d, orient='index').T
+        df = pd.DataFrame.from_dict(dict(yf.Ticker(ticker).get_fast_info()), orient='index').T
         df['ticker'] = ticker
         df['timestamp_extracted'] = datetime.utcnow()
         df.rename(columns={'timezone': 'extracted_timezone'}, inplace=True)
@@ -138,14 +138,15 @@ class FinancialTap(YFinanceLogger):
         return df
 
     def get_financials(self, ticker):
-        df = yf.Ticker(ticker).get_financials().T.rename_axis('date').reset_index()
+        df = yf.Ticker(ticker).get_financials().T.rename_axis('timestamp').reset_index()
         df['ticker'] = ticker
-        self.extract_ticker_tz_aware_timestamp(df, 'date', ticker)
+        self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
         df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = [i.replace('e_b_i_t_d_a', 'ebitda').replace('e_p_s', 'eps').replace('e_b_i_t', 'ebit') \
                           .replace('diluted_n_i_availto_com_stockholders', 'diluted_ni_availto_com_stockholders')
                       for i in clean_strings(df.columns)]
-        column_order = ['date', 'date_tz_aware', 'timezone', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
+        first_cols = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker']
+        column_order = first_cols + sorted([i for i in df.columns if i not in first_cols])
         return df[column_order]
 
     def get_history_metadata(self, ticker):
@@ -153,24 +154,27 @@ class FinancialTap(YFinanceLogger):
         data['tradingPeriods'] = data['tradingPeriods'].to_dict()
         df = pd.Series({key: data[key] for key in data.keys()}).to_frame().T
         df.columns = clean_strings(df.columns)
+        df['timestamp_extracted'] = datetime.utcnow()
+        df = df.rename(columns={'symbol': 'ticker'})
         df = df.replace([np.inf, -np.inf, np.nan], None)
 
         column_order = \
-            ['symbol', 'timezone', 'currency'] + \
-            [i for i in df.columns if i not in ['symbol', 'timezone', 'currency', 'trading_periods', 'data_granularity', 'valid_ranges']] + \
-            ['trading_periods', 'data_granularity', 'valid_ranges']
+            ['ticker', 'timezone', 'currency'] + \
+            [i for i in df.columns if i not in
+             ['ticker', 'timezone', 'currency', 'trading_periods', 'data_granularity', 'valid_ranges']] + \
+             ['trading_periods', 'data_granularity', 'valid_ranges']
 
         return df[column_order]
 
     def get_income_stmt(self, ticker):
         df = yf.Ticker(ticker).get_income_stmt().T.rename_axis('date').reset_index()
         df['ticker'] = ticker
-        self.extract_ticker_tz_aware_timestamp(df, 'date', ticker)
         df = df.replace([np.inf, -np.inf, np.nan], None)
         df.columns = [i.replace('e_b_i_t_d_a', 'ebitda').replace('e_p_s', 'eps').replace('e_b_i_t', 'ebit')\
-                       .replace('diluted_n_i_availto_com_stockholders', 'diluted_ni_availto_com_stockholders')
+                       .replace('diluted_n_i_availto_com_stockholders', 'diluted_ni_availto_com_stockholders')\
+                       .replace('p_p_e', 'ppe')
                       for i in clean_strings(df.columns)]
-        column_order = ['date', 'date_tz_aware', 'timezone', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
+        column_order = ['date', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
         return df[column_order]
 
     def get_incomestmt(self, ticker):
@@ -195,11 +199,11 @@ class FinancialTap(YFinanceLogger):
 
     def get_major_holders(self, ticker):
         df = yf.Ticker(ticker).get_major_holders()
-        df.columns = ['pct', 'category']
+        df.columns = ['value', 'category']
         df['ticker'] = ticker
         df['timestamp_extracted'] = datetime.utcnow()
         df = df.replace([np.inf, -np.inf, np.nan], None)
-        return df[['timestamp_extracted', 'ticker', 'category', 'pct']]
+        return df[['timestamp_extracted', 'ticker', 'category', 'value']]
 
     def get_mutualfund_holders(self, ticker):
         df = yf.Ticker(ticker).get_mutualfund_holders()
@@ -215,7 +219,9 @@ class FinancialTap(YFinanceLogger):
         df['ticker'] = ticker
         df['timestamp_extracted'] = datetime.utcnow()
         df = df.replace([np.inf, -np.inf, np.nan], None)
-        column_order = ['timestamp_extracted', 'ticker'] + sorted([i for i in df.columns if i not in ['timestamp_extracted', 'ticker']])
+        df.columns = clean_strings(df.columns)
+        column_order = ['timestamp_extracted', 'ticker'] + \
+                       sorted([i for i in df.columns if i not in ['timestamp_extracted', 'ticker']])
         return df[column_order]
 
     def get_recommendations(self, ticker):

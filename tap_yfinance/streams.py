@@ -28,7 +28,6 @@ class BaseStream(Stream, ABC):
 
         self.stream_params = self.config.get('financial_category').get(self.financial_category).get(self.name)
         self.schema_category = self.stream_params.get('schema_category')
-
         self.tickers = None
         self.df_tickers = None
         self._ticker_download_calls = 0
@@ -62,9 +61,9 @@ class BaseStream(Stream, ABC):
         if stream_params['tickers'] == '*':
             ticker_download_method = self.get_ticker_download_method()
             self.df_tickers = getattr(ticker_downloader, ticker_download_method)()
-            self.tickers = self.df_tickers['yahoo_ticker'].unique().tolist()
+            self.tickers = self.df_tickers['ticker'].unique().tolist()
         else:
-            self.df_tickers = pd.DataFrame({'yahoo_ticker': stream_params['tickers']})
+            self.df_tickers = pd.DataFrame({'ticker': stream_params['tickers']})
             self.tickers = stream_params['tickers']
 
         self._ticker_download_calls += 1
@@ -87,11 +86,13 @@ class BaseStream(Stream, ABC):
             return 'download_forex_pairs'
         elif self.catalog_entry['tap_stream_id'].startswith('crypto'):
             return 'download_top_250_crypto_tickers'
+        elif self.catalog_entry['metadata'][-1]['metadata']['schema-name'].startswith('financials'):
+            return 'download_valid_stock_tickers'  # only stock tickers for financial data
         else:
             raise ValueError('Could not determine ticker_download_method')
 
 class TickerStream(BaseStream):
-    replication_key = "yahoo_ticker"
+    replication_key = "ticker"
     is_timestamp_replication_key = False
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
@@ -110,7 +111,9 @@ class TickerStream(BaseStream):
         """
 
         state = self.get_context_state(context)
-        record = self.df_tickers[self.df_tickers['yahoo_ticker'] == context['ticker']].to_dict(orient='records')[0]
+
+        record = self.df_tickers[self.df_tickers['ticker'] == context['ticker']].to_dict(orient='records')[0]
+
         increment_state(
             state,
             replication_key=self.replication_key,
@@ -118,6 +121,7 @@ class TickerStream(BaseStream):
             is_sorted=self.is_sorted,
             check_sorted=self.check_sorted
         )
+
         yield record
 
 class PriceStream(BaseStream):
@@ -234,8 +238,7 @@ class PriceStreamWide(BaseStream):
             yield {'data': record, self.replication_key: record['replication_key']}
 
 class FinancialStream(BaseStream):
-    replication_key = "replication_key"
-    is_timestamp_replication_key = False
+    is_timestamp_replication_key = True
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)

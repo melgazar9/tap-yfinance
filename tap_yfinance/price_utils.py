@@ -239,7 +239,12 @@ class TickerDownloader(YFinanceLogger):
         session.close()
 
         df = tables[0].copy()
-        df = df.rename(columns={'Symbol': 'yahoo_ticker', '% Change': 'pct_change'})
+        df = df.rename(columns={
+            'Symbol': 'ticker',
+            '% Change': 'pct_change',
+            'Volume in Currency (Since 0:00 UTC)': 'volume_in_currency_since_0_00_utc'
+        })
+
         df.columns = clean_strings(df.columns)
 
         # Add Decentral-Games tickers
@@ -247,7 +252,7 @@ class TickerDownloader(YFinanceLogger):
         missing_dg_tickers = [i for i in ['ICE13133-USD', 'DG15478-USD', 'XDG-USD'] if i not in df['ticker']]
         if len(missing_dg_tickers):
             df_dg = pd.DataFrame({
-                'yahoo_ticker': missing_dg_tickers,
+                'ticker': missing_dg_tickers,
                 'name': missing_dg_tickers,
                 'price_intraday': np.nan,
                 'change': np.nan,
@@ -285,7 +290,7 @@ class TickerDownloader(YFinanceLogger):
 
         df = tables[0].copy()
 
-        df = df.rename(columns={'Symbol': 'yahoo_ticker', '% Change': 'pct_change'})
+        df = df.rename(columns={'Symbol': 'ticker', '% Change': 'pct_change'})
         df.columns = clean_strings(df.columns)
 
         df.loc[:, 'bloomberg_ticker'] = df['name'].apply(lambda x: f"{x[4:]}-{x[0:3]}")
@@ -293,7 +298,7 @@ class TickerDownloader(YFinanceLogger):
         df = df.dropna(how='all', axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
 
-        first_cols = ['yahoo_ticker', 'name', 'bloomberg_ticker']
+        first_cols = ['ticker', 'name', 'bloomberg_ticker']
         df = df[first_cols + [i for i in df.columns if i not in first_cols]]
         return df
 
@@ -314,7 +319,7 @@ class TickerDownloader(YFinanceLogger):
         session.close()
 
         df = tables[0].copy()
-        df = df.rename(columns={'Symbol': 'yahoo_ticker', '% Change': 'pct_change', 'Unnamed: 7': 'open_interest'})
+        df = df.rename(columns={'Symbol': 'ticker', '% Change': 'pct_change', 'Unnamed: 7': 'open_interest'})
         df.columns = clean_strings(df.columns)
 
         df = df.dropna(how='all', axis=1)
@@ -348,6 +353,19 @@ class TickerDownloader(YFinanceLogger):
 
         # napi = numerapi.SignalsAPI(os.environ.get('NUMERAI_PUBLIC_KEY'), os.environ.get('NUMERAI_PRIVATE_KEY'))
 
+        def handle_duplicate_columns(columns):
+            seen_columns = {}
+            new_columns = []
+
+            for column in columns:
+                if column not in seen_columns:
+                    new_columns.append(column)
+                    seen_columns[column] = 1
+                else:
+                    seen_columns[column] += 1
+                    new_columns.append(f"{column}_{seen_columns[column]}")
+            return new_columns
+
         df_pts_tickers = cls.download_pts_stock_tickers()
 
         numerai_yahoo_tickers = \
@@ -367,6 +385,7 @@ class TickerDownloader(YFinanceLogger):
             .set_index('yahoo_ticker')
 
         df_tickers_wide = pd.concat([df1, df2, df3, df4], axis=1)
+        df_tickers_wide.columns = handle_duplicate_columns(df_tickers_wide.columns)
         df_tickers_wide.columns = clean_strings(df_tickers_wide.columns)
 
         for col in df_tickers_wide.columns:
@@ -393,7 +412,7 @@ class TickerDownloader(YFinanceLogger):
         ] = True
 
         df_tickers = df_tickers.replace([np.inf, -np.inf, np.nan], None)
-
+        df_tickers = df_tickers.rename(columns={'yahoo_ticker': 'ticker'})  # necessary to allow schema partitioning
         return df_tickers
 
 def get_valid_yfinance_start_timestamp(interval, start='1950-01-01 00:00:00'):
