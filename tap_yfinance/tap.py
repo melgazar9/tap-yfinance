@@ -106,7 +106,6 @@ class TapYFinance(Tap):
             else:
                 raise ValueError('Could not set the proper stream.')
             streams.append(stream)
-
         return streams
 
 

@@ -3,9 +3,9 @@
    "add_record_metadata":true,
    "financial_category":{
      "financials": {
-       "history_metadata": {
+       "news": {
          "tickers": "*",
-         "schema_category": "get_history_metadata"
+         "schema_category": "get_news"
        }
      }
    }
