@@ -172,17 +172,16 @@ class FinancialTap(YFinanceLogger):
     def get_financials(self, ticker):
         df = yf.Ticker(ticker).get_financials().T
         if isinstance(df, pd.DataFrame) and df.shape[0]:
-            df = df.rename_axis('timestamp').reset_index()
+            df = df.rename_axis('date').reset_index()
             df['ticker'] = ticker
-            self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = [i.replace('e_b_i_t_d_a', 'ebitda').replace('e_p_s', 'eps').replace('e_b_i_t', 'ebit')
                            .replace('p_p_e', 'ppe')
                            .replace('diluted_n_i_availto_com_stockholders', 'diluted_ni_availto_com_stockholders')
                           for i in clean_strings(df.columns)]
-            first_cols = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker']
+            first_cols = ['date', 'ticker']
         else:
-            return pd.DataFrame(columns=['timestamp'])
+            return pd.DataFrame(columns=['date'])
         column_order = first_cols + sorted([i for i in df.columns if i not in first_cols])
         return df[column_order]
 

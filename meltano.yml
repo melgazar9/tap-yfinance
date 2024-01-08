@@ -20,7 +20,27 @@ plugins:
         - stream-maps
 
       select:
+        - actions
+        - balance_sheet
+        - cash_flow
+        - dividends
+        - earnings_dates
+        - fast_info
+        - financials
+        - history_metadata
+        - income_stmt
+        - institutional_holders
+        - major_holders
+        - mutualfund_holders
+        - news
+        - shares_full
+        - splits
+        - option_chain
+        - options
         - quarterly_balance_sheet
+        - quarterly_cash_flow
+        - quarterly_financials
+        - quarterly_income_stmt
 
       config:
         default_start_date: "1950-01-01"
