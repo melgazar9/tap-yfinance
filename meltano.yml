@@ -25,18 +25,23 @@ plugins:
         - forex_tickers
         - crypto_tickers
         - stock_prices_1m
+        - futures_prices_1m
         - forex_prices_1m
         - crypto_prices_1m
         - stock_prices_2m
+        - futures_prices_2m
         - forex_prices_2m
         - crypto_prices_2m
         - stock_prices_5m
+        - futures_prices_5m
         - forex_prices_5m
         - crypto_prices_5m
         - stock_prices_1h
+        - futures_prices_1h
         - forex_prices_1h
         - crypto_prices_1h
         - stock_prices_1d
+        - futures_prices_1d
         - forex_prices_1d
         - crypto_prices_1d
         - actions
