@@ -488,7 +488,7 @@ def get_schema(schema_category):
             th.Property("market_time", th.StringType),
             th.Property("change", th.NumberType),
             th.Property("pct_change", th.StringType),
-            th.Property("volume", th.StringType),
+            th.Property("volume", th.NumberType),
             th.Property("open_interest", th.StringType)
         ).to_dict()
 

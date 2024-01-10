@@ -321,7 +321,7 @@ class TickerDownloader(YFinanceLogger):
         df = tables[0].copy()
         df = df.rename(columns={'Symbol': 'ticker', '% Change': 'pct_change', 'Unnamed: 7': 'open_interest'})
         df.columns = clean_strings(df.columns)
-
+        df['open_interest'] = df['open_interest'].astype(str)
         df = df.dropna(how='all', axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
         return df
