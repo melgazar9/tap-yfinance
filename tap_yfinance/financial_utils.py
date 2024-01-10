@@ -44,13 +44,19 @@ class FinancialTap(YFinanceLogger):
         return df
 
     def get_actions(self, ticker):
-        df = yf.Ticker(ticker).get_actions()
+        try:
+            df = yf.Ticker(ticker).get_actions()
+        except:
+            logging.warning(f'Error extracting data get_actions for ticker {ticker}. Skipping...')
+            return pd.DataFrame(columns=['timestamp'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.reset_index().rename(columns={'Date': 'timestamp'})
             self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
             df = df.replace([np.inf, -np.inf, np.nan], None)
         else:
             return pd.DataFrame(columns=['timestamp'])
+
         column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'dividends', 'stock_splits']
         return df[column_order]
 
@@ -59,7 +65,12 @@ class FinancialTap(YFinanceLogger):
         return
 
     def get_balance_sheet(self, ticker):
-        df = yf.Ticker(ticker).get_balance_sheet()
+        try:
+            df = yf.Ticker(ticker).get_balance_sheet()
+        except:
+            logging.warning(f'Error extracting data get_balance_sheet for ticker {ticker}. Skipping...')
+            return pd.DataFrame(columns=['date'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis('date').reset_index()
             df['ticker'] = ticker
@@ -68,6 +79,7 @@ class FinancialTap(YFinanceLogger):
             df.columns = [i.replace('p_p_e', 'ppe') for i in df.columns]
         else:
             return pd.DataFrame(columns=['date'])
+
         column_order = ['date', 'ticker'] + [i for i in df.columns if i not in ['date', 'ticker']]
         return df[column_order]
 
@@ -88,26 +100,35 @@ class FinancialTap(YFinanceLogger):
         return
 
     def get_cash_flow(self, ticker):
-        df = yf.Ticker(ticker).get_cash_flow()
-        if isinstance(df, pd.DataFrame) and df.shape[0]:
-            df = df.T.rename_axis('date').reset_index()
-            df['ticker'] = ticker
-            df.columns = clean_strings(df.columns)
-            df.columns = [
-                i.replace('p_p_e', 'ppe').replace('c_f_o', 'cfo').replace('c_f_f', 'cff').replace('c_f_i', 'cfi')
-                for i in df.columns]
-            df = df.replace([np.inf, -np.inf, np.nan], None)
-        else:
+        try:
+            df = yf.Ticker(ticker).get_cash_flow()
+            if isinstance(df, pd.DataFrame) and df.shape[0]:
+                df = df.T.rename_axis('date').reset_index()
+                df['ticker'] = ticker
+                df.columns = clean_strings(df.columns)
+                df.columns = [
+                    i.replace('p_p_e', 'ppe').replace('c_f_o', 'cfo').replace('c_f_f', 'cff').replace('c_f_i', 'cfi')
+                    for i in df.columns]
+                df = df.replace([np.inf, -np.inf, np.nan], None)
+            else:
+                return pd.DataFrame(columns=['date'])
+            column_order = ['date', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
+            return df[column_order]
+        except:
+            logging.warning(f'Error extracting data get_cash_flow for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['date'])
-        column_order = ['date', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
-        return df[column_order]
 
     def get_cashflow(self, ticker):
         """ Same output as the method get_cash_flow """
         return
 
     def get_dividends(self, ticker):
-        df = yf.Ticker(ticker)
+        try:
+            df = yf.Ticker(ticker)
+        except:
+            logging.warning(f'Error extracting data get_dividends for ticker {ticker}. Skipping...')
+            return pd.DataFrame(columns=['timestamp'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.get_dividends().rename_axis('timestamp').reset_index()
             df['ticker'] = ticker
@@ -115,6 +136,7 @@ class FinancialTap(YFinanceLogger):
             df = df.replace([np.inf, -np.inf, np.nan], None)
         else:
             return pd.DataFrame(columns=['timestamp'])
+
         df.columns = clean_strings(df.columns)
         return df[['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'dividends']]
 
@@ -126,7 +148,7 @@ class FinancialTap(YFinanceLogger):
         try:
             df = yf.Ticker(ticker).get_earnings_dates()
         except:
-            logging.warning(f'Error loading get_earnings_dates as dictionary for ticker {ticker}. Skipping...')
+            logging.warning(f'Error extracting get_earnings_dates as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp_extracted'])
 
         if isinstance(df, pd.DataFrame) and df.shape[0]:
@@ -156,7 +178,7 @@ class FinancialTap(YFinanceLogger):
         try:
             df = pd.DataFrame.from_dict(dict(yf.Ticker(ticker).get_fast_info()), orient='index').T
         except:
-            logging.warning(f'Error loading get_fast_info as dictionary for ticker {ticker}. Skipping...')
+            logging.warning(f'Error extracting get_fast_info as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp_extracted'])
 
         if isinstance(df, pd.DataFrame) and df.shape[0]:
@@ -180,7 +202,7 @@ class FinancialTap(YFinanceLogger):
         try:
             df = yf.Ticker(ticker).get_financials().T
         except:
-            logging.warning(f'Error loading get_financials as dictionary for ticker {ticker}. Skipping...')
+            logging.warning(f'Error extracting get_financials as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['date'])
 
         if isinstance(df, pd.DataFrame) and df.shape[0]:
@@ -194,6 +216,7 @@ class FinancialTap(YFinanceLogger):
             first_cols = ['date', 'ticker']
         else:
             return pd.DataFrame(columns=['date'])
+
         column_order = first_cols + sorted([i for i in df.columns if i not in first_cols])
         return df[column_order]
 
@@ -201,9 +224,8 @@ class FinancialTap(YFinanceLogger):
         try:
             data = yf.Ticker(ticker).get_history_metadata()
         except:
-            logging.warning(f'Error loading get_history_metadata as dictionary for ticker {ticker}. Skipping...')
+            logging.warning(f'Error extracting get_history_metadata as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp_extracted'])
-
 
         if len(data):
             try:
@@ -240,7 +262,12 @@ class FinancialTap(YFinanceLogger):
             return pd.DataFrame(columns=['timestamp_extracted'])
 
     def get_income_stmt(self, ticker):
-        df = yf.Ticker(ticker).get_income_stmt()
+        try:
+            df = yf.Ticker(ticker).get_income_stmt()
+        except:
+            logging.warning(f'Error extracting get_income_stmt as dictionary for ticker {ticker}. Skipping...')
+            return pd.DataFrame(columns=['date'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis('date').reset_index()
             df['ticker'] = ticker
@@ -252,6 +279,7 @@ class FinancialTap(YFinanceLogger):
             column_order = ['date', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
         else:
             return pd.DataFrame(columns=['date'])
+
         return df[column_order]
 
     def get_incomestmt(self, ticker):
@@ -268,6 +296,7 @@ class FinancialTap(YFinanceLogger):
         except:
             logging.warning(f"Could not extract institutional_holders for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['date_reported'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0] and df.shape[1] == 5:
             df['ticker'] = ticker
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -275,6 +304,7 @@ class FinancialTap(YFinanceLogger):
             df.columns = clean_strings(df.columns)
             column_order = ['date_reported', 'ticker'] + sorted(
                 [i for i in df.columns if i not in ['date_reported', 'ticker']])
+
             return df[column_order]
         else:
             logging.warning(f"Inconsistent fields for institutional_holders for ticker {ticker}. Skipping...")
@@ -374,7 +404,12 @@ class FinancialTap(YFinanceLogger):
         return
 
     def get_shares_full(self, ticker):
-        df = yf.Ticker(ticker).get_shares_full()
+        try:
+            df = yf.Ticker(ticker).get_shares_full()
+        except:
+            logging.warning(f"Could not extract get_shares_full for ticker {ticker}. Skipping...")
+            return pd.DataFrame(columns=['timestamp'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.reset_index()
             df.columns = ['timestamp', 'amount']
@@ -386,7 +421,12 @@ class FinancialTap(YFinanceLogger):
             return pd.DataFrame(columns=['timestamp'])
 
     def get_splits(self, ticker):
-        df = yf.Ticker(ticker).get_splits()
+        try:
+            df = yf.Ticker(ticker).get_splits()
+        except:
+            logging.warning(f"Could not extract get_splits for ticker {ticker}. Skipping...")
+            return pd.DataFrame(columns=['timestamp'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.rename_axis('timestamp').reset_index()
             df['ticker'] = ticker
@@ -481,7 +521,12 @@ class FinancialTap(YFinanceLogger):
                     return pd.DataFrame(columns=['timestamp_extracted', 'ticker', 'expiration_date'])
 
     def quarterly_balance_sheet(self, ticker):
-        df = yf.Ticker(ticker).quarterly_balance_sheet
+        try:
+            df = yf.Ticker(ticker).quarterly_balance_sheet
+        except:
+            logging.warning(f"Could not extract quarterly_balance_sheet for ticker {ticker}. Skipping...")
+            return pd.DataFrame(columns=['date'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis('date').reset_index()
             df['ticker'] = ticker
@@ -497,7 +542,12 @@ class FinancialTap(YFinanceLogger):
         return
 
     def quarterly_cash_flow(self, ticker):
-        df = yf.Ticker(ticker).quarterly_cash_flow
+        try:
+            df = yf.Ticker(ticker).quarterly_cash_flow
+        except:
+            logging.warning(f"Could not extract quarterly_cash_flow for ticker {ticker}. Skipping...")
+            return pd.DataFrame(columns=['date'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis('date').reset_index()
             df['ticker'] = ticker
@@ -513,7 +563,12 @@ class FinancialTap(YFinanceLogger):
         return
 
     def quarterly_financials(self, ticker):
-        df = yf.Ticker(ticker).quarterly_financials
+        try:
+            df = yf.Ticker(ticker).quarterly_financials
+        except:
+            logging.warning(f"Could not extract quarterly_financials for ticker {ticker}. Skipping...")
+            return pd.DataFrame(columns=['date'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis('date').reset_index()
             df['ticker'] = ticker
@@ -527,7 +582,12 @@ class FinancialTap(YFinanceLogger):
             return pd.DataFrame(columns=['date'])
 
     def quarterly_income_stmt(self, ticker):
-        df = yf.Ticker(ticker).quarterly_income_stmt
+        try:
+            df = yf.Ticker(ticker).quarterly_income_stmt
+        except:
+            logging.warning(f"Could not extract quarterly_income_stmt for ticker {ticker}. Skipping...")
+            return pd.DataFrame(columns=['date'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis('date').reset_index()
             df['ticker'] = ticker
