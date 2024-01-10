@@ -123,7 +123,12 @@ class FinancialTap(YFinanceLogger):
         return
 
     def get_earnings_dates(self, ticker):
-        df = yf.Ticker(ticker).get_earnings_dates()
+        try:
+            df = yf.Ticker(ticker).get_earnings_dates()
+        except:
+            logging.warning(f'Error loading get_earnings_dates as dictionary for ticker {ticker}. Skipping...')
+            return pd.DataFrame(columns=['timestamp_extracted'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.rename_axis('timestamp').reset_index()
             df['ticker'] = ticker
@@ -133,8 +138,10 @@ class FinancialTap(YFinanceLogger):
             df.rename(columns={'surprise': 'pct_surprise'}, inplace=True)
         else:
             return pd.DataFrame(columns=['timestamp'])
-        column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'eps_estimate', 'reported_eps',
-                        'pct_surprise']
+
+        column_order = \
+            ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'eps_estimate', 'reported_eps', 'pct_surprise']
+
         return df[column_order]
 
     def get_earnings_forecast(self, ticker):
@@ -149,7 +156,7 @@ class FinancialTap(YFinanceLogger):
         try:
             df = pd.DataFrame.from_dict(dict(yf.Ticker(ticker).get_fast_info()), orient='index').T
         except:
-            logging.warning(f'Error loading get_fast_info as dictionary for ticker {ticker}. Skipping this ticker...')
+            logging.warning(f'Error loading get_fast_info as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp_extracted'])
 
         if isinstance(df, pd.DataFrame) and df.shape[0]:
@@ -170,7 +177,12 @@ class FinancialTap(YFinanceLogger):
             return pd.DataFrame(columns=['timestamp_extracted'])
 
     def get_financials(self, ticker):
-        df = yf.Ticker(ticker).get_financials().T
+        try:
+            df = yf.Ticker(ticker).get_financials().T
+        except:
+            logging.warning(f'Error loading get_financials as dictionary for ticker {ticker}. Skipping...')
+            return pd.DataFrame(columns=['date'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.rename_axis('date').reset_index()
             df['ticker'] = ticker
@@ -186,34 +198,43 @@ class FinancialTap(YFinanceLogger):
         return df[column_order]
 
     def get_history_metadata(self, ticker):
-        data = yf.Ticker(ticker).get_history_metadata()
+        try:
+            data = yf.Ticker(ticker).get_history_metadata()
+        except:
+            logging.warning(f'Error loading get_history_metadata as dictionary for ticker {ticker}. Skipping...')
+            return pd.DataFrame(columns=['timestamp_extracted'])
+
 
         if len(data):
-            if 'tradingPeriods' in data.keys():
-                data['tradingPeriods'] = data['tradingPeriods'].to_dict()
-            df = pd.Series({key: data[key] for key in data.keys()}).to_frame().T
-            df.columns = clean_strings(df.columns)
-            df = df.rename(columns={'symbol': 'ticker'})
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            try:
+                if 'tradingPeriods' in data.keys():
+                    data['tradingPeriods'] = data['tradingPeriods'].to_dict()
+                df = pd.Series({key: data[key] for key in data.keys()}).to_frame().T
+                df.columns = clean_strings(df.columns)
+                df = df.rename(columns={'symbol': 'ticker'})
+                df = df.replace([np.inf, -np.inf, np.nan], None)
 
-            if 'current_trading_period' in df.columns:
-                df_ctp = pd.json_normalize(df['current_trading_period'])
-                df_ctp.columns = clean_strings(df_ctp.columns)
-                df_ctp = df_ctp.add_prefix('current_trading_period_')
-                df = pd.concat([df, df_ctp], axis=1)
-                df = df.drop(['current_trading_period'], axis=1)
+                if 'current_trading_period' in df.columns:
+                    df_ctp = pd.json_normalize(df['current_trading_period'])
+                    df_ctp.columns = clean_strings(df_ctp.columns)
+                    df_ctp = df_ctp.add_prefix('current_trading_period_')
+                    df = pd.concat([df, df_ctp], axis=1)
+                    df = df.drop(['current_trading_period'], axis=1)
 
-            if 'trading_periods' in df.columns:
-                df_tp = pd.DataFrame().from_dict(df['trading_periods'].iloc[0])
-                df_tp = df_tp.add_prefix('trading_period_').reset_index(drop=True)
-                df = pd.concat([df, df_tp], axis=1).ffill()
-                df = df.drop('trading_periods', axis=1)
+                if 'trading_periods' in df.columns:
+                    df_tp = pd.DataFrame().from_dict(df['trading_periods'].iloc[0])
+                    df_tp = df_tp.add_prefix('trading_period_').reset_index(drop=True)
+                    df = pd.concat([df, df_tp], axis=1).ffill()
+                    df = df.drop('trading_periods', axis=1)
 
-            df['timestamp_extracted'] = datetime.utcnow()
+                df['timestamp_extracted'] = datetime.utcnow()
 
-            first_cols = ['ticker', 'timezone', 'currency']
-            column_order = first_cols + [i for i in df.columns if i not in first_cols]
-            return df[column_order]
+                first_cols = ['ticker', 'timezone', 'currency']
+                column_order = first_cols + [i for i in df.columns if i not in first_cols]
+                return df[column_order]
+            except:
+                logging.warning(f'Error parsing get_history_metadata as dictionary for ticker {ticker}. Skipping...')
+                return pd.DataFrame(columns=['timestamp_extracted'])
 
         else:
             return pd.DataFrame(columns=['timestamp_extracted'])
@@ -386,47 +407,78 @@ class FinancialTap(YFinanceLogger):
 
     def option_chain(self, ticker):
         # TODO: clean option extraction
-        df = pd.DataFrame()
-        option_expiration_dates = yf.Ticker(ticker).options
-        if len(option_expiration_dates):
-            for exp_date in option_expiration_dates:
-                option_chain_data = yf.Ticker(ticker).option_chain(date=exp_date)
-                if len(option_chain_data):
-                    for ocd in option_chain_data[0: -1]:
-                        ocd.columns = clean_strings(ocd.columns)
-                        ocd['last_trade_date_tz_aware'] = ocd['last_trade_date'].copy()
-                        ocd['last_trade_date'] = pd.to_datetime(ocd['last_trade_date'], utc=True)
-                        df = pd.concat([df, ocd])
-                        df['ticker'] = ticker
-                        df['timestamp_extracted'] = datetime.utcnow()
-                        df.drop_duplicates(inplace=True)
-                        df['metadata'] = option_chain_data[-1]
-                try:
-                    df.columns = clean_strings(df.columns)
-                    extract_ticker_tz_aware_timestamp(df, 'last_trade_date', ticker)
-                    df = df.replace([np.inf, -np.inf, np.nan], None)
+        num_tries = 3
+        n = 0
+        while n < num_tries:
+            try:
+                df = pd.DataFrame()
+                option_expiration_dates = yf.Ticker(ticker).options
+                if option_expiration_dates and len(option_expiration_dates):
+                    for exp_date in option_expiration_dates:
+                        option_chain_data = yf.Ticker(ticker).option_chain(date=exp_date)
+                        if len(option_chain_data):
+                            for ocd in option_chain_data[0: -1]:
+                                ocd.columns = clean_strings(ocd.columns)
+                                ocd['last_trade_date_tz_aware'] = ocd['last_trade_date'].copy()
+                                ocd['last_trade_date'] = pd.to_datetime(ocd['last_trade_date'], utc=True)
+                                df = pd.concat([df, ocd])
+                                df['ticker'] = ticker
+                                df['timestamp_extracted'] = datetime.utcnow()
+                                df.drop_duplicates(inplace=True)
+                                df['metadata'] = option_chain_data[-1]
+                        try:
+                            df.columns = clean_strings(df.columns)
+                            extract_ticker_tz_aware_timestamp(df, 'last_trade_date', ticker)
+                            df = df.replace([np.inf, -np.inf, np.nan], None)
 
-                    column_order = \
-                        ['last_trade_date', 'last_trade_date_tz_aware', 'timezone', 'timestamp_extracted', 'ticker'] + \
-                        [i for i in df.columns if i not in ['last_trade_date', 'last_trade_date_tz_aware', 'timezone',
-                                                            'timestamp_extracted', 'ticker']]
+                            column_order = \
+                                ['last_trade_date', 'last_trade_date_tz_aware', 'timezone', 'timestamp_extracted', 'ticker'] + \
+                                [i for i in df.columns if i not in ['last_trade_date', 'last_trade_date_tz_aware', 'timezone',
+                                                                    'timestamp_extracted', 'ticker']]
 
-                    return df[column_order]
+                            return df[column_order]
 
-                except:
+                        except:
+                            return pd.DataFrame(columns=['last_trade_date'])
+                else:
                     return pd.DataFrame(columns=['last_trade_date'])
-        else:
-            return pd.DataFrame(columns=['last_trade_date'])
+            except:
+                n += 1
+                if n < num_tries:
+                    logging.warning(
+                        f"try-catch failed {n} times for method option_chain for ticker {ticker}. Trying again..."
+                    )
+                else:
+                    logging.warning(
+                        f"try-catch failed {n} times for method option_chain for ticker {ticker}. Skipping..."
+                    )
+                    return pd.DataFrame(columns=['last_trade_date'])
 
     def options(self, ticker):
-        option_expiration_dates = pd.DataFrame(yf.Ticker(ticker).options, columns=['expiration_date'])
-        if len(option_expiration_dates):
-            option_expiration_dates['ticker'] = ticker
-            option_expiration_dates['timestamp_extracted'] = datetime.utcnow()
-            option_expiration_dates = option_expiration_dates.replace([np.inf, -np.inf, np.nan], None)
-            return option_expiration_dates[['timestamp_extracted', 'ticker', 'expiration_date']]
-        else:
-            return pd.DataFrame(columns=['timestamp_extracted', 'ticker', 'expiration_date'])
+        num_tries = 3
+        n = 0
+        while n < num_tries:
+            try:
+                option_expiration_dates = yf.Ticker(ticker).options
+                if option_expiration_dates:
+                    option_expiration_dates = pd.DataFrame(option_expiration_dates, columns=['expiration_date'])
+                    option_expiration_dates['ticker'] = ticker
+                    option_expiration_dates['timestamp_extracted'] = datetime.utcnow()
+                    option_expiration_dates = option_expiration_dates.replace([np.inf, -np.inf, np.nan], None)
+                    return option_expiration_dates[['timestamp_extracted', 'ticker', 'expiration_date']]
+                else:
+                    return pd.DataFrame(columns=['timestamp_extracted', 'ticker', 'expiration_date'])
+            except:
+                n += 1
+                if n < num_tries:
+                    logging.warning(
+                        f"try-catch failed {n} times for method options for ticker {ticker}. Trying again..."
+                    )
+                else:
+                    logging.warning(
+                        f"try-catch failed {n} times for method options for ticker {ticker}. Skipping..."
+                    )
+                    return pd.DataFrame(columns=['timestamp_extracted', 'ticker', 'expiration_date'])
 
     def quarterly_balance_sheet(self, ticker):
         df = yf.Ticker(ticker).quarterly_balance_sheet
@@ -472,7 +524,7 @@ class FinancialTap(YFinanceLogger):
             column_order = ['date', 'ticker'] + sorted([i for i in df.columns if i not in ['date', 'ticker']])
             return df[column_order]
         else:
-            return pd.DataFrame(columns=['timestamp'])
+            return pd.DataFrame(columns=['date'])
 
     def quarterly_income_stmt(self, ticker):
         df = yf.Ticker(ticker).quarterly_income_stmt

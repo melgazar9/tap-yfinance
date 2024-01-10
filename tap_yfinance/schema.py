@@ -229,7 +229,9 @@ BALANCE_SHEET_SCHEMA = th.PropertiesList(
     th.Property('general_partnership_capital', th.NumberType),
     th.Property('limited_partnership_capital', th.NumberType),
     th.Property('total_partnership_capital', th.NumberType),
-    th.Property('dueto_related_parties_non_current', th.NumberType)
+    th.Property('dueto_related_parties_non_current', th.NumberType),
+    th.Property('restricted_common_stock', th.NumberType),
+    th.Property('other_capital_stock', th.NumberType)
 ).to_dict()
 
 
@@ -353,7 +355,9 @@ CASH_FLOW_SCHEMA = th.PropertiesList(
     th.Property('depletion', th.NumberType),
     th.Property('change_in_dividend_payable', th.NumberType),
     th.Property('receiptsfrom_government_grants', th.NumberType),
-    th.Property('dividends_received_direct', th.NumberType)
+    th.Property('dividends_received_direct', th.NumberType),
+    th.Property('net_short_term_debt_issuance', th.NumberType),
+    th.Property('dividends_paid_direct', th.NumberType)
 ).to_dict()
 
 
@@ -436,7 +440,8 @@ FINANCIALS_SCHEMA = th.PropertiesList(
     th.Property('net_income_extraordinary', th.NumberType),
     th.Property('net_income_from_tax_loss_carryforward', th.NumberType),
     th.Property('depletion_income_statement', th.NumberType),
-    th.Property('depreciation', th.NumberType)
+    th.Property('depreciation', th.NumberType),
+    th.Property('net_interest_income', th.NumberType)
 ).to_dict()
 
 

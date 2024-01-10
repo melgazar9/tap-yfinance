@@ -39,6 +39,9 @@ plugins:
         - options
         - quarterly_balance_sheet
         - quarterly_cash_flow
+        - options
+        - quarterly_balance_sheet
+        - quarterly_cash_flow
         - quarterly_financials
         - quarterly_income_stmt
 
@@ -276,7 +279,7 @@ plugins:
 
         financials:
           replication-method: INCREMENTAL
-          replication-key: timestamp
+          replication-key: date
 
         history_metadata:
           replication-method: INCREMENTAL
