@@ -488,7 +488,7 @@ def get_schema(schema_category):
             th.Property("market_time", th.StringType),
             th.Property("change", th.NumberType),
             th.Property("pct_change", th.StringType),
-            th.Property("volume", th.NumberType),
+            th.Property("volume", th.StringType),
             th.Property("open_interest", th.StringType)
         ).to_dict()
 
@@ -643,8 +643,8 @@ def get_schema(schema_category):
         schema = th.PropertiesList(
             th.Property("timestamp_extracted", th.DateTimeType, required=True),
             th.Property("ticker", th.StringType),
-            th.Property("category", th.StringType),
-            th.Property("value", th.StringType),
+            th.Property("breakdown", th.StringType),
+            th.Property("value", th.NumberType),
         ).to_dict()
 
     elif schema_category == 'get_mutualfund_holders':
@@ -652,7 +652,7 @@ def get_schema(schema_category):
             th.Property("date_reported", th.DateTimeType, required=True),
             th.Property("ticker", th.StringType),
             th.Property("holder", th.StringType),
-            th.Property("pct_out", th.NumberType),
+            th.Property("pct_held", th.NumberType),
             th.Property("shares", th.NumberType),
             th.Property("value", th.NumberType)
         ).to_dict()

@@ -9,20 +9,8 @@ from numerapi import SignalsAPI
 from pandas_datareader import data as pdr
 import re
 
-class YFinanceLogger:
-    """ Logger inherited by all YFinanceTap classes """
 
-    def __init__(self, log_level=logging.INFO):
-        self.log_level = log_level
-
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(self.log_level)
-        ch = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s  %(name)s:  %(levelname)s  %(message)s')
-        ch.setFormatter(formatter)
-        self.logger.addHandler(ch)
-
-class PriceTap(YFinanceLogger):
+class PriceTap():
     """
     Parameters
     ----------
@@ -84,10 +72,10 @@ class PriceTap(YFinanceLogger):
         self.current_runtime_seconds = (datetime.now() - self.request_start_timestamp).seconds
 
         if self.n_requests > 1900 and self.current_runtime_seconds > 3500:
-            self.logger.info(f'\nToo many requests per hour. Pausing requests for {self.current_runtime_seconds} seconds.\n')
+            logging.info(f'\nToo many requests per hour. Pausing requests for {self.current_runtime_seconds} seconds.\n')
             time.sleep(np.abs(3600 - self.current_runtime_seconds))
         if self.n_requests > 45000 and self.current_runtime_seconds > 85000:
-            self.logger.info(f'\nToo many requests per day. Pausing requests for {self.current_runtime_seconds} seconds.\n')
+            logging.info(f'\nToo many requests per day. Pausing requests for {self.current_runtime_seconds} seconds.\n')
             time.sleep(np.abs(86400 - self.current_runtime_seconds))
         return self
 
@@ -111,7 +99,7 @@ class PriceTap(YFinanceLogger):
 
         if 'start' not in yf_params.keys():
             yf_params['start'] = '1950-01-01 00:00:00'
-            self.logger.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
+            logging.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
 
         yf_params['start'] = \
             get_valid_yfinance_start_timestamp(interval=yf_params['interval'], start=yf_params['start'])
@@ -151,7 +139,7 @@ class PriceTap(YFinanceLogger):
 
         if 'start' not in yf_params.keys():
             yf_params['start'] = '1950-01-01 00:00:00'
-            self.logger.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
+            logging.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
 
         yf_params['start'] = \
             get_valid_yfinance_start_timestamp(interval=yf_params['interval'], start=yf_params['start'])
@@ -174,7 +162,7 @@ class PriceTap(YFinanceLogger):
         return df
 
 
-class TickerDownloader(YFinanceLogger):
+class TickerDownloader():
     """
     Description
     -----------
@@ -321,6 +309,7 @@ class TickerDownloader(YFinanceLogger):
         df = tables[0].copy()
         df = df.rename(columns={'Symbol': 'ticker', '% Change': 'pct_change', 'Unnamed: 7': 'open_interest'})
         df.columns = clean_strings(df.columns)
+        df['volume'] = df['volume'].astype(str)
         df['open_interest'] = df['open_interest'].astype(str)
         df = df.dropna(how='all', axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -338,13 +327,13 @@ class TickerDownloader(YFinanceLogger):
         eligible_tickers = pd.Series(napi.ticker_universe(), name='bloomberg_ticker')
         ticker_map = pd.merge(ticker_map, eligible_tickers, on='bloomberg_ticker', how='right')
 
-        self.logger.info('Number of eligible tickers in map: %s', str(ticker_map.shape[0]))
+        logging.info('Number of eligible tickers in map: %s', str(ticker_map.shape[0]))
 
         ticker_map = ticker_map.replace([np.inf, -np.inf, np.nan], None)
         valid_tickers = [i for i in ticker_map[yahoo_ticker_colname] if i is not None and len(i) > 0]
-        self.logger.info(f'tickers before cleaning: %s', ticker_map.shape)
+        logging.info(f'tickers before cleaning: %s', ticker_map.shape)
         ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
-        self.logger.info(f'tickers after cleaning: %s', ticker_map.shape)
+        logging.info(f'tickers after cleaning: %s', ticker_map.shape)
         return ticker_map
 
     @classmethod

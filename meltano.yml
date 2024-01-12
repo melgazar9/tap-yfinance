@@ -28,22 +28,6 @@ plugins:
         - futures_prices_1m
         - forex_prices_1m
         - crypto_prices_1m
-        - stock_prices_2m
-        - futures_prices_2m
-        - forex_prices_2m
-        - crypto_prices_2m
-        - stock_prices_5m
-        - futures_prices_5m
-        - forex_prices_5m
-        - crypto_prices_5m
-        - stock_prices_1h
-        - futures_prices_1h
-        - forex_prices_1h
-        - crypto_prices_1h
-        - stock_prices_1d
-        - futures_prices_1d
-        - forex_prices_1d
-        - crypto_prices_1d
         - actions
         - balance_sheet
         - cash_flow
@@ -143,83 +127,87 @@ plugins:
 
           financials:
             actions:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_actions
 
             balance_sheet:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_balance_sheet
 
             cash_flow:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_cash_flow
 
             dividends:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_dividends
 
             earnings_dates:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_earnings_dates
 
             fast_info:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_fast_info
 
             financials:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_financials
 
             history_metadata:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_history_metadata
 
             income_stmt:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_income_stmt
 
             institutional_holders:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_institutional_holders
 
             major_holders:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_major_holders
 
+            mutualfund_holders:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_mutualfund_holders
+
             news:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_news
 
             shares_full:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_shares_full
 
             splits:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: get_splits
 
             option_chain:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: option_chain
 
             options:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: options
 
             quarterly_balance_sheet:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: quarterly_balance_sheet
 
             quarterly_cash_flow:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: quarterly_cash_flow
 
             quarterly_financials:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: quarterly_financials
 
             quarterly_income_stmt:
-              tickers: "*"
+              tickers: [ "AAPL", "META" ]
               schema_category: quarterly_income_stmt
 
 

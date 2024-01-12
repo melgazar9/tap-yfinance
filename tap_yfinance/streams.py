@@ -46,7 +46,7 @@ class BaseStream(Stream, ABC):
     @property
     def partitions(self) -> list[dict]:
         if self._ticker_download_calls == 0:
-            self.logger.info(f"Tickers have not been downloaded yet. Downloading now...")
+            logging.info(f"Tickers have not been downloaded yet. Downloading now...")
             self.download_tickers(self.stream_params)
 
         assert isinstance(self.tickers, list), f'self.tickers must be a list, but it is of type {type(self.tickers)}.'
@@ -146,7 +146,7 @@ class PriceStream(BaseStream):
 
         """
 
-        self.logger.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
+        logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
         yf_params = self.yf_params.copy()
         state = self.get_context_state(context)
 
@@ -205,7 +205,7 @@ class PriceStreamWide(BaseStream):
         """
 
         if self._ticker_download_calls == 0:
-            self.logger.info(f"Tickers have not been downloaded yet. Downloading now...")
+            logging.info(f"Tickers have not been downloaded yet. Downloading now...")
             self.download_tickers(self.stream_params)
 
         assert isinstance(self.tickers, list), f'self.tickers must be a list, but it is of type {type(self.tickers)}.'
@@ -258,7 +258,7 @@ class FinancialStream(BaseStream):
 
         """
 
-        self.logger.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
+        logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
         state = self.get_context_state(context)
 
         df = getattr(self.financial_tap, self.schema_category)(ticker=context['ticker'])

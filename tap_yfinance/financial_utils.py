@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import yfinance as yf
-from tap_yfinance.price_utils import YFinanceLogger, clean_strings
+from tap_yfinance.price_utils import clean_strings
 
 
 ### failed ###
@@ -21,7 +21,7 @@ from tap_yfinance.price_utils import YFinanceLogger, clean_strings
 # 'trend_details'
 
 
-class FinancialTap(YFinanceLogger):
+class FinancialTap():
 
     ### TODO: date filters? ###
 
@@ -124,13 +124,13 @@ class FinancialTap(YFinanceLogger):
 
     def get_dividends(self, ticker):
         try:
-            df = yf.Ticker(ticker)
+            df = yf.Ticker(ticker).get_dividends()
         except:
             logging.warning(f'Error extracting data get_dividends for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp'])
 
-        if isinstance(df, pd.DataFrame) and df.shape[0]:
-            df = df.get_dividends().rename_axis('timestamp').reset_index()
+        if isinstance(df, pd.Series) and df.shape[0]:
+            df = df.rename_axis('timestamp').reset_index()
             df['ticker'] = ticker
             self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -320,12 +320,21 @@ class FinancialTap(YFinanceLogger):
         except:
             logging.warning(f"Could not extract get_major_holders for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['timestamp_extracted'])
+
         if isinstance(df, pd.DataFrame) and df.shape[0] and df.shape[1] == 2:
-            df.columns = ['value', 'category']
+            df.columns = ['value', 'breakdown']
             df['ticker'] = ticker
             df['timestamp_extracted'] = datetime.utcnow()
             df = df.replace([np.inf, -np.inf, np.nan], None)
-            return df[['timestamp_extracted', 'ticker', 'category', 'value']]
+            column_order = ['timestamp_extracted', 'ticker', 'breakdown', 'value']
+            return df[column_order]
+        if isinstance(df, (pd.DataFrame, pd.Series)) and df.shape[0] and df.shape[1] == 1:
+            df = df.rename_axis('breakdown').reset_index().rename(columns={'Value': 'value'})
+            df['ticker'] = ticker
+            df['timestamp_extracted'] = datetime.utcnow()
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            column_order = ['timestamp_extracted', 'ticker', 'breakdown', 'value']
+            return df[column_order]
         else:
             logging.warning(f"Inconsistent fields for get_major_holders for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['timestamp_extracted'])
@@ -338,12 +347,13 @@ class FinancialTap(YFinanceLogger):
             return pd.DataFrame(columns=['date_reported'])
 
         if isinstance(df, pd.DataFrame) and df.shape[0] and df.shape[1] == 5:
-            df.rename(columns={'% Out': 'pct_out'}, inplace=True)
+            df.rename(columns={'pctHeld': 'pct_held'}, inplace=True)
             df.columns = clean_strings(df.columns)
             df['ticker'] = ticker
             df = df.replace([np.inf, -np.inf, np.nan], None)
             column_order = ['date_reported', 'ticker'] + sorted(
-                [i for i in df.columns if i not in ['date_reported', 'ticker']])
+                [i for i in df.columns if i not in ['date_reported', 'ticker']]
+            )
             return df[column_order]
         else:
             logging.warning(f"Inconsistent fields for get_mutualfund_holders for ticker {ticker}. Skipping...")
@@ -410,7 +420,7 @@ class FinancialTap(YFinanceLogger):
             logging.warning(f"Could not extract get_shares_full for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['timestamp'])
 
-        if isinstance(df, pd.DataFrame) and df.shape[0]:
+        if isinstance(df, pd.Series) and df.shape[0]:
             df = df.reset_index()
             df.columns = ['timestamp', 'amount']
             df['ticker'] = ticker
@@ -427,15 +437,17 @@ class FinancialTap(YFinanceLogger):
             logging.warning(f"Could not extract get_splits for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['timestamp'])
 
-        if isinstance(df, pd.DataFrame) and df.shape[0]:
+        column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'stock_splits']
+
+        if isinstance(df, pd.Series) and df.shape[0]:
             df = df.rename_axis('timestamp').reset_index()
             df['ticker'] = ticker
             self.extract_ticker_tz_aware_timestamp(df, 'timestamp', ticker)
             df.columns = clean_strings(df.columns)
             df = df.replace([np.inf, -np.inf, np.nan], None)
-            return df[['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'stock_splits']]
+            return df[column_order]
         else:
-            return pd.DataFrame(columns=['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'stock_splits'])
+            return pd.DataFrame(columns=column_order)
 
     def get_sustainability(self, ticker):
         """ yfinance.exceptions.YFNotImplementedError """
@@ -447,6 +459,9 @@ class FinancialTap(YFinanceLogger):
 
     def option_chain(self, ticker):
         # TODO: clean option extraction
+
+        first_cols = ['last_trade_date', 'last_trade_date_tz_aware', 'timezone', 'timestamp_extracted', 'ticker']
+
         num_tries = 3
         n = 0
         while n < num_tries:
@@ -464,18 +479,14 @@ class FinancialTap(YFinanceLogger):
                                 df = pd.concat([df, ocd])
                                 df['ticker'] = ticker
                                 df['timestamp_extracted'] = datetime.utcnow()
-                                df.drop_duplicates(inplace=True)
+                                df = df.drop_duplicates()
                                 df['metadata'] = option_chain_data[-1]
                         try:
                             df.columns = clean_strings(df.columns)
-                            extract_ticker_tz_aware_timestamp(df, 'last_trade_date', ticker)
+                            self.extract_ticker_tz_aware_timestamp(df, 'last_trade_date', ticker)
                             df = df.replace([np.inf, -np.inf, np.nan], None)
 
-                            column_order = \
-                                ['last_trade_date', 'last_trade_date_tz_aware', 'timezone', 'timestamp_extracted', 'ticker'] + \
-                                [i for i in df.columns if i not in ['last_trade_date', 'last_trade_date_tz_aware', 'timezone',
-                                                                    'timestamp_extracted', 'ticker']]
-
+                            column_order = first_cols + [i for i in df.columns if i not in first_cols]
                             return df[column_order]
 
                         except:
