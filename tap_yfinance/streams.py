@@ -8,6 +8,7 @@ from singer_sdk import Tap
 from typing import Iterable, Optional, Any
 from singer_sdk.streams import Stream
 from tap_yfinance.price_utils import *
+from tap_yfinance.financial_utils import *
 from tap_yfinance.schema import *
 from singer_sdk.helpers._state import increment_state
 
@@ -27,7 +28,6 @@ class BaseStream(Stream, ABC):
 
         self.stream_params = self.config.get('financial_category').get(self.financial_category).get(self.name)
         self.schema_category = self.stream_params.get('schema_category')
-
         self.tickers = None
         self.df_tickers = None
         self._ticker_download_calls = 0
@@ -46,7 +46,7 @@ class BaseStream(Stream, ABC):
     @property
     def partitions(self) -> list[dict]:
         if self._ticker_download_calls == 0:
-            self.logger.info(f"Tickers have not been downloaded yet. Downloading now...")
+            logging.info(f"Tickers have not been downloaded yet. Downloading now...")
             self.download_tickers(self.stream_params)
 
         assert isinstance(self.tickers, list), f'self.tickers must be a list, but it is of type {type(self.tickers)}.'
@@ -61,9 +61,9 @@ class BaseStream(Stream, ABC):
         if stream_params['tickers'] == '*':
             ticker_download_method = self.get_ticker_download_method()
             self.df_tickers = getattr(ticker_downloader, ticker_download_method)()
-            self.tickers = self.df_tickers['yahoo_ticker'].unique().tolist()
+            self.tickers = self.df_tickers['ticker'].unique().tolist()
         else:
-            self.df_tickers = pd.DataFrame({'yahoo_ticker': stream_params['tickers']})
+            self.df_tickers = pd.DataFrame({'ticker': stream_params['tickers']})
             self.tickers = stream_params['tickers']
 
         self._ticker_download_calls += 1
@@ -80,15 +80,19 @@ class BaseStream(Stream, ABC):
     def get_ticker_download_method(self):
         if self.catalog_entry['tap_stream_id'].startswith('stock'):
             return 'download_valid_stock_tickers'
+        elif self.catalog_entry['tap_stream_id'].startswith('futures'):
+            return 'download_futures_tickers'
         elif self.catalog_entry['tap_stream_id'].startswith('forex'):
             return 'download_forex_pairs'
         elif self.catalog_entry['tap_stream_id'].startswith('crypto'):
             return 'download_top_250_crypto_tickers'
+        elif self.catalog_entry['metadata'][-1]['metadata']['schema-name'].startswith('financials'):
+            return 'download_valid_stock_tickers'  # only stock tickers for financial data
         else:
             raise ValueError('Could not determine ticker_download_method')
 
 class TickerStream(BaseStream):
-    replication_key = "yahoo_ticker"
+    replication_key = "ticker"
     is_timestamp_replication_key = False
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
@@ -107,7 +111,9 @@ class TickerStream(BaseStream):
         """
 
         state = self.get_context_state(context)
-        record = self.df_tickers[self.df_tickers['yahoo_ticker'] == context['ticker']].to_dict(orient='records')[0]
+
+        record = self.df_tickers[self.df_tickers['ticker'] == context['ticker']].to_dict(orient='records')[0]
+
         increment_state(
             state,
             replication_key=self.replication_key,
@@ -115,6 +121,7 @@ class TickerStream(BaseStream):
             is_sorted=self.is_sorted,
             check_sorted=self.check_sorted
         )
+
         yield record
 
 class PriceStream(BaseStream):
@@ -124,7 +131,7 @@ class PriceStream(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
+        self.price_tap = PriceTap(schema_category=self.schema_category)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """
@@ -139,7 +146,7 @@ class PriceStream(BaseStream):
 
         """
 
-        self.logger.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
+        logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
         yf_params = self.yf_params.copy()
         state = self.get_context_state(context)
 
@@ -174,7 +181,7 @@ class PriceStreamWide(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.price_tap = YFinancePriceTap(schema_category=self.schema_category)
+        self.price_tap = PriceTap(schema_category=self.schema_category)
 
     @property
     def partitions(self):
@@ -198,7 +205,7 @@ class PriceStreamWide(BaseStream):
         """
 
         if self._ticker_download_calls == 0:
-            self.logger.info(f"Tickers have not been downloaded yet. Downloading now...")
+            logging.info(f"Tickers have not been downloaded yet. Downloading now...")
             self.download_tickers(self.stream_params)
 
         assert isinstance(self.tickers, list), f'self.tickers must be a list, but it is of type {type(self.tickers)}.'
@@ -229,3 +236,40 @@ class PriceStreamWide(BaseStream):
             )
 
             yield {'data': record, self.replication_key: record['replication_key']}
+
+class FinancialStream(BaseStream):
+    is_timestamp_replication_key = True
+
+    def __init__(self, tap: Tap, catalog_entry: dict) -> None:
+        super().__init__(tap, catalog_entry)
+        self.yf_params = self.stream_params.get('yf_params')
+        self.financial_tap = FinancialTap(schema_category=self.schema_category)
+
+    def get_records(self, context: dict | None) -> Iterable[dict]:
+        """
+        Return a generator of record-type dictionary objects.
+
+        The optional `context` argument is used to identify a specific slice of the
+        stream if partitioning is required for the stream. Most implementations do not
+        require partitioning and should ignore the `context` argument.
+
+        Args:
+            context: Stream partition or context dictionary.
+
+        """
+
+        logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
+        state = self.get_context_state(context)
+
+        df = getattr(self.financial_tap, self.schema_category)(ticker=context['ticker'])
+
+        for record in df.to_dict(orient='records'):
+            increment_state(
+                state,
+                replication_key=self.replication_key,
+                latest_record=record,
+                is_sorted=self.is_sorted,
+                check_sorted=self.check_sorted
+            )
+
+            yield record

@@ -20,9 +20,35 @@ plugins:
         - stream-maps
 
       select:
+        - stock_tickers
+        - futures_tickers
+        - forex_tickers
+        - crypto_tickers
         - stock_prices_1m
+        - futures_prices_1m
         - forex_prices_1m
         - crypto_prices_1m
+        - actions
+        - balance_sheet
+        - cash_flow
+        - dividends
+        - earnings_dates
+        - fast_info
+        - financials
+        - history_metadata
+        - income_stmt
+        - institutional_holders
+        - major_holders
+        - mutualfund_holders
+        - news
+        - shares_full
+        - splits
+        - option_chain
+        - options
+        - quarterly_balance_sheet
+        - quarterly_cash_flow
+        - quarterly_financials
+        - quarterly_income_stmt
 
       config:
         default_start_date: "1950-01-01"
@@ -35,6 +61,9 @@ plugins:
             stock_tickers:
               tickers: '*'
               schema_category: stock_tickers
+            futures_tickers:
+              tickers: '*'
+              schema_category: futures_tickers
             forex_tickers:
               tickers: '*'
               schema_category: forex_tickers
@@ -45,39 +74,138 @@ plugins:
           ### prices ###
 
           prices:
+
             ### long ###
 
             stock_prices_1m:
-              tickers: ["AAPL", "META"]
+              tickers: [ "AAPL", "META" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: stock_prices
 
+            futures_prices_1m:
+              tickers: [ "ES=F", "CL=F" ]
+              yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: futures_prices
+
             forex_prices_1m:
-              tickers: ["EURUSD=X", "RUB=X"]
+              tickers: [ "EURUSD=X", "RUB=X" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: forex_prices
 
             crypto_prices_1m:
-              tickers: ["BTC-USD", "ETH-USD"]
+              tickers: [ "BTC-USD", "ETH-USD" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: crypto_prices
 
             ### wide ###
 
             stock_prices_1m_wide:
-              tickers: ["AAPL", "META"]
+              tickers: [ "AAPL", "META" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: stock_prices_wide
 
+            futures_prices_1m_wide:
+              tickers: [ "ES=F", "CL=F" ]
+              yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              schema_category: futures_prices_wide
+
             forex_prices_1m_wide:
-              tickers: ["EURUSD=X", "RUB=X"]
+              tickers: [ "EURUSD=X", "RUB=X" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: forex_prices_wide
 
             crypto_prices_1m_wide:
-              tickers: '*'
+              tickers: [ "BTC-USD", "ETH-USD" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
               schema_category: crypto_prices_wide
+
+
+          ### financials ###
+
+          financials:
+            actions:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_actions
+
+            balance_sheet:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_balance_sheet
+
+            cash_flow:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_cash_flow
+
+            dividends:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_dividends
+
+            earnings_dates:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_earnings_dates
+
+            fast_info:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_fast_info
+
+            financials:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_financials
+
+            history_metadata:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_history_metadata
+
+            income_stmt:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_income_stmt
+
+            institutional_holders:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_institutional_holders
+
+            major_holders:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_major_holders
+
+            mutualfund_holders:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_mutualfund_holders
+
+            news:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_news
+
+            shares_full:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_shares_full
+
+            splits:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_splits
+
+            option_chain:
+              tickers: [ "AAPL", "META" ]
+              schema_category: option_chain
+
+            options:
+              tickers: [ "AAPL", "META" ]
+              schema_category: options
+
+            quarterly_balance_sheet:
+              tickers: [ "AAPL", "META" ]
+              schema_category: quarterly_balance_sheet
+
+            quarterly_cash_flow:
+              tickers: [ "AAPL", "META" ]
+              schema_category: quarterly_cash_flow
+
+            quarterly_financials:
+              tickers: [ "AAPL", "META" ]
+              schema_category: quarterly_financials
+
+            quarterly_income_stmt:
+              tickers: [ "AAPL", "META" ]
+              schema_category: quarterly_income_stmt
 
 
       metadata:
@@ -85,17 +213,24 @@ plugins:
 
         stock_tickers:
           replication-method: INCREMENTAL
-          replication-key: yahoo_ticker
+          replication-key: ticker
+        futures_tickers:
+          replication-method: INCREMENTAL
+          replication-key: ticker
         forex_tickers:
           replication-method: INCREMENTAL
-          replication-key: yahoo_ticker
+          replication-key: ticker
         crypto_tickers:
           replication-method: INCREMENTAL
-          replication-key: yahoo_ticker
+          replication-key: ticker
 
         ### prices ###
 
         stock_prices_1m:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        futures_prices_1m:
           replication-method: INCREMENTAL
           replication-key: timestamp
 
@@ -113,6 +248,10 @@ plugins:
           replication-method: INCREMENTAL
           replication-key: timestamp
 
+        futures_prices_1m_wide:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
         forex_prices_1m_wide:
           replication-method: INCREMENTAL
           replication-key: timestamp
@@ -120,6 +259,92 @@ plugins:
         crypto_prices_1m_wide:
           replication-method: INCREMENTAL
           replication-key: timestamp
+
+        ### financials ###
+
+        actions:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        balance_sheet:
+          replication-method: INCREMENTAL
+          replication-key: date
+
+        cash_flow:
+          replication-method: INCREMENTAL
+          replication-key: date
+
+        dividends:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        earnings_dates:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        fast_info:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
+        financials:
+          replication-method: INCREMENTAL
+          replication-key: date
+
+        history_metadata:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
+        income_stmt:
+          replication-method: INCREMENTAL
+          replication-key: date
+
+        institutional_holders:
+          replication-method: INCREMENTAL
+          replication-key: date_reported
+
+        major_holders:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
+        mutualfund_holders:
+          replication-method: INCREMENTAL
+          replication-key: date_reported
+
+        news:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
+        shares_full:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        splits:
+          replication-method: INCREMENTAL
+          replication-key: timestamp
+
+        option_chain:
+          replication-method: INCREMENTAL
+          replication-key: last_trade_date
+
+        options:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
+        quarterly_balance_sheet:
+          replication-method: INCREMENTAL
+          replication-key: date
+
+        quarterly_cash_flow:
+          replication-method: INCREMENTAL
+          replication-key: date
+
+        quarterly_financials:
+          replication-method: INCREMENTAL
+          replication-key: date
+
+        quarterly_income_stmt:
+          replication-method: INCREMENTAL
+          replication-key: date
 
 
   loaders:

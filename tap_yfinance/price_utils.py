@@ -9,20 +9,8 @@ from numerapi import SignalsAPI
 from pandas_datareader import data as pdr
 import re
 
-class YFinanceLogger:
-    """ Logger inherited by all YFinanceTap classes """
 
-    def __init__(self, log_level=logging.INFO):
-        self.log_level = log_level
-
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(self.log_level)
-        ch = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s  %(name)s:  %(levelname)s  %(message)s')
-        ch.setFormatter(formatter)
-        self.logger.addHandler(ch)
-
-class YFinancePriceTap(YFinanceLogger):
+class PriceTap():
     """
     Parameters
     ----------
@@ -49,22 +37,23 @@ class YFinancePriceTap(YFinanceLogger):
 
         assert pd.Timestamp(self.start_date) <= datetime.today(), 'Start date cannot be after the current date!'
 
-        assert 'stock_prices' in self.schema_category or 'forex_prices' in self.schema_category or 'crypto_prices' in self.schema_category, \
-            "self.schema_category must be set to either 'stock_prices', 'forex_prices', or 'crypto_prices'"
+        assert 'stock_prices' in self.schema_category \
+               or 'futures_prices' in self.schema_category \
+               or 'forex_prices' in self.schema_category \
+               or 'crypto_prices' in self.schema_category, \
+            "self.schema_category must be set to either 'stock_prices', 'futures_prices', 'forex_prices', or 'crypto_prices'"
 
         if self.schema_category == 'stock_prices':
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'dividends', 'stock_splits', 'repaired']
 
-        elif schema_category == 'forex_prices':
+        elif schema_category in ['futures_prices', 'forex_prices', 'crypto_prices']:
             self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
                                  'close', 'volume', 'repaired']
 
-        elif schema_category == 'crypto_prices':
-            self.column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'open', 'high', 'low',
-                                 'close', 'volume', 'repaired']
         elif schema_category.endswith('wide'):
             self.column_order = None
+
         else:
             raise ValueError('Could not determine price column order.')
 
@@ -83,10 +72,10 @@ class YFinancePriceTap(YFinanceLogger):
         self.current_runtime_seconds = (datetime.now() - self.request_start_timestamp).seconds
 
         if self.n_requests > 1900 and self.current_runtime_seconds > 3500:
-            self.logger.info(f'\nToo many requests per hour. Pausing requests for {self.current_runtime_seconds} seconds.\n')
+            logging.info(f'\nToo many requests per hour. Pausing requests for {self.current_runtime_seconds} seconds.\n')
             time.sleep(np.abs(3600 - self.current_runtime_seconds))
         if self.n_requests > 45000 and self.current_runtime_seconds > 85000:
-            self.logger.info(f'\nToo many requests per day. Pausing requests for {self.current_runtime_seconds} seconds.\n')
+            logging.info(f'\nToo many requests per day. Pausing requests for {self.current_runtime_seconds} seconds.\n')
             time.sleep(np.abs(86400 - self.current_runtime_seconds))
         return self
 
@@ -110,7 +99,7 @@ class YFinancePriceTap(YFinanceLogger):
 
         if 'start' not in yf_params.keys():
             yf_params['start'] = '1950-01-01 00:00:00'
-            self.logger.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
+            logging.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
 
         yf_params['start'] = \
             get_valid_yfinance_start_timestamp(interval=yf_params['interval'], start=yf_params['start'])
@@ -150,7 +139,7 @@ class YFinancePriceTap(YFinanceLogger):
 
         if 'start' not in yf_params.keys():
             yf_params['start'] = '1950-01-01 00:00:00'
-            self.logger.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
+            logging.info(f'\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n')
 
         yf_params['start'] = \
             get_valid_yfinance_start_timestamp(interval=yf_params['interval'], start=yf_params['start'])
@@ -173,7 +162,7 @@ class YFinancePriceTap(YFinanceLogger):
         return df
 
 
-class TickerDownloader(YFinanceLogger):
+class TickerDownloader():
     """
     Description
     -----------
@@ -192,7 +181,6 @@ class TickerDownloader(YFinanceLogger):
         Download py-ticker-symbols tickers
         """
         pts = PyTickerSymbols()
-
         all_getters = list(filter(
             lambda x: (
                     x.endswith('_yahoo_tickers') or x.endswith('_google_tickers')
@@ -239,17 +227,21 @@ class TickerDownloader(YFinanceLogger):
         session.close()
 
         df = tables[0].copy()
-        df.rename(columns={'% Change': 'pct_change'}, inplace=True)
+        df = df.rename(columns={
+            'Symbol': 'ticker',
+            '% Change': 'pct_change',
+            'Volume in Currency (Since 0:00 UTC)': 'volume_in_currency_since_0_00_utc'
+        })
+
         df.columns = clean_strings(df.columns)
-        df.rename(columns={'symbol': 'yahoo_ticker', 'name': 'yahoo_name', '%_change': 'pct_change'}, inplace=True)
 
         # Add Decentral-Games tickers
 
-        missing_dg_tickers = [i for i in ['ICE13133-USD', 'DG15478-USD', 'XDG-USD'] if i not in df['yahoo_ticker']]
+        missing_dg_tickers = [i for i in ['ICE13133-USD', 'DG15478-USD', 'XDG-USD'] if i not in df['ticker']]
         if len(missing_dg_tickers):
             df_dg = pd.DataFrame({
-                'yahoo_ticker': missing_dg_tickers,
-                'yahoo_name': missing_dg_tickers,
+                'ticker': missing_dg_tickers,
+                'name': missing_dg_tickers,
                 'price_intraday': np.nan,
                 'change': np.nan,
                 'pct_change': np.nan,
@@ -270,24 +262,58 @@ class TickerDownloader(YFinanceLogger):
 
     @staticmethod
     def download_forex_pairs():
-        forex_pairs = dict(
-            yahoo_ticker=[
-                'EURUSD=X', 'JPY=X', 'GBPUSD=X', 'AUDUSD=X', 'NZDUSD=X', 'EURJPY=X', 'GBPJPY=X', 'EURGBP=X',
-                'EURCAD=X', 'EURSEK=X', 'EURCHF=X', 'EURHUF=X', 'CNY=X', 'HKD=X', 'SGD=X', 'INR=X', 'MXN=X',
-                'PHP=X', 'IDR=X', 'THB=X', 'MYR=X', 'ZAR=X', 'RUB=X'
-            ],
-            yahoo_name=[
-                'USD/EUR', 'USD/JPY', 'USD/GBP', 'USD/AUD', 'USD/NZD', 'EUR/JPY', 'GBP/JPY', 'EUR/GBP',
-                'EUR/CAD', 'EUR/SEK', 'EUR/CHF', 'EUR/HUF', 'USD/CNY', 'USD/HKD', 'USD/SGD', 'USD/INR', 'USD/MXN',
-                'USD/PHP', 'USD/IDR', 'USD/THB', 'USD/MYR', 'USD/ZAR', 'USD/RUB'
-            ]
-        )
+        """
+        Description
+        -----------
+        Download the yfinance forex pair ticker names
+        Note: At the time of coding, setting num_currencies higher than 250 results in only 25 crypto tickers returned.
+        """
 
-        # TODO: Download a list of all relevant forex pairs
-        df_forex_pairs = pd.DataFrame(forex_pairs)
-        df_forex_pairs.loc[:, 'bloomberg_ticker'] = df_forex_pairs['yahoo_name'].apply(lambda x: f"{x[4:]}-{x[0:3]}")
-        df_forex_pairs = df_forex_pairs.replace([np.inf, -np.inf, np.nan], None)
-        return df_forex_pairs
+        from requests_html import HTMLSession
+
+        session = HTMLSession()
+        resp = session.get(f"https://finance.yahoo.com/currencies/")
+        tables = pd.read_html(resp.html.raw_html)
+        session.close()
+
+        df = tables[0].copy()
+
+        df = df.rename(columns={'Symbol': 'ticker', '% Change': 'pct_change'})
+        df.columns = clean_strings(df.columns)
+
+        df.loc[:, 'bloomberg_ticker'] = df['name'].apply(lambda x: f"{x[4:]}-{x[0:3]}")
+
+        df = df.dropna(how='all', axis=1)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
+
+        first_cols = ['ticker', 'name', 'bloomberg_ticker']
+        df = df[first_cols + [i for i in df.columns if i not in first_cols]]
+        return df
+
+    @staticmethod
+    def download_futures_tickers():
+        """
+        Description
+        -----------
+        Download the yfinance future contract ticker names
+        Note: At the time of coding, setting num_currencies higher than 250 results in only 25 crypto tickers returned.
+        """
+
+        from requests_html import HTMLSession
+
+        session = HTMLSession()
+        resp = session.get(f"https://finance.yahoo.com/commodities/")
+        tables = pd.read_html(resp.html.raw_html)
+        session.close()
+
+        df = tables[0].copy()
+        df = df.rename(columns={'Symbol': 'ticker', '% Change': 'pct_change', 'Unnamed: 7': 'open_interest'})
+        df.columns = clean_strings(df.columns)
+        df['volume'] = df['volume'].astype(str)
+        df['open_interest'] = df['open_interest'].astype(str)
+        df = df.dropna(how='all', axis=1)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
+        return df
 
     def download_numerai_signals_ticker_map(
             self,
@@ -301,13 +327,13 @@ class TickerDownloader(YFinanceLogger):
         eligible_tickers = pd.Series(napi.ticker_universe(), name='bloomberg_ticker')
         ticker_map = pd.merge(ticker_map, eligible_tickers, on='bloomberg_ticker', how='right')
 
-        self.logger.info('Number of eligible tickers in map: %s', str(ticker_map.shape[0]))
+        logging.info('Number of eligible tickers in map: %s', str(ticker_map.shape[0]))
 
         ticker_map = ticker_map.replace([np.inf, -np.inf, np.nan], None)
         valid_tickers = [i for i in ticker_map[yahoo_ticker_colname] if i is not None and len(i) > 0]
-        self.logger.info(f'tickers before cleaning: %s', ticker_map.shape)
+        logging.info(f'tickers before cleaning: %s', ticker_map.shape)
         ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
-        self.logger.info(f'tickers after cleaning: %s', ticker_map.shape)
+        logging.info(f'tickers after cleaning: %s', ticker_map.shape)
         return ticker_map
 
     @classmethod
@@ -315,6 +341,19 @@ class TickerDownloader(YFinanceLogger):
         """ Download the valid tickers from py-ticker-symbols """
 
         # napi = numerapi.SignalsAPI(os.environ.get('NUMERAI_PUBLIC_KEY'), os.environ.get('NUMERAI_PRIVATE_KEY'))
+
+        def handle_duplicate_columns(columns):
+            seen_columns = {}
+            new_columns = []
+
+            for column in columns:
+                if column not in seen_columns:
+                    new_columns.append(column)
+                    seen_columns[column] = 1
+                else:
+                    seen_columns[column] += 1
+                    new_columns.append(f"{column}_{seen_columns[column]}")
+            return new_columns
 
         df_pts_tickers = cls.download_pts_stock_tickers()
 
@@ -324,23 +363,25 @@ class TickerDownloader(YFinanceLogger):
 
         df1 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
         df2 = pd.merge(numerai_yahoo_tickers, df_pts_tickers, on='yahoo_ticker', how='left').set_index('yahoo_ticker')
-        df3 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='numerai_ticker', how='left') \
-                .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
-                .set_index('yahoo_ticker')
+        df3 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='numerai_ticker',
+                       how='left') \
+            .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
+            .set_index('yahoo_ticker')
 
-        df4 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='bloomberg_ticker', how='left') \
-                .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
-                .set_index('yahoo_ticker')
+        df4 = pd.merge(df_pts_tickers, numerai_yahoo_tickers, left_on='yahoo_ticker', right_on='bloomberg_ticker',
+                       how='left') \
+            .rename(columns={'yahoo_ticker_x': 'yahoo_ticker', 'yahoo_ticker_y': 'yahoo_ticker_old'}) \
+            .set_index('yahoo_ticker')
 
         df_tickers_wide = pd.concat([df1, df2, df3, df4], axis=1)
-        col_identifier = df_tickers_wide.columns.to_series().groupby(level=0).transform('cumcount').replace(0, '')
-        df_tickers_wide.columns = df_tickers_wide.columns.astype('string') + col_identifier.astype('string')
+        df_tickers_wide.columns = handle_duplicate_columns(df_tickers_wide.columns)
+        df_tickers_wide.columns = clean_strings(df_tickers_wide.columns)
 
         for col in df_tickers_wide.columns:
             suffix = col[-1]
             if suffix.isdigit():
                 root_col = col.strip('_' + suffix)
-                df_tickers_wide[root_col] = df_tickers_wide[root_col].fillna(df_tickers_wide[col])
+                df_tickers_wide.loc[:, root_col] = df_tickers_wide[root_col].fillna(df_tickers_wide[col])
 
         df_tickers = \
             df_tickers_wide.reset_index() \
@@ -360,7 +401,7 @@ class TickerDownloader(YFinanceLogger):
         ] = True
 
         df_tickers = df_tickers.replace([np.inf, -np.inf, np.nan], None)
-
+        df_tickers = df_tickers.rename(columns={'yahoo_ticker': 'ticker'})  # necessary to allow schema partitioning
         return df_tickers
 
 def get_valid_yfinance_start_timestamp(interval, start='1950-01-01 00:00:00'):
@@ -408,6 +449,7 @@ def flatten_list(lst):
 
 def clean_strings(lst):
     cleaned_list = [re.sub(r'[^a-zA-Z0-9_]', '_', s) for s in lst]  # remove special characters
+    cleaned_list = [re.sub(r'(?<!^)(?=[A-Z])', '_', s).lower() for s in cleaned_list]  # camel case -> snake case
     cleaned_list = [re.sub(r'_+', '_', s).strip('_').lower() for s in cleaned_list]  # clean leading and trailing underscores
     return cleaned_list
 
