@@ -512,11 +512,12 @@ class FinancialTap():
             try:
                 option_expiration_dates = yf.Ticker(ticker).options
                 if option_expiration_dates:
-                    option_expiration_dates = pd.DataFrame(option_expiration_dates, columns=['expiration_date'])
-                    option_expiration_dates['ticker'] = ticker
-                    option_expiration_dates['timestamp_extracted'] = datetime.utcnow()
-                    option_expiration_dates = option_expiration_dates.replace([np.inf, -np.inf, np.nan], None)
-                    return option_expiration_dates[['timestamp_extracted', 'ticker', 'expiration_date']]
+                    df = pd.DataFrame(option_expiration_dates, columns=['expiration_date'])
+                    df['ticker'] = ticker
+                    df['timestamp_extracted'] = datetime.utcnow()
+                    df['expiration_date'] = pd.to_datetime(df['expiration_date'])
+                    df = df.replace([np.inf, -np.inf, np.nan], None)
+                    return df[['timestamp_extracted', 'ticker', 'expiration_date']]
                 else:
                     return pd.DataFrame(columns=['timestamp_extracted', 'ticker', 'expiration_date'])
             except:
