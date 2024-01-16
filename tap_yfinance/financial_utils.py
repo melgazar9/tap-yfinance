@@ -467,9 +467,9 @@ class FinancialTap():
         while n < num_tries:
             try:
                 df = pd.DataFrame()
-                option_exp_dates = yf.Ticker(ticker).options
-                if option_exp_dates and len(option_exp_dates):
-                    for exp_date in option_exp_dates:
+                option_expiration_dates = yf.Ticker(ticker).options
+                if option_expiration_dates and len(option_expiration_dates):
+                    for exp_date in option_expiration_dates:
                         option_chain_data = yf.Ticker(ticker).option_chain(date=exp_date)
                         if len(option_chain_data):
                             for ocd in option_chain_data[0: -1]:
