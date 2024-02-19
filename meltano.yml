@@ -53,6 +53,7 @@ plugins:
         - quarterly_cash_flow
         - quarterly_financials
         - quarterly_income_stmt
+        - upgrades_downgrades
 
       config:
         default_start_date: "1950-01-01"
@@ -227,6 +228,10 @@ plugins:
               tickers: [ "AAPL", "META" ]
               schema_category: quarterly_income_stmt
 
+            upgrades_downgrades:
+              tickers: [ "AAPL", "META" ]
+              schema_category: get_upgrades_downgrades
+
 
       metadata:
         ### tickers ###
@@ -381,6 +386,10 @@ plugins:
         quarterly_income_stmt:
           replication-method: INCREMENTAL
           replication-key: date
+
+        upgrades_downgrades:
+          replication-method: INCREMENTAL
+          replication-key: grade_date
 
 
   loaders:
