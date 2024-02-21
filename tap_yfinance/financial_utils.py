@@ -297,16 +297,16 @@ class FinancialTap:
         return
 
     def get_insider_purchases(self, ticker):
+        column_order = ['ticker', 'insider_purchases_last_6m', 'shares', 'trans', 'timestamp_extracted']
         try:
             df = yf.Ticker(ticker).get_insider_purchases()
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df['timestamp_extracted'] = datetime.now()
             df.columns = clean_strings(df.columns)
             df['ticker'] = ticker
-            column_order = ['ticker', 'insider_purchases_last_6m', 'shares', 'trans', 'timestamp_extracted']
             return df[column_order]
         except Exception:
-            return pd.DataFrame()
+            return pd.DataFrame(columns=column_order)
 
     def get_insider_roster_holders(self, ticker):
         try:
@@ -439,15 +439,15 @@ class FinancialTap:
             return pd.DataFrame(columns=['timestamp_extracted'])
 
     def get_recommendations(self, ticker):
+        column_order = ['ticker', 'period', 'strong_buy', 'buy', 'hold', 'sell', 'strong_sell']
         try:
             df = yf.Ticker(ticker).get_recommendations()
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = clean_strings(df.columns)
             df['ticker'] = ticker
-            column_order = ['ticker', 'period', 'strong_buy', 'buy', 'hold', 'sell', 'strong_sell']
             return df[column_order]
         except Exception:
-            return pd.DataFrame()
+            return pd.DataFrame(columns=column_order)
 
     def get_recommendations_summary(self, ticker):
         """ yfinance.exceptions.YFNotImplementedError """
@@ -479,13 +479,13 @@ class FinancialTap:
             return pd.DataFrame(columns=['timestamp'])
 
     def get_splits(self, ticker):
+        column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'stock_splits']
+
         try:
             df = yf.Ticker(ticker).get_splits()
         except Exception:
             logging.warning(f"Could not extract get_splits for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['timestamp'])
-
-        column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'stock_splits']
 
         if isinstance(df, pd.Series) and df.shape[0]:
             df = df.rename_axis('timestamp').reset_index()
@@ -506,15 +506,16 @@ class FinancialTap:
         return
 
     def get_upgrades_downgrades(self, ticker):
+        column_order = ['grade_date', 'ticker', 'firm', 'to_grade', 'from_grade', 'action']
         try:
-            df = yf.Ticker(ticker).get_upgrades_downgrades().reset_index()
+            df = yf.Ticker(ticker).get_upgrades_downgrades()
+            df = df.reset_index()
             df.columns = clean_strings(df.columns)
             df['ticker'] = ticker
-            column_order = ['grade_date', 'ticker', 'firm', 'to_grade', 'from_grade', 'action']
             return df[column_order]
         except Exception:
             logging.warning(f"Could not extract get_upgrades_downgrades for ticker {ticker}. Skipping...")
-        return
+        return pd.DataFrame(columns=column_order)
 
     def option_chain(self, ticker):
         # TODO: clean option extraction
