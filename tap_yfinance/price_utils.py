@@ -125,7 +125,7 @@ class PriceTap():
             df = df[self.column_order]
             return df
 
-        except:
+        except Exception:
             self.failed_ticker_downloads[yf_params['interval']].append(ticker)
             return pd.DataFrame(columns=self.column_order)
 

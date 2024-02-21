@@ -543,6 +543,20 @@ def get_schema(schema_category):
             th.Property("dividends", th.NumberType)
         ).to_dict()
 
+    elif schema_category == 'get_calendar':
+        schema = th.PropertiesList(
+            th.Property("dividend_date", th.DateTimeType),
+            th.Property("ex_dividend_date", th.DateTimeType),
+            th.Property("earnings_date", th.DateTimeType),
+            th.Property("ticker", th.StringType),
+            th.Property("earnings_high", th.NumberType),
+            th.Property("earnings_low", th.NumberType),
+            th.Property("earnings_average", th.NumberType),
+            th.Property("revenue_high", th.NumberType),
+            th.Property("revenue_low", th.NumberType),
+            th.Property("revenue_average", th.NumberType)
+        ).to_dict()
+
     elif schema_category == 'get_earnings_dates':
         schema = th.PropertiesList(
             th.Property("timestamp", th.DateTimeType, required=True),
@@ -629,6 +643,43 @@ def get_schema(schema_category):
     elif schema_category == 'get_income_stmt':
         schema = INCOME_STMT_SCHEMA
 
+    elif schema_category == 'get_insider_purchases':
+        schema = th.PropertiesList(
+            th.Property("timestamp_extracted", th.DateTimeType, required=True),
+            th.Property("ticker", th.StringType),
+            th.Property("insider_purchases_last_6m", th.StringType),
+            th.Property("shares", th.NumberType),
+            th.Property("trans", th.NumberType)
+        ).to_dict()
+
+    elif schema_category == 'get_insider_roster_holders':
+        schema = th.PropertiesList(
+            th.Property("latest_transaction_date", th.DateTimeType),
+            th.Property("ticker", th.StringType),
+            th.Property("name", th.StringType),
+            th.Property("position", th.StringType),
+            th.Property("url", th.StringType),
+            th.Property("most_recent_transaction", th.StringType),
+            th.Property("shares_owned_indirectly", th.NumberType),
+            th.Property("position_indirect_date", th.NumberType),
+            th.Property("shares_owned_directly", th.NumberType),
+            th.Property("position_direct_date", th.DateTimeType)
+        ).to_dict()
+
+    elif schema_category == 'get_insider_transactions':
+        schema = th.PropertiesList(
+            th.Property("ticker", th.StringType),
+            th.Property("start_date", th.DateTimeType),
+            th.Property("shares", th.NumberType),
+            th.Property("url", th.StringType),
+            th.Property("text", th.StringType),
+            th.Property("insider", th.StringType),
+            th.Property("position", th.StringType),
+            th.Property("transaction", th.StringType),
+            th.Property("ownership", th.StringType),
+            th.Property("value", th.NumberType)
+        ).to_dict()
+
     elif schema_category == 'get_institutional_holders':
         schema = th.PropertiesList(
             th.Property("date_reported", th.DateTimeType, required=True),
@@ -696,6 +747,16 @@ def get_schema(schema_category):
             th.Property("timezone", th.StringType),
             th.Property("ticker", th.StringType),
             th.Property("stock_splits", th.NumberType)
+        ).to_dict()
+
+    elif schema_category == 'get_upgrades_downgrades':
+        schema = th.PropertiesList(
+            th.Property("ticker", th.StringType),
+            th.Property("grade_date", th.DateTimeType),
+            th.Property("firm", th.StringType),
+            th.Property("to_grade", th.StringType),
+            th.Property("from_grade", th.StringType),
+            th.Property("action", th.StringType)
         ).to_dict()
 
     elif schema_category == 'option_chain':
