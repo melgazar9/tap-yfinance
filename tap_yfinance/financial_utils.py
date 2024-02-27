@@ -408,24 +408,21 @@ class FinancialTap:
             return pd.DataFrame(columns=['date_reported'])
 
         if isinstance(df, pd.DataFrame) and df.shape[0]:
+            def process_thumbnail_column(ser):
+                max_thumbnail_len = ser.apply(lambda x: len(x['resolutions']) if not pd.isnull(x) else 0).max()
+                df_thumbnails = pd.DataFrame()
+                for i in range(max_thumbnail_len):
+                    t = pd.json_normalize(pd.json_normalize(pd.json_normalize(ser)['resolutions'])[i])
+                    t = t.add_suffix(f'_{i}')
+                    df_thumbnails = pd.concat([df_thumbnails, t], axis=1)
+                return df_thumbnails
+
             df['ticker'] = ticker
             df['timestamp_extracted'] = datetime.utcnow()
             df.columns = clean_strings(df.columns)
 
             if 'thumbnail' in df.keys():
-                na_fill = {
-                    'resolutions': [
-                        {'url': None, 'width': None, 'height': None, 'tag': None},
-                        {'url': None, 'width': None, 'height': None, 'tag': None}
-                    ]
-                }
-                df['thumbnail'] = df['thumbnail'].apply(lambda x: na_fill if pd.isna(x) else x)
-                df_thumbnail_0 = pd.json_normalize(pd.json_normalize(pd.json_normalize(df['thumbnail'])['resolutions'])[0])
-                df_thumbnail_0 = df_thumbnail_0.add_suffix('_0')
-                df_thumbnail_1 = pd.json_normalize(pd.json_normalize(pd.json_normalize(df['thumbnail'])['resolutions'])[1])
-                df_thumbnail_1 = df_thumbnail_1.add_suffix('_1')
-                df_thumbnail = pd.concat([df_thumbnail_0, df_thumbnail_1], axis=1)
-
+                df_thumbnail = process_thumbnail_column(df['thumbnail'])
                 df = pd.concat([df, df_thumbnail], axis=1)
                 df = df.drop('thumbnail', axis=1)
 
