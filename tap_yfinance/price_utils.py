@@ -10,7 +10,7 @@ from pandas_datareader import data as pdr
 import re
 
 
-class PriceTap():
+class PriceTap:
     """
     Parameters
     ----------
@@ -21,10 +21,32 @@ class PriceTap():
     def __init__(self,
                  schema_category,
                  yf_params=None,
-                 ticker_colname='ticker'):
+                 ticker_colname='ticker',
+                 cache_params=None):
         self.schema_category = schema_category
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
+        self.cache_params = cache_params
+
+        if self.cache_params is not None:
+            from requests import Session
+            from requests_cache import CacheMixin, SQLiteCache
+            from requests_ratelimiter import LimiterMixin, MemoryQueueBucket
+            from pyrate_limiter import Duration, RequestRate, Limiter
+
+            class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
+                pass
+
+            n_requests_per_duration = self.cache_params['n_requests_per_duration']
+            rate_limit_seconds = self.cache_params['rate_limit_seconds']
+
+            self.session = CachedLimiterSession(
+                limiter=Limiter(RequestRate(n_requests_per_duration, Duration.SECOND * rate_limit_seconds)),
+                bucket_class=MemoryQueueBucket,
+                backend=SQLiteCache("yfinance.cache")
+            )
+        else:
+            self.session = None
 
         super().__init__()
 
@@ -104,7 +126,7 @@ class PriceTap():
         yf_params['start'] = \
             get_valid_yfinance_start_timestamp(interval=yf_params['interval'], start=yf_params['start'])
 
-        t = yf.Ticker(ticker)
+        t = yf.Ticker(ticker, session=self.session)
         try:
             df = t.history(**yf_params).rename_axis(index='timestamp')
             df.columns = clean_strings(df.columns)

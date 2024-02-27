@@ -131,7 +131,8 @@ class PriceStream(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.price_tap = PriceTap(schema_category=self.schema_category)
+        self.cache_params = self.stream_params.get('cache_params')
+        self.price_tap = PriceTap(schema_category=self.schema_category, cache_params=self.cache_params)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """
@@ -181,7 +182,8 @@ class PriceStreamWide(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.price_tap = PriceTap(schema_category=self.schema_category)
+        self.cache_params = self.stream_params.get('cache_params')
+        self.price_tap = PriceTap(schema_category=self.schema_category, cache_params=self.cache_params)
 
     @property
     def partitions(self):
@@ -243,7 +245,8 @@ class FinancialStream(BaseStream):
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)
         self.yf_params = self.stream_params.get('yf_params')
-        self.financial_tap = FinancialTap(schema_category=self.schema_category)
+        self.cache_params = self.stream_params.get('cache_params')
+        self.financial_tap = FinancialTap(schema_category=self.schema_category, cache_params=self.cache_params)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         """

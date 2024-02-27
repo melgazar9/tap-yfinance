@@ -21,10 +21,31 @@ class FinancialTap:
 
     ### TODO: date filters? ###
 
-    def __init__(self, schema_category, yf_params=None, ticker_colname='ticker'):
+    def __init__(self, schema_category, yf_params=None, ticker_colname='ticker', cache_params=None):
         self.schema_category = schema_category
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
+        self.cache_params = cache_params
+
+        if self.cache_params is not None:
+            from requests import Session
+            from requests_cache import CacheMixin, SQLiteCache
+            from requests_ratelimiter import LimiterMixin, MemoryQueueBucket
+            from pyrate_limiter import Duration, RequestRate, Limiter
+
+            class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
+                pass
+
+            n_requests_per_duration = self.cache_params['n_requests_per_duration']
+            rate_limit_seconds = self.cache_params['rate_limit_seconds']
+
+            self.session = CachedLimiterSession(
+                limiter=Limiter(RequestRate(n_requests_per_duration, Duration.SECOND * rate_limit_seconds)),
+                bucket_class=MemoryQueueBucket,
+                backend=SQLiteCache("yfinance.cache")
+            )
+        else:
+            self.session = None
 
         super().__init__()
 
@@ -41,7 +62,7 @@ class FinancialTap:
 
     def get_actions(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_actions()
+            df = yf.Ticker(ticker, session=self.session).get_actions()
         except Exception:
             logging.warning(f'Error extracting data get_actions for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp'])
@@ -62,7 +83,7 @@ class FinancialTap:
 
     def get_balance_sheet(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_balance_sheet()
+            df = yf.Ticker(ticker, session=self.session).get_balance_sheet()
         except Exception:
             logging.warning(f'Error extracting data get_balance_sheet for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['date'])
@@ -90,7 +111,7 @@ class FinancialTap:
     def get_calendar(self, ticker):
         """ yfinance.exceptions.YFNotImplementedError """
         try:
-            df = pd.DataFrame(yf.Ticker(ticker).get_calendar())
+            df = pd.DataFrame(yf.Ticker(ticker, session=self.session).get_calendar())
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = clean_strings(df.columns)
             df['ticker'] = ticker
@@ -107,7 +128,7 @@ class FinancialTap:
 
     def get_cash_flow(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_cash_flow()
+            df = yf.Ticker(ticker, session=self.session).get_cash_flow()
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df = df.T.rename_axis('date').reset_index()
                 df['ticker'] = ticker
@@ -130,7 +151,7 @@ class FinancialTap:
 
     def get_dividends(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_dividends()
+            df = yf.Ticker(ticker, session=self.session).get_dividends()
         except Exception:
             logging.warning(f'Error extracting data get_dividends for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp'])
@@ -152,7 +173,7 @@ class FinancialTap:
 
     def get_earnings_dates(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_earnings_dates()
+            df = yf.Ticker(ticker, session=self.session).get_earnings_dates()
         except Exception:
             logging.warning(f'Error extracting get_earnings_dates as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp_extracted'])
@@ -182,7 +203,7 @@ class FinancialTap:
 
     def get_fast_info(self, ticker):
         try:
-            df = pd.DataFrame.from_dict(dict(yf.Ticker(ticker).get_fast_info()), orient='index').T
+            df = pd.DataFrame.from_dict(dict(yf.Ticker(ticker, session=self.session).get_fast_info()), orient='index').T
         except Exception:
             logging.warning(f'Error extracting get_fast_info as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp_extracted'])
@@ -206,7 +227,7 @@ class FinancialTap:
 
     def get_financials(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_financials().T
+            df = yf.Ticker(ticker, session=self.session).get_financials().T
         except Exception:
             logging.warning(f'Error extracting get_financials as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['date'])
@@ -228,7 +249,7 @@ class FinancialTap:
 
     def get_history_metadata(self, ticker):
         try:
-            data = yf.Ticker(ticker).get_history_metadata()
+            data = yf.Ticker(ticker, session=self.session).get_history_metadata()
         except Exception:
             logging.warning(f'Error extracting get_history_metadata as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['timestamp_extracted'])
@@ -269,7 +290,7 @@ class FinancialTap:
 
     def get_income_stmt(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_income_stmt()
+            df = yf.Ticker(ticker, session=self.session).get_income_stmt()
         except Exception:
             logging.warning(f'Error extracting get_income_stmt as dictionary for ticker {ticker}. Skipping...')
             return pd.DataFrame(columns=['date'])
@@ -299,7 +320,7 @@ class FinancialTap:
     def get_insider_purchases(self, ticker):
         column_order = ['ticker', 'insider_purchases_last_6m', 'shares', 'trans', 'timestamp_extracted']
         try:
-            df = yf.Ticker(ticker).get_insider_purchases()
+            df = yf.Ticker(ticker, session=self.session).get_insider_purchases()
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df['timestamp_extracted'] = datetime.now()
             df.columns = clean_strings(df.columns)
@@ -310,7 +331,7 @@ class FinancialTap:
 
     def get_insider_roster_holders(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_insider_roster_holders()
+            df = yf.Ticker(ticker, session=self.session).get_insider_roster_holders()
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = [i.replace('u_r_l', 'url') for i in clean_strings(df.columns)]
             df['ticker'] = ticker
@@ -322,7 +343,7 @@ class FinancialTap:
 
     def get_insider_transactions(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_insider_transactions()
+            df = yf.Ticker(ticker, session=self.session).get_insider_transactions()
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = [i.replace('u_r_l', 'url') for i in clean_strings(df.columns)]
             df['ticker'] = ticker
@@ -333,7 +354,7 @@ class FinancialTap:
 
     def get_institutional_holders(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_institutional_holders()
+            df = yf.Ticker(ticker, session=self.session).get_institutional_holders()
         except Exception:
             logging.warning(f"Could not extract institutional_holders for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['date_reported'])
@@ -357,7 +378,7 @@ class FinancialTap:
 
     def get_major_holders(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_major_holders()
+            df = yf.Ticker(ticker, session=self.session).get_major_holders()
         except Exception:
             logging.warning(f"Could not extract get_major_holders for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['timestamp_extracted'])
@@ -382,7 +403,7 @@ class FinancialTap:
 
     def get_mutualfund_holders(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_mutualfund_holders()
+            df = yf.Ticker(ticker, session=self.session).get_mutualfund_holders()
         except Exception:
             logging.warning(f"Could not extract get_mutualfund_holders for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['date_reported'])
@@ -402,7 +423,7 @@ class FinancialTap:
 
     def get_news(self, ticker):
         try:
-            df = pd.DataFrame(yf.Ticker(ticker).get_news())
+            df = pd.DataFrame(yf.Ticker(ticker, session=self.session).get_news())
         except Exception:
             logging.warning(f"Could not extract get_news for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['date_reported'])
@@ -441,7 +462,7 @@ class FinancialTap:
     def get_recommendations(self, ticker):
         column_order = ['ticker', 'period', 'strong_buy', 'buy', 'hold', 'sell', 'strong_sell']
         try:
-            df = yf.Ticker(ticker).get_recommendations()
+            df = yf.Ticker(ticker, session=self.session).get_recommendations()
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = clean_strings(df.columns)
             df['ticker'] = ticker
@@ -463,7 +484,7 @@ class FinancialTap:
 
     def get_shares_full(self, ticker):
         try:
-            df = yf.Ticker(ticker).get_shares_full()
+            df = yf.Ticker(ticker, session=self.session).get_shares_full()
         except Exception:
             logging.warning(f"Could not extract get_shares_full for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['timestamp'])
@@ -482,7 +503,7 @@ class FinancialTap:
         column_order = ['timestamp', 'timestamp_tz_aware', 'timezone', 'ticker', 'stock_splits']
 
         try:
-            df = yf.Ticker(ticker).get_splits()
+            df = yf.Ticker(ticker, session=self.session).get_splits()
         except Exception:
             logging.warning(f"Could not extract get_splits for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['timestamp'])
@@ -508,7 +529,7 @@ class FinancialTap:
     def get_upgrades_downgrades(self, ticker):
         column_order = ['grade_date', 'ticker', 'firm', 'to_grade', 'from_grade', 'action']
         try:
-            df = yf.Ticker(ticker).get_upgrades_downgrades()
+            df = yf.Ticker(ticker, session=self.session).get_upgrades_downgrades()
             df = df.reset_index()
             df.columns = clean_strings(df.columns)
             df['ticker'] = ticker
@@ -527,10 +548,10 @@ class FinancialTap:
         while n < num_tries:
             try:
                 df = pd.DataFrame()
-                option_expiration_dates = yf.Ticker(ticker).options
+                option_expiration_dates = yf.Ticker(ticker, session=self.session).options
                 if option_expiration_dates and len(option_expiration_dates):
                     for exp_date in option_expiration_dates:
-                        option_chain_data = yf.Ticker(ticker).option_chain(date=exp_date)
+                        option_chain_data = yf.Ticker(ticker, session=self.session).option_chain(date=exp_date)
                         if len(option_chain_data):
                             for ocd in option_chain_data[0: -1]:
                                 ocd.columns = clean_strings(ocd.columns)
@@ -571,7 +592,7 @@ class FinancialTap:
         n = 0
         while n < num_tries:
             try:
-                option_expiration_dates = yf.Ticker(ticker).options
+                option_expiration_dates = yf.Ticker(ticker, session=self.session).options
                 if option_expiration_dates:
                     df = pd.DataFrame(option_expiration_dates, columns=['expiration_date'])
                     df['ticker'] = ticker
@@ -595,7 +616,7 @@ class FinancialTap:
 
     def quarterly_balance_sheet(self, ticker):
         try:
-            df = yf.Ticker(ticker).quarterly_balance_sheet
+            df = yf.Ticker(ticker, session=self.session).quarterly_balance_sheet
         except Exception:
             logging.warning(f"Could not extract quarterly_balance_sheet for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['date'])
@@ -616,7 +637,7 @@ class FinancialTap:
 
     def quarterly_cash_flow(self, ticker):
         try:
-            df = yf.Ticker(ticker).quarterly_cash_flow
+            df = yf.Ticker(ticker, session=self.session).quarterly_cash_flow
         except Exception:
             logging.warning(f"Could not extract quarterly_cash_flow for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['date'])
@@ -637,7 +658,7 @@ class FinancialTap:
 
     def quarterly_financials(self, ticker):
         try:
-            df = yf.Ticker(ticker).quarterly_financials
+            df = yf.Ticker(ticker, session=self.session).quarterly_financials
         except Exception:
             logging.warning(f"Could not extract quarterly_financials for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['date'])
@@ -656,7 +677,7 @@ class FinancialTap:
 
     def quarterly_income_stmt(self, ticker):
         try:
-            df = yf.Ticker(ticker).quarterly_income_stmt
+            df = yf.Ticker(ticker, session=self.session).quarterly_income_stmt
         except Exception:
             logging.warning(f"Could not extract quarterly_income_stmt for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=['date'])

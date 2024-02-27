@@ -4,6 +4,7 @@
 # Ignore meltano internal cache and sqlite systemdb
 
 .meltano/
+yfinance.cache
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -85,21 +85,25 @@ plugins:
             stock_prices_1m:
               tickers: [ "AAPL", "META" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: stock_prices
 
             futures_prices_1m:
               tickers: [ "ES=F", "CL=F" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: futures_prices
 
             forex_prices_1m:
               tickers: [ "EURUSD=X", "RUB=X" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: forex_prices
 
             crypto_prices_1m:
               tickers: [ "BTC-USD", "ETH-USD" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: crypto_prices
 
             ### wide ###
@@ -107,21 +111,25 @@ plugins:
             stock_prices_1m_wide:
               tickers: [ "AAPL", "META" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: stock_prices_wide
 
             futures_prices_1m_wide:
               tickers: [ "ES=F", "CL=F" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: futures_prices_wide
 
             forex_prices_1m_wide:
               tickers: [ "EURUSD=X", "RUB=X" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: forex_prices_wide
 
             crypto_prices_1m_wide:
               tickers: [ "BTC-USD", "ETH-USD" ]
               yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: crypto_prices_wide
 
 
@@ -130,106 +138,132 @@ plugins:
           financials:
             actions:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_actions
 
             balance_sheet:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_balance_sheet
 
             cash_flow:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_cash_flow
 
             calendar:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_calendar
 
             dividends:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_dividends
 
             earnings_dates:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_earnings_dates
 
             fast_info:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_fast_info
 
             financials:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_financials
 
             history_metadata:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_history_metadata
 
             income_stmt:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_income_stmt
 
             insider_purchases:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_insider_purchases
 
             insider_roster_holders:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_insider_roster_holders
 
             insider_transactions:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_insider_transactions
 
             institutional_holders:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_institutional_holders
 
             major_holders:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_major_holders
 
             mutualfund_holders:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_mutualfund_holders
 
             news:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_news
 
             shares_full:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_shares_full
 
             splits:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_splits
 
             option_chain:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: option_chain
 
             options:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: options
 
             quarterly_balance_sheet:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: quarterly_balance_sheet
 
             quarterly_cash_flow:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: quarterly_cash_flow
 
             quarterly_financials:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: quarterly_financials
 
             quarterly_income_stmt:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: quarterly_income_stmt
 
             upgrades_downgrades:
               tickers: [ "AAPL", "META" ]
+              cache_params: { "n_requests_per_duration": 1900, "rate_limit_seconds": 7000 }
               schema_category: get_upgrades_downgrades
 
 
