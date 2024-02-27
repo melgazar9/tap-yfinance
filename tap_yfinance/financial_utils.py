@@ -412,7 +412,10 @@ class FinancialTap:
                 max_thumbnail_len = ser.apply(lambda x: len(x['resolutions']) if not pd.isnull(x) else 0).max()
                 df_thumbnails = pd.DataFrame()
                 for i in range(max_thumbnail_len):
-                    t = pd.json_normalize(pd.json_normalize(pd.json_normalize(ser)['resolutions'])[i])
+                    t = pd.json_normalize(ser)['resolutions']
+                    if pd.isnull(t.iloc[0]).all():
+                        t.iloc[0] = []
+                    t = pd.json_normalize(pd.json_normalize(t)[i])
                     t = t.add_suffix(f'_{i}')
                     df_thumbnails = pd.concat([df_thumbnails, t], axis=1)
                 return df_thumbnails
