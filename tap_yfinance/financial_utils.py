@@ -413,7 +413,7 @@ class FinancialTap:
                 df_thumbnails = pd.DataFrame()
                 for i in range(max_thumbnail_len):
                     t = pd.json_normalize(ser)['resolutions']
-                    if pd.isnull(t.iloc[0]).all():
+                    if not isinstance(t.iloc[0], list) and pd.isnull(t.iloc[0]):
                         t.iloc[0] = []
                     t = pd.json_normalize(pd.json_normalize(t)[i])
                     t = t.add_suffix(f'_{i}')
