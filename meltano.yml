@@ -193,7 +193,7 @@ plugins:
               schema_category: get_mutualfund_holders
 
             news:
-              tickers: [ "AAPL", "META" ]
+              tickers: [ "AAPL", "META", "ALRM", "000080.KS" ]
               schema_category: get_news
 
             shares_full:
