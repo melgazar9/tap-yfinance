@@ -713,7 +713,6 @@ def get_schema(schema_category):
         schema = th.PropertiesList(
             th.Property("timestamp_extracted", th.DateTimeType, required=True),
             th.Property("ticker", th.StringType),
-            th.Property("ticker", th.StringType),
             th.Property("link", th.StringType),
             th.Property("provider_publish_time", th.NumberType),
             th.Property("publisher", th.StringType),
