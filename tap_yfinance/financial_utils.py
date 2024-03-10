@@ -408,27 +408,10 @@ class FinancialTap:
             return pd.DataFrame(columns=['date_reported'])
 
         if isinstance(df, pd.DataFrame) and df.shape[0]:
-            def process_thumbnail_column(ser):
-                max_thumbnail_len = ser.apply(lambda x: len(x['resolutions']) if not pd.isnull(x) else 0).max()
-                df_thumbnails = pd.DataFrame()
-                for i in range(max_thumbnail_len):
-                    t = pd.json_normalize(ser)['resolutions']
-                    if not isinstance(t.iloc[0], list) and pd.isnull(t.iloc[0]):
-                        t.iloc[0] = []
-                    t = pd.json_normalize(pd.json_normalize(t)[i])
-                    t = t.add_suffix(f'_{i}')
-                    df_thumbnails = pd.concat([df_thumbnails, t], axis=1)
-                return df_thumbnails
-
             df['ticker'] = ticker
             df['timestamp_extracted'] = datetime.utcnow()
             df.columns = clean_strings(df.columns)
-
-            if 'thumbnail' in df.keys():
-                df_thumbnail = process_thumbnail_column(df['thumbnail'])
-                df = pd.concat([df, df_thumbnail], axis=1)
-                df = df.drop('thumbnail', axis=1)
-
+            df['provider_publish_time'] = pd.to_datetime(df['provider_publish_time'], unit='s')
             df = df.replace([np.inf, -np.inf, np.nan], None)
 
             column_order = ['timestamp_extracted', 'ticker'] + \

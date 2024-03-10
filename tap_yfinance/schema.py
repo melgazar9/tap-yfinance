@@ -466,7 +466,7 @@ def get_schema(schema_category):
     elif schema_category in ['stock_prices_wide', 'futures_prices_wide', 'forex_prices_wide', 'crypto_prices_wide']:
         schema = th.PropertiesList(  # potentially a dynamic number of columns
             th.Property("timestamp", th.DateTimeType, required=True),
-            th.Property("data", th.AnyType, required=True)
+            th.Property("data", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}), required=True)
         ).to_dict()
 
     elif schema_category == 'stock_tickers':
@@ -714,17 +714,10 @@ def get_schema(schema_category):
             th.Property("timestamp_extracted", th.DateTimeType, required=True),
             th.Property("ticker", th.StringType),
             th.Property("link", th.StringType),
-            th.Property("provider_publish_time", th.NumberType),
+            th.Property("provider_publish_time", th.DateTimeType),
             th.Property("publisher", th.StringType),
             th.Property("related_tickers", th.ArrayType(th.StringType)),
-            th.Property("url_0", th.StringType),
-            th.Property("width_0", th.NumberType),
-            th.Property("height_0", th.NumberType),
-            th.Property("tag_0", th.StringType),
-            th.Property("url_1", th.StringType),
-            th.Property("width_1", th.NumberType),
-            th.Property("height_1", th.NumberType),
-            th.Property("tag_1", th.StringType),
+            th.Property("thumbnail", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
             th.Property("title", th.StringType),
             th.Property("type", th.StringType),
             th.Property("uuid", th.StringType)
@@ -778,7 +771,7 @@ def get_schema(schema_category):
             th.Property("in_the_money", th.BooleanType),
             th.Property("contract_size", th.StringType),
             th.Property("currency", th.StringType),
-            th.Property("metadata", th.AnyType)
+            th.Property("metadata", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}))
         ).to_dict()
 
     elif schema_category == 'options':
