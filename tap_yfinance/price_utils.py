@@ -162,7 +162,7 @@ class PriceTap():
         return df
 
 
-class TickerDownloader():
+class TickerDownloader:
     """
     Description
     -----------
@@ -211,6 +211,46 @@ class TickerDownloader():
         return all_tickers
 
     @staticmethod
+    def download_crypto_tickers(num_currencies_per_loop=250):
+        """
+        Description
+        -----------
+        Download cryptocurrency pairs
+        """
+
+        from requests_html import HTMLSession
+
+        session = HTMLSession()
+
+        df = pd.DataFrame()
+
+        offset = 0
+        while True:
+            resp = session.get(f"https://finance.yahoo.com/crypto?offset={offset}&count={num_currencies_per_loop}")
+            df_i = pd.read_html(resp.html.raw_html)[0]
+            if offset > 0 and df_i.iloc[0]['Symbol'] == 'BTC-USD':
+                # yahoo returns a default of offset = 0 if offset is greater than the maximum number of pages
+                break
+            df = pd.concat([df, df_i], axis=0)
+            offset += num_currencies_per_loop
+        session.close()
+        df = df.reset_index(drop=True)
+
+        df = df.rename(columns={
+            'Symbol': 'ticker',
+            '% Change': 'pct_change',
+            'Volume in Currency (Since 0:00 UTC)': 'volume_in_currency_since_0_00_utc'
+        })
+
+        df.columns = clean_strings(df.columns)
+        df = df.dropna(how='all', axis=1)
+        df = df.replace([np.inf, -np.inf, np.nan], None)
+        column_order = ['ticker', 'name', 'price_intraday', 'change', 'pct_change', 'market_cap',
+                        'volume_in_currency_since_0_00_utc', 'volume_in_currency_24_hr',
+                        'total_volume_all_currencies_24_hr', 'circulating_supply']
+        return df[column_order]
+
+    @staticmethod
     def download_top_250_crypto_tickers(num_currencies=250):
         """
         Description
@@ -234,31 +274,12 @@ class TickerDownloader():
         })
 
         df.columns = clean_strings(df.columns)
-
-        # Add Decentral-Games tickers
-
-        missing_dg_tickers = [i for i in ['ICE13133-USD', 'DG15478-USD', 'XDG-USD'] if i not in df['ticker']]
-        if len(missing_dg_tickers):
-            df_dg = pd.DataFrame({
-                'ticker': missing_dg_tickers,
-                'name': missing_dg_tickers,
-                'price_intraday': np.nan,
-                'change': np.nan,
-                'pct_change': np.nan,
-                'market_cap': np.nan,
-                'volume_in_currency_since_0_00_utc': np.nan,
-                'volume_in_currency_24_hr': np.nan,
-                'total_volume_all_currencies_24_hr': np.nan,
-                'circulating_supply': np.nan,
-                '52_week_range': np.nan,
-                'day_chart': np.nan
-            })
-
-            df = pd.concat([df, df_dg], axis=0).reset_index(drop=True)
-
         df = df.dropna(how='all', axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
-        return df
+        column_order = ['ticker', 'name', 'price_intraday', 'change', 'pct_change', 'market_cap',
+                        'volume_in_currency_since_0_00_utc', 'volume_in_currency_24_hr',
+                        'total_volume_all_currencies_24_hr', 'circulating_supply']
+        return df[column_order]
 
     @staticmethod
     def download_forex_pairs():
