@@ -502,18 +502,18 @@ def get_schema(schema_category):
             th.Property("pct_change", th.StringType)
         ).to_dict()
 
-    elif schema_category == 'crypto_tickers':
+    elif schema_category in ('crypto_tickers', 'crypto_tickers_top_250'):
         schema = th.PropertiesList(
             th.Property("ticker", th.StringType, required=True),
             th.Property("name", th.StringType),
             th.Property("price_intraday", th.NumberType),
             th.Property("change", th.NumberType),
-            th.Property("pct_change", th.StringType),
-            th.Property("market_cap", th.StringType),
-            th.Property("volume_in_currency_since_0_00_utc", th.StringType),
-            th.Property("volume_in_currency_24_hr", th.StringType),
-            th.Property("total_volume_all_currencies_24_hr", th.StringType),
-            th.Property("circulating_supply", th.StringType)
+            th.Property("pct_change", th.AnyType()),
+            th.Property("market_cap", th.AnyType()),
+            th.Property("volume_in_currency_since_0_00_utc", th.AnyType()),
+            th.Property("volume_in_currency_24_hr", th.AnyType()),
+            th.Property("total_volume_all_currencies_24_hr", th.AnyType()),
+            th.Property("circulating_supply", th.AnyType())
         ).to_dict()
 
     ### financials ###

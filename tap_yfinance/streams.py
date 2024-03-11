@@ -84,7 +84,10 @@ class BaseStream(Stream, ABC):
             return 'download_futures_tickers'
         elif self.catalog_entry['tap_stream_id'].startswith('forex'):
             return 'download_forex_pairs'
-        elif self.catalog_entry['tap_stream_id'].startswith('crypto'):
+        elif self.catalog_entry['tap_stream_id'].startswith('crypto') and \
+                self.catalog_entry['tap_stream_id'] != 'crypto_tickers_top_250':
+            return 'download_crypto_tickers'
+        elif self.catalog_entry['tap_stream_id'] == 'crypto_tickers_top_250':
             return 'download_top_250_crypto_tickers'
         elif self.catalog_entry['metadata'][-1]['metadata']['schema-name'].startswith('financials'):
             return 'download_valid_stock_tickers'  # only stock tickers for financial data
