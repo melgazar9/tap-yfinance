@@ -709,7 +709,6 @@ def get_schema(schema_category):
         ).to_dict()
 
     elif schema_category == 'get_news':
-        # TODO: Low priority, but need to fix nested json parsing --- thumbnail is always returning an empty json
         schema = th.PropertiesList(
             th.Property("timestamp_extracted", th.DateTimeType, required=True),
             th.Property("ticker", th.StringType),
