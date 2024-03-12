@@ -709,7 +709,6 @@ def get_schema(schema_category):
         ).to_dict()
 
     elif schema_category == 'get_news':
-        # TODO: Low priority, but need to fix nested json parsing --- thumbnail is always returning an empty json
         schema = th.PropertiesList(
             th.Property("timestamp_extracted", th.DateTimeType, required=True),
             th.Property("ticker", th.StringType),
@@ -717,7 +716,7 @@ def get_schema(schema_category):
             th.Property("provider_publish_time", th.DateTimeType),
             th.Property("publisher", th.StringType),
             th.Property("related_tickers", th.ArrayType(th.StringType)),
-            th.Property("thumbnail", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+            th.Property("thumbnail", th.AnyType()),
             th.Property("title", th.StringType),
             th.Property("type", th.StringType),
             th.Property("uuid", th.StringType)
