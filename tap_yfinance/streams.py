@@ -148,7 +148,6 @@ class TickerStream(BaseStream):
 
 class PriceStream(BaseStream):
     replication_key = "timestamp"
-    # is_sorted = True
     is_timestamp_replication_key = True
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
@@ -208,7 +207,6 @@ class PriceStream(BaseStream):
 class PriceStreamWide(BaseStream):
     replication_key = "timestamp"
     is_timestamp_replication_key = True
-    # is_sorted = True
 
     def __init__(self, tap: Tap, catalog_entry: dict) -> None:
         super().__init__(tap, catalog_entry)

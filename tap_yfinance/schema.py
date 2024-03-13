@@ -740,7 +740,10 @@ def get_schema(schema_category):
             th.Property("provider_publish_time", th.DateTimeType),
             th.Property("publisher", th.StringType),
             th.Property("related_tickers", th.ArrayType(th.StringType)),
-            th.Property("thumbnail", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+            th.Property(
+                "thumbnail",
+                th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}),
+            ),
             th.Property("title", th.StringType),
             th.Property("type", th.StringType),
             th.Property("uuid", th.StringType),

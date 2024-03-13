@@ -2,11 +2,10 @@
    "default_start_date":"1950-01-01",
    "add_record_metadata":true,
    "financial_category":{
-     "prices": {
-       "crypto_prices_1m": {
-         "tickers": ["BTC-USD"],
-         "yf_params": { "interval": "1m", "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false },
-         "schema_category": "crypto_prices"
+     "financials": {
+       "news": {
+         "tickers": "*",
+         "schema_category": "get_news"
        }
      }
    }
