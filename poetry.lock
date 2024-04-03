@@ -843,13 +843,13 @@ files = [
 
 [[package]]
 name = "numerapi"
-version = "2.17.0"
+version = "2.18.0"
 description = "Automatically download and upload data for the Numerai machine learning competition"
 optional = false
 python-versions = "*"
 files = [
-    {file = "numerapi-2.17.0-py3-none-any.whl", hash = "sha256:5b2db88f4640e658e409a9023b1e0f6a4304accc30aeb271576918af6f4f2102"},
-    {file = "numerapi-2.17.0.tar.gz", hash = "sha256:66d28310b5f1bd0fa6f414b2c830b28e7cd1d44d4fbcf3f8e4d85a0dfaed0b99"},
+    {file = "numerapi-2.18.0-py3-none-any.whl", hash = "sha256:b17d0926ee37ec5cdd4162759b2c1904f7b69d58c136caa6c240a448e304237b"},
+    {file = "numerapi-2.18.0.tar.gz", hash = "sha256:bc03c94b7161c82da84af5d7b39570ab67bf7c715a9ad7b915a81709b018e8be"},
 ]
 
 [package.dependencies]

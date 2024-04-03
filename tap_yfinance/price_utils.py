@@ -5,7 +5,6 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 from pytickersymbols import PyTickerSymbols
-from numerapi import SignalsAPI
 from pandas_datareader import data as pdr
 import re
 
@@ -427,7 +426,6 @@ class TickerDownloader:
 
     def download_numerai_signals_ticker_map(
         self,
-        napi=SignalsAPI(),
         numerai_ticker_link="https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/signals_ticker_map_w_bbg.csv",
         yahoo_ticker_colname="yahoo",
     ):
@@ -435,10 +433,6 @@ class TickerDownloader:
         """Download numerai to yahoo ticker mapping"""
 
         ticker_map = pd.read_csv(numerai_ticker_link)
-        eligible_tickers = pd.Series(napi.ticker_universe(), name="bloomberg_ticker")
-        ticker_map = pd.merge(
-            ticker_map, eligible_tickers, on="bloomberg_ticker", how="right"
-        )
 
         logging.info("Number of eligible tickers in map: %s", str(ticker_map.shape[0]))
 
@@ -454,8 +448,6 @@ class TickerDownloader:
     @classmethod
     def download_valid_stock_tickers(cls):
         """Download the valid tickers from py-ticker-symbols"""
-
-        # napi = numerapi.SignalsAPI(os.environ.get('NUMERAI_PUBLIC_KEY'), os.environ.get('NUMERAI_PRIVATE_KEY'))
 
         def handle_duplicate_columns(columns):
             seen_columns = {}
