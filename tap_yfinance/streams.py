@@ -37,9 +37,6 @@ class BaseStream(Stream, ABC):
         self.df_tickers = None
         self._ticker_download_calls = 0
 
-    def get_schema(self):
-        return get_schema(self.schema_category)
-
     @property
     def schema(self):
         return self._schema
