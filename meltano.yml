@@ -78,7 +78,7 @@ plugins:
               schema_category: crypto_tickers
             crypto_tickers_top_250:
               tickers: '*'
-              schema_category: crypto_tickers_top_250
+              schema_category: crypto_tickers
 
           ### prices ###
 
