@@ -1,5 +1,11 @@
 from singer_sdk import typing as th
 
+CUSTOM_JSON_SCHEMA = {
+    "additionalProperties": True,
+    "description": "Custom JSON typing.",
+    "type": ["object", "null"],
+}
+
 INCOME_STMT_SCHEMA = th.PropertiesList(
     th.Property("date", th.DateTimeType, required=True),
     th.Property("ticker", th.StringType),
@@ -486,11 +492,7 @@ def get_schema(schema_category):
     ]:
         schema = th.PropertiesList(  # potentially a dynamic number of columns
             th.Property("timestamp", th.DateTimeType, required=True),
-            th.Property(
-                "data",
-                th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}),
-                required=True,
-            ),
+            th.Property("data", th.CustomType(CUSTOM_JSON_SCHEMA), required=True),
         ).to_dict()
 
     elif schema_category == "stock_tickers":
@@ -740,10 +742,7 @@ def get_schema(schema_category):
             th.Property("provider_publish_time", th.DateTimeType),
             th.Property("publisher", th.StringType),
             th.Property("related_tickers", th.ArrayType(th.StringType)),
-            th.Property(
-                "thumbnail",
-                th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}),
-            ),
+            th.Property("thumbnail", th.CustomType(CUSTOM_JSON_SCHEMA)),
             th.Property("title", th.StringType),
             th.Property("type", th.StringType),
             th.Property("uuid", th.StringType),
@@ -797,10 +796,7 @@ def get_schema(schema_category):
             th.Property("in_the_money", th.BooleanType),
             th.Property("contract_size", th.StringType),
             th.Property("currency", th.StringType),
-            th.Property(
-                "metadata",
-                th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}),
-            ),
+            th.Property("metadata", th.CustomType(CUSTOM_JSON_SCHEMA)),
         ).to_dict()
 
     elif schema_category == "options":
