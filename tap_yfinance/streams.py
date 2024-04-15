@@ -1,308 +1,537 @@
 from __future__ import annotations
-
-from abc import ABC
-
-import pandas as pd
-
-from singer_sdk import Tap
-from typing import Iterable, Optional, Any
-from singer_sdk.streams import Stream
-from tap_yfinance.price_utils import *
-from tap_yfinance.financial_utils import *
+from tap_yfinance.client import *
 from tap_yfinance.schema import *
-from singer_sdk.helpers._state import increment_state
-
-
-class BaseStream(Stream, ABC):
-    def __init__(self, tap: Tap, catalog_entry: dict) -> None:
-        self.catalog_entry = catalog_entry
-        self.table_name = self.catalog_entry["table_name"]
-        self.financial_category = self.catalog_entry["metadata"][-1]["metadata"][
-            "schema-name"
-        ]
-
-        super().__init__(
-            tap=tap,
-            schema=self.catalog_entry["schema"],
-            name=self.catalog_entry["table_name"],
-        )
-
-        self.stream_params = (
-            self.config.get("financial_category")
-            .get(self.financial_category)
-            .get(self.name)
-        )
-        self.schema_category = self.stream_params.get("schema_category")
-        self.tickers = None
-        self.df_tickers = None
-        self._ticker_download_calls = 0
-
-    @property
-    def schema(self):
-        return self._schema
-
-    @schema.setter
-    def schema(self, value):
-        self._schema = value
-
-    @property
-    def partitions(self) -> list[dict]:
-        if self._ticker_download_calls == 0:
-            logging.info(f"Tickers have not been downloaded yet. Downloading now...")
-            self.download_tickers(self.stream_params)
-
-        assert isinstance(
-            self.tickers, list
-        ), f"self.tickers must be a list, but it is of type {type(self.tickers)}."
-        return [{"ticker": t} for t in self.tickers]
-
-    def download_tickers(self, stream_params):
-        assert (
-            self._ticker_download_calls == 0
-        ), f"self._ticker_download_calls should be set to 0 but is {self._ticker_download_calls}."
-
-        ticker_downloader = TickerDownloader()
-
-        if stream_params["tickers"] == "*":
-            ticker_download_method = self.get_ticker_download_method()
-            self.df_tickers = getattr(ticker_downloader, ticker_download_method)()
-            self.tickers = self.df_tickers["ticker"].unique().tolist()
-        else:
-            self.df_tickers = pd.DataFrame({"ticker": stream_params["tickers"]})
-            self.tickers = stream_params["tickers"]
-
-        self._ticker_download_calls += 1
-
-        assert (
-            self._ticker_download_calls == 1
-        ), f"""
-                self.download_tickers has been called too many times.
-                It should only be called once but has been called {self._ticker_download_calls} times.
-            """
-
-        assert isinstance(self.tickers, list)
-        return self
-
-    def get_ticker_download_method(self):
-        if self.catalog_entry["tap_stream_id"].startswith("stock"):
-            return "download_valid_stock_tickers"
-        elif self.catalog_entry["tap_stream_id"].startswith("futures"):
-            return "download_futures_tickers"
-        elif self.catalog_entry["tap_stream_id"].startswith("forex"):
-            return "download_forex_pairs"
-        elif (
-            self.catalog_entry["tap_stream_id"].startswith("crypto")
-            and self.catalog_entry["tap_stream_id"] != "crypto_tickers_top_250"
-        ):
-            return "download_crypto_tickers"
-        elif self.catalog_entry["tap_stream_id"] == "crypto_tickers_top_250":
-            return "download_top_250_crypto_tickers"
-        elif self.catalog_entry["metadata"][-1]["metadata"]["schema-name"].startswith(
-            "financials"
-        ):
-            return (
-                "download_valid_stock_tickers"  # only stock tickers for financial data
-            )
-        else:
-            raise ValueError("Could not determine ticker_download_method")
-
-
-class TickerStream(BaseStream):
-    replication_key = "ticker"
-    is_timestamp_replication_key = False
-
-    def __init__(self, tap: Tap, catalog_entry: dict) -> None:
-        super().__init__(tap, catalog_entry)
 
-    def get_records(self, context: dict | None) -> Iterable[dict]:
-        """
-        Return a generator of record-type dictionary objects.
+###### ticker streams ######
+
+class StockTickersStream(TickerStream):
+    name = 'stock_tickers'
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("google_ticker", th.StringType),
+        th.Property("bloomberg_ticker", th.StringType),
+        th.Property("numerai_ticker", th.StringType),
+        th.Property("yahoo_ticker_old", th.StringType),
+        th.Property("yahoo_valid_pts", th.BooleanType),
+        th.Property("yahoo_valid_numerai", th.BooleanType),
+    ).to_dict()
+
+class FuturesTickersStream(TickerStream):
+    name = 'futures_tickers'
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("name", th.StringType),
+        th.Property("last_price", th.NumberType),
+        th.Property("market_time", th.StringType),
+        th.Property("change", th.NumberType),
+        th.Property("pct_change", th.StringType),
+        th.Property("volume", th.StringType),
+        th.Property("open_interest", th.StringType),
+    ).to_dict()
 
-        The optional `context` argument is used to identify a specific slice of the
-        stream if partitioning is required for the stream. Most implementations do not
-        require partitioning and should ignore the `context` argument.
 
-        Args:
-            context: Stream partition or context dictionary.
-        """
+class ForexTickersStream(TickerStream):
+    name = 'forex_tickers'
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("name", th.StringType),
+        th.Property("bloomberg_ticker", th.StringType),
+        th.Property("last_price", th.NumberType),
+        th.Property("change", th.NumberType),
+        th.Property("pct_change", th.StringType),
+    ).to_dict()
 
-        state = self.get_context_state(context)
+class CryptoTickersStream(TickerStream):
+    name = 'crypto_tickers'
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("name", th.StringType),
+        th.Property("price_intraday", th.NumberType),
+        th.Property("change", th.NumberType),
+        th.Property("pct_change", th.StringType),
+        th.Property("market_cap", th.StringType),
+        th.Property("volume_in_currency_since_0_00_utc", th.StringType),
+        th.Property("volume_in_currency_24_hr", th.StringType),
+        th.Property("total_volume_all_currencies_24_hr", th.StringType),
+        th.Property("circulating_supply", th.StringType),
+    ).to_dict()
 
-        record = self.df_tickers[
-            self.df_tickers["ticker"] == context["ticker"]
-        ].to_dict(orient="records")[0]
 
-        increment_state(
-            state,
-            replication_key=self.replication_key,
-            latest_record=record,
-            is_sorted=self.is_sorted,
-            check_sorted=self.check_sorted,
-        )
+###### price streams ######
 
-        yield record
+class CryptoTickersTop250Stream(CryptoTickersStream):
+    name = 'crypto_tickers_top_250'
 
+class StockPrices1mStream(StockPricesStream):
+    name = 'stock_prices_1m'
 
-class PriceStream(BaseStream):
-    replication_key = "timestamp"
-    is_timestamp_replication_key = True
+class StockPrices2mStream(StockPricesStream):
+    name = 'stock_prices_2m'
 
-    def __init__(self, tap: Tap, catalog_entry: dict) -> None:
-        super().__init__(tap, catalog_entry)
-        self.yf_params = self.stream_params.get("yf_params")
-        self.price_tap = PriceTap(schema_category=self.schema_category)
+class StockPrices5mStream(StockPricesStream):
+    name = 'stock_prices_5m'
 
-    def get_records(self, context: dict | None) -> Iterable[dict]:
-        """
-        Return a generator of record-type dictionary objects.
-
-        The optional `context` argument is used to identify a specific slice of the
-        stream if partitioning is required for the stream. Most implementations do not
-        require partitioning and should ignore the `context` argument.
+class StockPrices1hStream(StockPricesStream):
+    name = 'stock_prices_1h'
 
-        Args:
-            context: Stream partition or context dictionary.
+class StockPrices1dStream(StockPricesStream):
+    name = 'stock_prices_1d'
 
-        """
-
-        logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
-        yf_params = self.yf_params.copy()
-        state = self.get_context_state(context)
-
-        if state and "progress_markers" in state.keys():
-            start_date = datetime.fromisoformat(
-                state.get("progress_markers").get("replication_key_value")
-            ).strftime("%Y-%m-%d")
-        else:
-            start_date = self.config.get("default_start_date")
+class FuturesPrices1mStream(DerivativePricesStream):
+    name = 'futures_prices_1m'
 
-        yf_params["start"] = start_date
+class FuturesPrices2mStream(DerivativePricesStream):
+    name = 'futures_prices_2m'
 
-        df = self.price_tap.download_price_history(
-            ticker=context["ticker"], yf_params=yf_params
-        )
+class FuturesPrices5mStream(DerivativePricesStream):
+    name = 'futures_prices_5m'
 
-        for record in df.to_dict(orient="records"):
-            replication_key = (
-                context["ticker"]
-                + "|"
-                + record["timestamp"].strftime("%Y-%m-%d %H:%M:%S.%f")
-            )
-            record["replication_key"] = replication_key
+class FuturesPrices1hStream(DerivativePricesStream):
+    name = 'futures_prices_1h'
 
-            increment_state(
-                state,
-                replication_key=self.replication_key,
-                latest_record=record,
-                is_sorted=self.is_sorted,
-                check_sorted=self.check_sorted,
-            )
+class FuturesPrices1dStream(DerivativePricesStream):
+    name = 'futures_prices_1d'
 
-            yield record
+class ForexPrices1mStream(DerivativePricesStream):
+    name = 'forex_prices_1m'
 
+class ForexPrices2mStream(DerivativePricesStream):
+    name = 'forex_prices_2m'
 
-class PriceStreamWide(BaseStream):
-    replication_key = "timestamp"
-    is_timestamp_replication_key = True
+class ForexPrices5mStream(DerivativePricesStream):
+    name = 'forex_prices_5m'
 
-    def __init__(self, tap: Tap, catalog_entry: dict) -> None:
-        super().__init__(tap, catalog_entry)
-        self.yf_params = self.stream_params.get("yf_params")
-        self.price_tap = PriceTap(schema_category=self.schema_category)
+class ForexPrices1hStream(DerivativePricesStream):
+    name = 'forex_prices_1h'
 
-    @property
-    def partitions(self):
-        """
-        No partitions when running wide stream. Performance will increase because all relevant tickers are batch
-        downloaded at once, but data integrity will be likely be sacrificed (see yfinance docs).
-        """
+class ForexPrices1dStream(DerivativePricesStream):
+    name = 'forex_prices_1d'
 
-        return None
+class CryptoPrices1mStream(DerivativePricesStream):
+    name = 'crypto_prices_1m'
 
-    def get_records(self, context: dict | None) -> Iterable[dict]:
-        """
-        Return a generator of record-type dictionary objects.
+class CryptoPrices2mStream(DerivativePricesStream):
+    name = 'crypto_prices_2m'
 
-        The optional `context` argument is used to identify a specific slice of the
-        stream if partitioning is required for the stream. Most implementations do not
-        require partitioning and should ignore the `context` argument.
+class CryptoPrices5mStream(DerivativePricesStream):
+    name = 'crypto_prices_5m'
 
-        Args:
-            context: Stream partition or context dictionary.
-        """
+class CryptoPrices1hStream(DerivativePricesStream):
+    name = 'crypto_prices_1h'
 
-        if self._ticker_download_calls == 0:
-            logging.info(f"Tickers have not been downloaded yet. Downloading now...")
-            self.download_tickers(self.stream_params)
+class CryptoPrices1dStream(DerivativePricesStream):
+    name = 'crypto_prices_1d'
 
-        assert isinstance(
-            self.tickers, list
-        ), f"self.tickers must be a list, but it is of type {type(self.tickers)}."
+###### prices wide streams ######
 
-        yf_params = self.yf_params.copy()
-        state = self.get_context_state(context)
+class StockPricesWide1mStream(PricesStreamWide):
+    name = 'stock_prices_wide_1m'
 
-        if state and "progress_markers" in state.keys():
-            start_date = datetime.fromisoformat(
-                state.get("progress_markers").get("replication_key_value")
-            ).strftime("%Y-%m-%d")
-        else:
-            start_date = self.config.get("default_start_date")
+class StockPricesWide2mStream(PricesStreamWide):
+    name = 'stock_prices_wide_2m'
 
-        yf_params["start"] = start_date
+class StockPricesWide5mStream(PricesStreamWide):
+    name = 'stock_prices_wide_5m'
 
-        df = self.price_tap.download_price_history_wide(
-            tickers=self.tickers, yf_params=yf_params
-        )
-        df.sort_values(by="timestamp", inplace=True)
+class StockPricesWide1hStream(PricesStreamWide):
+    name = 'stock_prices_wide_1h'
 
-        for record in df.to_dict(orient="records"):
-            record["replication_key"] = record["timestamp"]
+class StockPricesWide1dStream(PricesStreamWide):
+    name = 'stock_prices_wide_1d'
 
-            increment_state(
-                state,
-                replication_key=self.replication_key,
-                latest_record=record,
-                is_sorted=self.is_sorted,
-                check_sorted=self.check_sorted,
-            )
+class FuturesPricesWide1mStream(PricesStreamWide):
+    name = 'futures_prices_wide_1m'
 
-            yield {"data": record, self.replication_key: record["replication_key"]}
+class FuturesPricesWide2mStream(PricesStreamWide):
+    name = 'futures_prices_wide_2m'
 
+class FuturesPricesWide5mStream(PricesStreamWide):
+    name = 'futures_prices_wide_5m'
 
-class FinancialStream(BaseStream):
-    is_timestamp_replication_key = True
+class FuturesPricesWide1hStream(PricesStreamWide):
+    name = 'futures_prices_wide_1h'
+
+class FuturesPricesWide1dStream(PricesStreamWide):
+    name = 'futures_prices_wide_1d'
 
-    def __init__(self, tap: Tap, catalog_entry: dict) -> None:
-        super().__init__(tap, catalog_entry)
-        self.yf_params = self.stream_params.get("yf_params")
-        self.financial_tap = FinancialTap(schema_category=self.schema_category)
-
-    def get_records(self, context: dict | None) -> Iterable[dict]:
-        """
-        Return a generator of record-type dictionary objects.
-
-        The optional `context` argument is used to identify a specific slice of the
-        stream if partitioning is required for the stream. Most implementations do not
-        require partitioning and should ignore the `context` argument.
-
-        Args:
-            context: Stream partition or context dictionary.
-
-        """
-
-        logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
-        state = self.get_context_state(context)
-
-        df = getattr(self.financial_tap, self.schema_category)(ticker=context["ticker"])
-
-        for record in df.to_dict(orient="records"):
-            increment_state(
-                state,
-                replication_key=self.replication_key,
-                latest_record=record,
-                is_sorted=self.is_sorted,
-                check_sorted=self.check_sorted,
-            )
-
-            yield record
+class ForexPricesWide1mStream(PricesStreamWide):
+    name = 'forex_prices_wide_1m'
+
+class ForexPricesWide2mStream(PricesStreamWide):
+    name = 'forex_prices_wide_2m'
+
+class ForexPricesWide5mStream(PricesStreamWide):
+    name = 'forex_prices_wide_5m'
+
+class ForexPricesWide1hStream(PricesStreamWide):
+    name = 'forex_prices_wide_1h'
+
+class ForexPricesWide1dStream(PricesStreamWide):
+    name = 'forex_prices_wide_1d'
+
+class CryptoPricesWide1mStream(PricesStreamWide):
+    name = 'crypto_prices_wide_1m'
+
+class CryptoPricesWide2mStream(PricesStreamWide):
+    name = 'crypto_prices_wide_2m'
+
+class CryptoPricesWide5mStream(PricesStreamWide):
+    name = 'crypto_prices_wide_5m'
+
+class CryptoPricesWide1hStream(PricesStreamWide):
+    name = 'crypto_prices_wide_1h'
+
+class CryptoPricesWide1dStream(PricesStreamWide):
+    name = 'crypto_prices_wide_1d'
+
+
+###### financial streams ######
+
+class ActionsStream(FinancialStream):
+    name = 'actions'
+    method_name = 'get_actions'
+
+    schema = th.PropertiesList(
+        th.Property("timestamp", th.DateTimeType, required=True),
+        th.Property("timestamp_tz_aware", th.StringType),
+        th.Property("timezone", th.StringType),
+        th.Property("ticker", th.StringType),
+        th.Property("dividends", th.NumberType),
+        th.Property("stock_splits", th.NumberType),
+    ).to_dict()
+
+class BalanceSheetStream(FinancialStream):
+    name = 'balance_sheet'
+    method_name = 'get_balance_sheet'
+    schema = BALANCE_SHEET_SCHEMA
+
+
+class CalendarStream(FinancialStream):
+    name = 'calendar'
+    method_name = 'get_calendar'
+    schema = th.PropertiesList(
+        th.Property("dividend_date", th.DateTimeType),
+        th.Property("ex_dividend_date", th.DateTimeType),
+        th.Property("earnings_date", th.DateTimeType),
+        th.Property("ticker", th.StringType),
+        th.Property("earnings_high", th.NumberType),
+        th.Property("earnings_low", th.NumberType),
+        th.Property("earnings_average", th.NumberType),
+        th.Property("revenue_high", th.NumberType),
+        th.Property("revenue_low", th.NumberType),
+        th.Property("revenue_average", th.NumberType),
+    ).to_dict()
+
+class CashFlowStream(FinancialStream):
+    name = 'cash_flow'
+    method_name = 'get_cash_flow'
+    schema = CASH_FLOW_SCHEMA
+
+class DividendsStream(FinancialStream):
+    name = 'dividends'
+    method_name = 'get_dividends'
+    schema = th.PropertiesList(
+        th.Property("timestamp", th.DateTimeType, required=True),
+        th.Property("timestamp_tz_aware", th.StringType),
+        th.Property("timezone", th.StringType),
+        th.Property("ticker", th.StringType),
+        th.Property("dividends", th.NumberType),
+    ).to_dict()
+
+class EarningsDatesStream(FinancialStream):
+    name = 'earnings_dates'
+    method_name = 'get_earnings_dates'
+    schema = th.PropertiesList(
+        th.Property("timestamp", th.DateTimeType, required=True),
+        th.Property("timestamp_tz_aware", th.StringType),
+        th.Property("timezone", th.StringType),
+        th.Property("ticker", th.StringType),
+        th.Property("eps_estimate", th.NumberType),
+        th.Property("reported_eps", th.NumberType),
+        th.Property("pct_surprise", th.NumberType),
+    ).to_dict()
+
+class FastInfoStream(FinancialStream):
+    name = 'fast_info'
+    method_name = 'get_fast_info'
+    schema = th.PropertiesList(
+        th.Property("currency", th.StringType),
+        th.Property("day_high", th.NumberType),
+        th.Property("day_low", th.NumberType),
+        th.Property("exchange", th.StringType),
+        th.Property("fifty_day_average", th.NumberType),
+        th.Property("last_price", th.NumberType),
+        th.Property("last_volume", th.NumberType),
+        th.Property("market_cap", th.NumberType),
+        th.Property("open", th.NumberType),
+        th.Property("previous_close", th.NumberType),
+        th.Property("quote_type", th.StringType),
+        th.Property("regular_market_previous_close", th.NumberType),
+        th.Property("shares", th.NumberType),
+        th.Property("ten_day_average_volume", th.NumberType),
+        th.Property("three_month_average_volume", th.NumberType),
+        th.Property("extracted_timezone", th.StringType),
+        th.Property("two_hundred_day_average", th.NumberType),
+        th.Property("year_change", th.NumberType),
+        th.Property("year_high", th.NumberType),
+        th.Property("year_low", th.NumberType),
+        th.Property("ticker", th.StringType),
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("timestamp_tz_aware", th.StringType),
+    ).to_dict()
+
+class FinancialsStream(FinancialStream):
+    name = 'financials'
+    method_name = 'get_financials'
+    schema = FINANCIALS_SCHEMA
+
+class HistoryMetadataStream(FinancialStream):
+    name = 'history_metadata'
+    method_name = 'get_history_metadata'
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("timezone", th.StringType),
+        th.Property("currency", th.StringType),
+        th.Property("exchange_name", th.StringType),
+        th.Property("instrument_type", th.StringType),
+        th.Property("first_trade_date", th.NumberType),
+        th.Property("regular_market_time", th.NumberType),
+        th.Property("gmtoffset", th.NumberType),
+        th.Property("exchange_timezone_name", th.StringType),
+        th.Property("regular_market_price", th.NumberType),
+        th.Property("chart_previous_close", th.NumberType),
+        th.Property("previous_close", th.NumberType),
+        th.Property("scale", th.NumberType),
+        th.Property("price_hint", th.NumberType),
+        th.Property("current_trading_period", th.NumberType),
+        th.Property("trading_periods", th.NumberType),
+        th.Property("data_granularity", th.StringType),
+        th.Property("range", th.StringType),
+        th.Property("valid_ranges", th.ArrayType(th.StringType)),
+        th.Property("current_trading_period_pre_timezone", th.StringType),
+        th.Property("current_trading_period_pre_start", th.NumberType),
+        th.Property("current_trading_period_pre_end", th.NumberType),
+        th.Property("current_trading_period_pre_gmtoffset", th.NumberType),
+        th.Property("current_trading_period_regular_timezone", th.StringType),
+        th.Property("current_trading_period_regular_start", th.NumberType),
+        th.Property("current_trading_period_regular_end", th.NumberType),
+        th.Property("current_trading_period_regular_gmtoffset", th.NumberType),
+        th.Property("current_trading_period_post_timezone", th.StringType),
+        th.Property("current_trading_period_post_start", th.NumberType),
+        th.Property("current_trading_period_post_end", th.NumberType),
+        th.Property("current_trading_period_post_gmtoffset", th.NumberType),
+        th.Property("trading_period_pre_start", th.DateTimeType),
+        th.Property("trading_period_pre_end", th.DateTimeType),
+        th.Property("trading_period_start", th.DateTimeType),
+        th.Property("trading_period_end", th.DateTimeType),
+        th.Property("trading_period_post_start", th.DateTimeType),
+        th.Property("trading_period_post_end", th.DateTimeType),
+        th.Property("full_exchange_name", th.StringType),
+        th.Property("has_pre_post_market_data", th.BooleanType),
+        th.Property("fifty_two_week_high", th.NumberType),
+        th.Property("fifty_two_week_low", th.NumberType),
+        th.Property("regular_market_day_high", th.NumberType),
+        th.Property("regular_market_day_low", th.NumberType),
+        th.Property("regular_market_volume", th.NumberType)
+    ).to_dict()
+
+class IncomeStmtStream(FinancialStream):
+    name = 'income_stmt'
+    method_name = 'get_income_stmt'
+    schema = INCOME_STMT_SCHEMA
+
+class InsiderPurchasesStream(FinancialStream):
+    name = 'insider_purchases'
+    method_name = 'get_insider_purchases'
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("insider_purchases_last_6m", th.StringType),
+        th.Property("shares", th.NumberType),
+        th.Property("trans", th.NumberType),
+    ).to_dict()
+
+class InsiderRosterHoldersStream(FinancialStream):
+    name = 'insider_roster_holders'
+    method_name = 'get_insider_roster_holders'
+    schema = th.PropertiesList(
+        th.Property("latest_transaction_date", th.DateTimeType),
+        th.Property("ticker", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("position", th.StringType),
+        th.Property("url", th.StringType),
+        th.Property("most_recent_transaction", th.StringType),
+        th.Property("shares_owned_indirectly", th.NumberType),
+        th.Property("position_indirect_date", th.NumberType),
+        th.Property("shares_owned_directly", th.NumberType),
+        th.Property("position_direct_date", th.DateTimeType),
+    ).to_dict()
+
+class InsiderTransactionsStream(FinancialStream):
+    name = 'insider_transactions'
+    method_name = 'get_insider_transactions'
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType),
+        th.Property("start_date", th.DateTimeType),
+        th.Property("shares", th.NumberType),
+        th.Property("url", th.StringType),
+        th.Property("text", th.StringType),
+        th.Property("insider", th.StringType),
+        th.Property("position", th.StringType),
+        th.Property("transaction", th.StringType),
+        th.Property("ownership", th.StringType),
+        th.Property("value", th.NumberType),
+    ).to_dict()
+
+class InstitutionalHoldersStream(FinancialStream):
+    name = 'institutional_holders'
+    method_name = 'get_institutional_holders'
+    schema = th.PropertiesList(
+        th.Property("date_reported", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("holder", th.StringType),
+        th.Property("pct_out", th.NumberType),
+        th.Property("shares", th.NumberType),
+        th.Property("value", th.NumberType),
+    ).to_dict()
+
+class MajorHoldersStream(FinancialStream):
+    name = 'major_holders'
+    method_name = 'get_major_holders'
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("breakdown", th.StringType),
+        th.Property("value", th.NumberType),
+    ).to_dict()
+
+class MutualFundHoldersStream(FinancialStream):
+    name = 'mutualfund_holders'
+    method_name = 'get_mutualfund_holders'
+    schema = th.PropertiesList(
+        th.Property("date_reported", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("holder", th.StringType),
+        th.Property("pct_held", th.NumberType),
+        th.Property("shares", th.NumberType),
+        th.Property("value", th.NumberType),
+    ).to_dict()
+
+class NewsStream(FinancialStream):
+    name = 'news'
+    method_name = 'get_news'
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("link", th.StringType),
+        th.Property("provider_publish_time", th.DateTimeType),
+        th.Property("publisher", th.StringType),
+        th.Property("related_tickers", th.ArrayType(th.StringType)),
+        th.Property("thumbnail", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("title", th.StringType),
+        th.Property("type", th.StringType),
+        th.Property("uuid", th.StringType),
+    ).to_dict()
+
+class RecommendationsStream(FinancialStream):
+    name = 'recommendations'
+    method_name = 'get_recommendations'
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType),
+        th.Property("timestamp_extracted", th.DateTimeType),
+        th.Property("period", th.StringType),
+        th.Property("strong_buy", th.NumberType),
+        th.Property("buy", th.NumberType),
+        th.Property("hold", th.NumberType),
+        th.Property("sell", th.NumberType),
+        th.Property("strong_sell", th.NumberType),
+    ).to_dict()
+
+class SharesFullStream(FinancialStream):
+    name = 'shares_full'
+    method_name = 'get_shares_full'
+    schema = th.PropertiesList(
+        th.Property("timestamp", th.DateTimeType, required=True),
+        th.Property("timestamp_tz_aware", th.StringType),
+        th.Property("timezone", th.StringType),
+        th.Property("ticker", th.StringType),
+        th.Property("amount", th.NumberType),
+    ).to_dict()
+
+class SplitsStream(FinancialStream):
+    name = 'splits'
+    method_name = 'get_splits'
+    schema = th.PropertiesList(
+        th.Property("timestamp", th.DateTimeType, required=True),
+        th.Property("timestamp_tz_aware", th.StringType),
+        th.Property("timezone", th.StringType),
+        th.Property("ticker", th.StringType),
+        th.Property("stock_splits", th.NumberType),
+    ).to_dict()
+
+class OptionChainStream(FinancialStream):
+    name = 'option_chain'
+    method_name = 'option_chain'
+    schema = th.PropertiesList(
+        th.Property("last_trade_date", th.DateTimeType, required=True),
+        th.Property("last_trade_date_tz_aware", th.StringType),
+        th.Property("timezone", th.StringType),
+        th.Property("timestamp_extracted", th.DateTimeType),
+        th.Property("ticker", th.StringType),
+        th.Property("contract_symbol", th.StringType),
+        th.Property("strike", th.NumberType),
+        th.Property("last_price", th.NumberType),
+        th.Property("bid", th.NumberType),
+        th.Property("ask", th.NumberType),
+        th.Property("change", th.NumberType),
+        th.Property("percent_change", th.NumberType),
+        th.Property("volume", th.NumberType),
+        th.Property("open_interest", th.NumberType),
+        th.Property("implied_volatility", th.NumberType),
+        th.Property("in_the_money", th.BooleanType),
+        th.Property("contract_size", th.StringType),
+        th.Property("currency", th.StringType),
+        th.Property("metadata", th.CustomType(CUSTOM_JSON_SCHEMA)),
+    ).to_dict()
+
+class OptionsStream(FinancialStream):
+    name = 'options'
+    method_name = 'options'
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("expiration_date", th.DateTimeType),
+    ).to_dict()
+
+class QuarterlyBalanceSheetStream(FinancialStream):
+    name = 'quarterly_balance_sheet'
+    method_name = 'quarterly_balance_sheet'
+    schema = BALANCE_SHEET_SCHEMA
+
+class QuarterlyCashFlowStream(FinancialStream):
+    name = 'quarterly_cash_flow'
+    method_name = 'quarterly_cash_flow'
+    schema = CASH_FLOW_SCHEMA
+
+class QuarterlyFinancialsStream(FinancialStream):
+    name = 'quarterly_financials'
+    method_name = 'quarterly_financials'
+    schema = FINANCIALS_SCHEMA
+
+class QuarterlyIncomeStmtStream(FinancialStream):
+    name = 'quarterly_income_stmt'
+    method_name = 'quarterly_income_stmt'
+    schema = INCOME_STMT_SCHEMA
+
+class UpgradesDowngradesStream(FinancialStream):
+    name = 'upgrades_downgrades'
+    method_name = 'get_upgrades_downgrades'
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType),
+        th.Property("grade_date", th.DateTimeType),
+        th.Property("firm", th.StringType),
+        th.Property("to_grade", th.StringType),
+        th.Property("from_grade", th.StringType),
+        th.Property("action", th.StringType),
+    ).to_dict()

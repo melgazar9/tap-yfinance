@@ -22,8 +22,8 @@ class FinancialTap:
 
     ### TODO: date filters? ###
 
-    def __init__(self, schema_category, yf_params=None, ticker_colname="ticker"):
-        self.schema_category = schema_category
+    def __init__(self, schema, yf_params=None, ticker_colname="ticker"):
+        self.schema = schema
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
 
@@ -106,7 +106,6 @@ class FinancialTap:
         return
 
     def get_calendar(self, ticker):
-        """yfinance.exceptions.YFNotImplementedError"""
         try:
             df = pd.DataFrame(yf.Ticker(ticker).get_calendar())
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -566,6 +565,7 @@ class FinancialTap:
     def get_recommendations(self, ticker):
         column_order = [
             "ticker",
+            "timestamp_extracted",
             "period",
             "strong_buy",
             "buy",
@@ -578,6 +578,7 @@ class FinancialTap:
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
             return df[column_order]
         except Exception:
             return pd.DataFrame(columns=column_order)
