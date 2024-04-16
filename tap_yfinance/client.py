@@ -136,26 +136,14 @@ class BasePriceStream(BaseStream):
     replication_key = "timestamp"
     is_timestamp_replication_key = True
     # primary_keys = ["timestamp", "ticker"]
-    # is_sorted = True  #  TODO: Test with is_sorted = True
+    # is_sorted = True  #  TODO: Test with is_sorted = True and add @backoff rate limiter
 
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-        self.yf_params = self.stream_params.get("yf_params")
+        self.yf_params = self.stream_params.get("yf_params") if self.stream_params is not None else None
         self.price_tap = PriceTap(schema=self.schema)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
-        """
-        Return a generator of record-type dictionary objects.
-
-        The optional `context` argument is used to identify a specific slice of the
-        stream if partitioning is required for the stream. Most implementations do not
-        require partitioning and should ignore the `context` argument.
-
-        Args:
-            context: Stream partition or context dictionary.
-
-        """
-
         logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
         yf_params = self.yf_params.copy()
         state = self.get_context_state(context)
@@ -229,7 +217,7 @@ class PricesStreamWide(BaseStream):
 
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-        self.yf_params = self.stream_params.get("yf_params")
+        self.yf_params = self.stream_params.get("yf_params") if self.stream_params is not None else None
         self.price_tap = PriceTap(schema=self.schema)
 
     @property
@@ -242,17 +230,6 @@ class PricesStreamWide(BaseStream):
         return None
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
-        """
-        Return a generator of record-type dictionary objects.
-
-        The optional `context` argument is used to identify a specific slice of the
-        stream if partitioning is required for the stream. Most implementations do not
-        require partitioning and should ignore the `context` argument.
-
-        Args:
-            context: Stream partition or context dictionary.
-        """
-
         if self._ticker_download_calls == 0:
             logging.info(f"Tickers have not been downloaded yet. Downloading now...")
             self.download_tickers(self.stream_params)
@@ -297,7 +274,7 @@ class FinancialStream(BaseStream):
 
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-        self.yf_params = self.stream_params.get("yf_params")
+        self.yf_params = self.stream_params.get("yf_params") if self.stream_params is not None else None
         self.financial_tap = FinancialTap(schema=self.schema)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
