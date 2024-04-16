@@ -297,7 +297,7 @@ class FinancialStream(BaseStream):
 
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-        # self.yf_params = self.stream_params.get("yf_params")
+        self.yf_params = self.stream_params.get("yf_params")
         self.financial_tap = FinancialTap(schema=self.schema)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
