@@ -141,7 +141,6 @@ class BasePriceStream(BaseStream):
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
         self.yf_params = self.stream_params.get("yf_params") if self.stream_params is not None else None
-        self.price_tap = PriceTap(schema=self.schema)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
@@ -157,7 +156,9 @@ class BasePriceStream(BaseStream):
 
         yf_params["start"] = start_date
 
-        df = self.price_tap.download_price_history(
+        price_tap = PriceTap(schema=self.schema, config=self.config, name=self.name, ticker=context['ticker'])
+
+        df = price_tap.download_price_history(
             ticker=context["ticker"], yf_params=yf_params
         )
 
@@ -218,7 +219,6 @@ class PricesStreamWide(BaseStream):
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
         self.yf_params = self.stream_params.get("yf_params") if self.stream_params is not None else None
-        self.price_tap = PriceTap(schema=self.schema)
 
     @property
     def partitions(self):
@@ -250,7 +250,9 @@ class PricesStreamWide(BaseStream):
 
         yf_params["start"] = start_date
 
-        df = self.price_tap.download_price_history_wide(
+        price_tap = PriceTap(schema=self.schema)
+
+        df = price_tap.download_price_history_wide(
             tickers=self.tickers, yf_params=yf_params
         )
         df.sort_values(by="timestamp", inplace=True)
@@ -275,13 +277,13 @@ class FinancialStream(BaseStream):
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
         self.yf_params = self.stream_params.get("yf_params") if self.stream_params is not None else None
-        self.financial_tap = FinancialTap(schema=self.schema)
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
         state = self.get_context_state(context)
 
-        df = getattr(self.financial_tap, self.method_name)(ticker=context["ticker"])
+        financial_tap = FinancialTap(schema=self.schema, ticker=context["ticker"], config=self.config, name=self.name)
+        df = getattr(financial_tap, self.method_name)(ticker=context["ticker"])
 
         for record in df.to_dict(orient="records"):
             increment_state(

@@ -17,13 +17,38 @@ class PriceTap:
     ticker_colname: str of column name to set of output yahoo ticker columns
     """
 
-    def __init__(self, schema, yf_params=None, ticker_colname="ticker"):
+    def __init__(self, schema, config, name, ticker=None, yf_params=None, ticker_colname="ticker"):
         self.schema = schema
+        self.config = config
+        self.name = name
         self.column_order = list(self.schema.get("properties").keys())
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
+        self.ticker = ticker
 
         super().__init__()
+
+        if isinstance(self.ticker, str) and self.config is not None and "yf_cache_params" in self.config.get(self.name):
+            rate_request_limit = self.config.get(self.name).get("yf_cache_params").get("rate_request_limit")
+            rate_seconds_limit = self.config.get(self.name).get("yf_cache_params").get("rate_seconds_limit")
+
+            from requests import Session
+            from requests_cache import CacheMixin, SQLiteCache
+            from requests_ratelimiter import LimiterMixin, MemoryQueueBucket
+            from pyrate_limiter import Duration, RequestRate, Limiter
+            class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
+                pass
+
+            self.session = CachedLimiterSession(
+                limiter=Limiter(RequestRate(rate_request_limit, Duration.SECOND * rate_seconds_limit)),
+                bucket_class=MemoryQueueBucket,
+                backend=SQLiteCache("yfinance.cache"),
+            )
+
+            self.yf_ticker_obj = yf.Ticker(self.ticker, session=self.session)
+
+        else:
+            self.yf_ticker_obj = yf.Ticker(self.ticker)
 
         if "prepost" not in self.yf_params.keys():
             self.yf_params["prepost"] = True
@@ -93,9 +118,8 @@ class PriceTap:
             interval=yf_params["interval"], start=yf_params["start"]
         )
 
-        t = yf.Ticker(ticker)
         try:
-            df = t.history(**yf_params).rename_axis(index="timestamp")
+            df = self.yf_ticker_obj.history(**yf_params).rename_axis(index="timestamp")
             df.columns = clean_strings(df.columns)
 
             self.n_requests += 1
