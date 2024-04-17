@@ -99,142 +99,82 @@ plugins:
         stock_prices_1m:
           tickers: [ "AAPL", "META" ]
           yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         stock_prices_2m:
           tickers: [ "AAPL", "META" ]
           yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         stock_prices_5m:
           tickers: [ "AAPL", "META" ]
           yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         stock_prices_1h:
           tickers: [ "AAPL", "META" ]
           yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         stock_prices_1d:
           tickers: [ "AAPL", "META" ]
           yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         futures_prices_1m:
           tickers: [ "ES=F", "CL=F" ]
           yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         futures_prices_2m:
           tickers: [ "ES=F", "CL=F" ]
           yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         futures_prices_5m:
           tickers: [ "ES=F", "CL=F" ]
           yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         futures_prices_1h:
           tickers: [ "ES=F", "CL=F" ]
           yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         futures_prices_1d:
           tickers: [ "ES=F", "CL=F" ]
           yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         forex_prices_1m:
           tickers: [ "EURUSD=X", "RUB=X" ]
           yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         forex_prices_2m:
           tickers: [ "EURUSD=X", "RUB=X" ]
           yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         forex_prices_5m:
           tickers: [ "EURUSD=X", "RUB=X" ]
           yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         forex_prices_1h:
           tickers: [ "EURUSD=X", "RUB=X" ]
           yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         forex_prices_1d:
           tickers: [ "EURUSD=X", "RUB=X" ]
           yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         crypto_prices_1m:
           tickers: [ "BTC-USD", "ETH-USD" ]
           yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         crypto_prices_2m:
           tickers: [ "BTC-USD", "ETH-USD" ]
           yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         crypto_prices_5m:
           tickers: [ "BTC-USD", "ETH-USD" ]
           yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         crypto_prices_1h:
           tickers: [ "BTC-USD", "ETH-USD" ]
           yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         crypto_prices_1d:
           tickers: [ "BTC-USD", "ETH-USD" ]
           yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         ### wide ###
 
@@ -259,165 +199,84 @@ plugins:
 
         actions:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         balance_sheet:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         cash_flow:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         calendar:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         dividends:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         earnings_dates:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         fast_info:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         financials:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         history_metadata:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         income_stmt:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         insider_purchases:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         insider_roster_holders:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         insider_transactions:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         institutional_holders:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         major_holders:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         mutualfund_holders:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         news:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         recommendations:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         shares_full:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         splits:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         option_chain:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         options:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         quarterly_balance_sheet:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         quarterly_cash_flow:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         quarterly_financials:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         quarterly_income_stmt:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
         upgrades_downgrades:
           tickers: [ "AAPL", "META" ]
-          yf_cache_params:
-            rate_request_limit: 2
-            rate_seconds_limit: 5
 
 
       metadata:
