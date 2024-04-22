@@ -72,7 +72,7 @@ class BaseStream(Stream, ABC):
             return "download_futures_tickers"
         elif self.name.startswith("forex"):
             return "download_forex_pairs"
-        elif self.name == "crypto_tickers":
+        elif self.name.startswith("crypto") and self.name != "crypto_tickers_top_250":
             return "download_crypto_tickers"
         elif self.name == "crypto_tickers_top_250":
             return "download_top_250_crypto_tickers"
