@@ -42,13 +42,15 @@ class PriceTap:
             self.session = CachedLimiterSession(
                 limiter=Limiter(RequestRate(rate_request_limit, Duration.SECOND * rate_seconds_limit)),
                 bucket_class=MemoryQueueBucket,
-                backend=SQLiteCache("yfinance.cache"),
+                backend=SQLiteCache("~/yfinance.cache"),
             )
 
             self.yf_ticker_obj = yf.Ticker(self.ticker, session=self.session)
 
-        else:
+        elif self.ticker is not None:
             self.yf_ticker_obj = yf.Ticker(self.ticker)
+        else:
+            self.yf_ticker_obj = None
 
         if "prepost" not in self.yf_params.keys():
             self.yf_params["prepost"] = True

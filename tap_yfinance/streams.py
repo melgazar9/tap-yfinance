@@ -428,7 +428,8 @@ class NewsStream(FinancialStream):
         th.Property("provider_publish_time", th.DateTimeType),
         th.Property("publisher", th.StringType),
         th.Property("related_tickers", th.ArrayType(th.StringType)),
-        th.Property("thumbnail", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        # th.Property("thumbnail", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("thumbnail", th.StringType),
         th.Property("title", th.StringType),
         th.Property("type", th.StringType),
         th.Property("uuid", th.StringType),
@@ -492,7 +493,7 @@ class OptionChainStream(FinancialStream):
         th.Property("in_the_money", th.BooleanType),
         th.Property("contract_size", th.StringType),
         th.Property("currency", th.StringType),
-        th.Property("metadata", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("metadata", th.StringType),
     ).to_dict()
 
 class OptionsStream(FinancialStream):

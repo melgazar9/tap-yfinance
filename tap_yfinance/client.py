@@ -45,7 +45,7 @@ class BaseStream(Stream, ABC):
 
         ticker_downloader = TickerDownloader()
 
-        if stream_params["tickers"] == "*":
+        if stream_params.get("tickers") == "*":
             ticker_download_method = self.get_ticker_download_method()
             self.df_tickers = getattr(ticker_downloader, ticker_download_method)()
             self.tickers = self.df_tickers["ticker"].unique().tolist()
@@ -109,7 +109,7 @@ class BaseStream(Stream, ABC):
                 "download_valid_stock_tickers"  # only stock tickers for financial data
             )
         else:
-            raise ValueError("Could not determine ticker_download_method")
+            raise ValueError(f"Could not determine ticker_download_method. Variable self.name is set to {self.name}")
 
 class TickerStream(BaseStream):
     replication_key = "ticker"
@@ -213,7 +213,7 @@ class PricesStreamWide(BaseStream):
 
     schema = th.PropertiesList(  # potentially a dynamic number of columns
         th.Property("timestamp", th.DateTimeType, required=True),
-        th.Property("data", th.CustomType(CUSTOM_JSON_SCHEMA), required=True),
+        th.Property("data", th.StringType, required=True),
     ).to_dict()
 
     def __init__(self, tap: Tap) -> None:
@@ -250,11 +250,9 @@ class PricesStreamWide(BaseStream):
 
         yf_params["start"] = start_date
 
-        price_tap = PriceTap(schema=self.schema)
+        price_tap = PriceTap(schema=self.schema, config=self.config, name=self.name)
 
-        df = price_tap.download_price_history_wide(
-            tickers=self.tickers, yf_params=yf_params
-        )
+        df = price_tap.download_price_history_wide(tickers=self.tickers, yf_params=yf_params)
         df.sort_values(by="timestamp", inplace=True)
 
         for record in df.to_dict(orient="records"):
@@ -268,7 +266,8 @@ class PricesStreamWide(BaseStream):
                 check_sorted=self.check_sorted,
             )
 
-            yield {"data": record, self.replication_key: record["replication_key"]}
+            cleaned_record = {"data": str(record), self.replication_key: record["replication_key"]}
+            yield cleaned_record
 
 
 class FinancialStream(BaseStream):

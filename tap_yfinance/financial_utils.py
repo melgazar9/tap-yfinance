@@ -572,9 +572,8 @@ class FinancialTap:
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
             df.columns = clean_strings(df.columns)
-            df["provider_publish_time"] = pd.to_datetime(
-                df["provider_publish_time"], unit="s"
-            )
+            df["provider_publish_time"] = pd.to_datetime(df["provider_publish_time"], unit="s")
+            df["thumbnail"] = df["thumbnail"].astype(str)
             df = df.replace([np.inf, -np.inf, np.nan], None)
 
             column_order = ["timestamp_extracted", "ticker"] + sorted(
@@ -733,6 +732,7 @@ class FinancialTap:
                                 df["timestamp_extracted"] = datetime.utcnow()
                                 df = df.drop_duplicates()
                                 df["metadata"] = option_chain_data[-1]
+                                df["metadata"] = df["metadata"].astype(str)
                         try:
                             df.columns = clean_strings(df.columns)
                             self.extract_ticker_tz_aware_timestamp(
