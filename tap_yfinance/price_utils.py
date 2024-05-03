@@ -17,12 +17,40 @@ class PriceTap:
     ticker_colname: str of column name to set of output yahoo ticker columns
     """
 
-    def __init__(self, schema_category, yf_params=None, ticker_colname="ticker"):
-        self.schema_category = schema_category
+    def __init__(self, schema, config, name, ticker=None, yf_params=None, ticker_colname="ticker"):
+        self.schema = schema
+        self.config = config
+        self.name = name
+        self.column_order = list(self.schema.get("properties").keys())
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
+        self.ticker = ticker
 
         super().__init__()
+
+        if isinstance(self.ticker, str) and self.config is not None and "yf_cache_params" in self.config.get(self.name):
+            rate_request_limit = self.config.get(self.name).get("yf_cache_params").get("rate_request_limit")
+            rate_seconds_limit = self.config.get(self.name).get("yf_cache_params").get("rate_seconds_limit")
+
+            from requests import Session
+            from requests_cache import CacheMixin, SQLiteCache
+            from requests_ratelimiter import LimiterMixin, MemoryQueueBucket
+            from pyrate_limiter import Duration, RequestRate, Limiter
+            class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
+                pass
+
+            self.session = CachedLimiterSession(
+                limiter=Limiter(RequestRate(rate_request_limit, Duration.SECOND * rate_seconds_limit)),
+                bucket_class=MemoryQueueBucket,
+                backend=SQLiteCache("~/yfinance.cache"),
+            )
+
+            self.yf_ticker_obj = yf.Ticker(self.ticker, session=self.session)
+
+        elif self.ticker is not None:
+            self.yf_ticker_obj = yf.Ticker(self.ticker)
+        else:
+            self.yf_ticker_obj = None
 
         if "prepost" not in self.yf_params.keys():
             self.yf_params["prepost"] = True
@@ -35,51 +63,7 @@ class PriceTap:
             pd.Timestamp(self.start_date) <= datetime.today()
         ), "Start date cannot be after the current date!"
 
-        assert (
-            "stock_prices" in self.schema_category
-            or "futures_prices" in self.schema_category
-            or "forex_prices" in self.schema_category
-            or "crypto_prices" in self.schema_category
-        ), "self.schema_category must be set to either 'stock_prices', 'futures_prices', 'forex_prices', or 'crypto_prices'"
-
-        if self.schema_category == "stock_prices":
-            self.column_order = [
-                "timestamp",
-                "timestamp_tz_aware",
-                "timezone",
-                "ticker",
-                "open",
-                "high",
-                "low",
-                "close",
-                "volume",
-                "dividends",
-                "stock_splits",
-                "repaired",
-            ]
-
-        elif schema_category in ["futures_prices", "forex_prices", "crypto_prices"]:
-            self.column_order = [
-                "timestamp",
-                "timestamp_tz_aware",
-                "timezone",
-                "ticker",
-                "open",
-                "high",
-                "low",
-                "close",
-                "volume",
-                "repaired",
-            ]
-
-        elif schema_category.endswith("wide"):
-            self.column_order = None
-
-        else:
-            raise ValueError("Could not determine price column order.")
-
         self.n_requests = 0
-
         self.failed_ticker_downloads = {}
 
     def _request_limit_check(self):
@@ -136,9 +120,8 @@ class PriceTap:
             interval=yf_params["interval"], start=yf_params["start"]
         )
 
-        t = yf.Ticker(ticker)
         try:
-            df = t.history(**yf_params).rename_axis(index="timestamp")
+            df = self.yf_ticker_obj.history(**yf_params).rename_axis(index="timestamp")
             df.columns = clean_strings(df.columns)
 
             self.n_requests += 1
@@ -158,6 +141,7 @@ class PriceTap:
             df = df.replace(
                 [np.inf, -np.inf, np.nan], None
             )  # None can be handled by json.dumps but inf and NaN can't be
+            df["replication_key"] = df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             df = df[self.column_order]
             return df
 
@@ -317,6 +301,9 @@ class TickerDownloader:
             "total_volume_all_currencies_24_hr",
             "circulating_supply",
         ]
+        str_cols = ["market_cap", "volume_in_currency_since_0_00_utc", "volume_in_currency_24_hr",
+                    "total_volume_all_currencies_24_hr", "circulating_supply"]
+        df[str_cols] = df[str_cols].astype(str)
         return df[column_order]
 
     @staticmethod
@@ -361,6 +348,9 @@ class TickerDownloader:
             "total_volume_all_currencies_24_hr",
             "circulating_supply",
         ]
+        str_cols = ["market_cap", "volume_in_currency_since_0_00_utc", "volume_in_currency_24_hr",
+                    "total_volume_all_currencies_24_hr", "circulating_supply"]
+        df[str_cols] = df[str_cols].astype(str)
         return df[column_order]
 
     @staticmethod
@@ -623,6 +613,7 @@ def get_valid_yfinance_start_timestamp(interval, start="1950-01-01 00:00:00"):
         )
     else:
         updated_start = pd.to_datetime(start)
+
     updated_start = updated_start.strftime(
         "%Y-%m-%d"
     )  # yfinance doesn't like strftime with hours, minutes, or seconds
