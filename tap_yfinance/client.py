@@ -213,7 +213,7 @@ class PricesStreamWide(BaseStream):
 
     schema = th.PropertiesList(  # potentially a dynamic number of columns
         th.Property("timestamp", th.DateTimeType, required=True),
-        th.Property("data", th.StringType, required=True),
+        th.Property("data", th.CustomType(CUSTOM_JSON_SCHEMA), required=True),
     ).to_dict()
 
     def __init__(self, tap: Tap) -> None:

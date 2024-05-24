@@ -45,10 +45,10 @@ plugins:
         - crypto_prices_5m.*
         - crypto_prices_1h.*
         - crypto_prices_1d.*
-        - stock_prices_wide_1m.*
-        - futures_prices_wide_1m.*
-        - forex_prices_wide_1m.*
-        - crypto_prices_wide_1m.*
+#        - stock_prices_wide_1m.*
+#        - futures_prices_wide_1m.*
+#        - forex_prices_wide_1m.*
+#        - crypto_prices_wide_1m.*
         - actions.*
         - balance_sheet.*
         - calendar.*
@@ -90,7 +90,7 @@ plugins:
         forex_tickers:
           tickers: '*'
         crypto_tickers:
-          tickers: '*'
+          tickers: [ "BTC-USD", "ETH-USD" ]
         crypto_tickers_top_250:
           tickers: '*'
 
