@@ -2216,16 +2216,17 @@ test = ["pytest (>=3.0.0)"]
 
 [[package]]
 name = "yfinance"
-version = "0.2.40"
+version = "0.2.38"
 description = "Download market data from Yahoo! Finance API"
 optional = false
 python-versions = "*"
 files = [
-    {file = "yfinance-0.2.40-py2.py3-none-any.whl", hash = "sha256:328176b5690de7aa192456a15b351c20ddde31b35d479f8179f5325bd340fc0b"},
-    {file = "yfinance-0.2.40.tar.gz", hash = "sha256:b053ac31229b5dc7f49a17a057f66aa7f688de2f5ddeb95c2455ec13cd89511a"},
+    {file = "yfinance-0.2.38-py2.py3-none-any.whl", hash = "sha256:07525cf84414272723a3e2b9d4c0a2898ddb60cc0828aa190de26664fac6f676"},
+    {file = "yfinance-0.2.38.tar.gz", hash = "sha256:483eecae0743d829fc337f21d80da4612f5257d5c1f35570efc4a5e98e4401a7"},
 ]
 
 [package.dependencies]
+appdirs = ">=1.4.4"
 beautifulsoup4 = ">=4.11.1"
 frozendict = ">=2.3.4"
 html5lib = ">=1.1"
@@ -2234,7 +2235,6 @@ multitasking = ">=0.0.7"
 numpy = ">=1.16.5"
 pandas = ">=1.3.0"
 peewee = ">=3.16.2"
-platformdirs = ">=2.0.0"
 pytz = ">=2022.5"
 requests = ">=2.31"
 requests-cache = {version = ">=1.0", optional = true, markers = "extra == \"nospam\""}
@@ -2247,13 +2247,13 @@ repair = ["scipy (>=1.6.3)"]
 
 [[package]]
 name = "zipp"
-version = "3.18.2"
+version = "3.19.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "zipp-3.18.2-py3-none-any.whl", hash = "sha256:dce197b859eb796242b0622af1b8beb0a722d52aa2f57133ead08edd5bf5374e"},
-    {file = "zipp-3.18.2.tar.gz", hash = "sha256:6278d9ddbcfb1f1089a88fde84481528b07b0e10474e09dcfe53dad4069fa059"},
+    {file = "zipp-3.19.0-py3-none-any.whl", hash = "sha256:96dc6ad62f1441bcaccef23b274ec471518daf4fbbc580341204936a5a3dddec"},
+    {file = "zipp-3.19.0.tar.gz", hash = "sha256:952df858fb3164426c976d9338d3961e8e8b3758e2e059e0f754b8c4262625ee"},
 ]
 
 [package.extras]
@@ -2266,4 +2266,4 @@ s3 = []
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "2ee1a62a7a4a23bed42988085f084ff8757c18fcfddcb0559ee70bb2bf21cbf2"
+content-hash = "cc169e8672f04e0a25824bf539696465c7bc40c1d16ef1a9b43f7f5ccc4b0e50"

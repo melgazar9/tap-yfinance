@@ -198,7 +198,7 @@ plugins:
         ### financials ###
 
         actions:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AYO.F" ]
 
         balance_sheet:
           tickers: [ "AAPL", "META" ]
