@@ -7,6 +7,7 @@ import yfinance as yf
 from pytickersymbols import PyTickerSymbols
 from pandas_datareader import data as pdr
 import re
+from requests.exceptions import ChunkedEncodingError
 
 
 class PriceTap:
@@ -17,7 +18,9 @@ class PriceTap:
     ticker_colname: str of column name to set of output yahoo ticker columns
     """
 
-    def __init__(self, schema, config, name, ticker=None, yf_params=None, ticker_colname="ticker"):
+    def __init__(
+        self, schema, config, name, ticker=None, yf_params=None, ticker_colname="ticker"
+    ):
         self.schema = schema
         self.config = config
         self.name = name
@@ -28,19 +31,36 @@ class PriceTap:
 
         super().__init__()
 
-        if isinstance(self.ticker, str) and self.config is not None and "yf_cache_params" in self.config.get(self.name):
-            rate_request_limit = self.config.get(self.name).get("yf_cache_params").get("rate_request_limit")
-            rate_seconds_limit = self.config.get(self.name).get("yf_cache_params").get("rate_seconds_limit")
+        if (
+            isinstance(self.ticker, str)
+            and self.config is not None
+            and "yf_cache_params" in self.config.get(self.name)
+        ):
+            rate_request_limit = (
+                self.config.get(self.name)
+                .get("yf_cache_params")
+                .get("rate_request_limit")
+            )
+            rate_seconds_limit = (
+                self.config.get(self.name)
+                .get("yf_cache_params")
+                .get("rate_seconds_limit")
+            )
 
             from requests import Session
             from requests_cache import CacheMixin, SQLiteCache
             from requests_ratelimiter import LimiterMixin, MemoryQueueBucket
             from pyrate_limiter import Duration, RequestRate, Limiter
+
             class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
                 pass
 
             self.session = CachedLimiterSession(
-                limiter=Limiter(RequestRate(rate_request_limit, Duration.SECOND * rate_seconds_limit)),
+                limiter=Limiter(
+                    RequestRate(
+                        rate_request_limit, Duration.SECOND * rate_seconds_limit
+                    )
+                ),
                 bucket_class=MemoryQueueBucket,
                 backend=SQLiteCache("~/yfinance.cache"),
             )
@@ -141,7 +161,9 @@ class PriceTap:
             df = df.replace(
                 [np.inf, -np.inf, np.nan], None
             )  # None can be handled by json.dumps but inf and NaN can't be
-            df["replication_key"] = df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+            df["replication_key"] = (
+                df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+            )
             df = df[self.column_order]
             return df
 
@@ -264,46 +286,87 @@ class TickerDownloader:
 
         df = pd.DataFrame()
 
-        offset = 0
-        while True:
-            resp = session.get(
-                f"https://finance.yahoo.com/crypto?offset={offset}&count={num_currencies_per_loop}"
-            )
-            df_i = pd.read_html(resp.html.raw_html)[0]
-            if offset > 0 and df_i.iloc[0]["Symbol"] == "BTC-USD":
-                # yahoo returns a default of offset = 0 if offset is greater than the maximum number of pages
-                break
-            df = pd.concat([df, df_i], axis=0)
-            offset += num_currencies_per_loop
-        session.close()
-        df = df.reset_index(drop=True)
+        seen_symbols = set()
 
+        start = 0
+        while True:
+            try:
+                resp = session.get(
+                    f"https://finance.yahoo.com/markets/crypto/all/?start={start}&count={num_currencies_per_loop}"
+                )
+
+                df_i = pd.read_html(resp.html.raw_html)[0]
+                df = pd.concat([df, df_i], axis=0)
+
+                if start > 0 and (
+                    df_i.iloc[0]["Symbol"] == "BTC-USD Bitcoin USD"
+                    or df_i.empty
+                    or all(df_i["Symbol"].isin(list(seen_symbols)))
+                ):
+                    break
+
+                seen_symbols.update(set(df_i["Symbol"]))
+                start += num_currencies_per_loop
+            except ChunkedEncodingError as e:
+                logging.warning(f"ChunkedEncodingError encountered: {e}. Retrying...")
+                time.sleep(5)
+                continue
+
+        session.close()
+
+        df = df.drop_duplicates().reset_index(drop=True)
         df = df.rename(
             columns={
                 "Symbol": "ticker",
                 "% Change": "pct_change",
+                "Change %": "pct_change",
                 "Volume in Currency (Since 0:00 UTC)": "volume_in_currency_since_0_00_utc",
+                "Total Volume All Currencies (24hr)": "total_volume_all_currencies_24h",
+                "52 Wk Change %": "change_pct_52wk",
+                "52 Wk Range": "range_52wk",
             }
         )
 
+        df["name"] = (
+            df["ticker"]
+            .str.split(" ")
+            .apply(lambda x: "".join(x[1:]) if len(x) > 1 else "")
+        )
+
+        df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
         df.columns = clean_strings(df.columns)
         df = df.dropna(how="all", axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
-        column_order = [
+
+        str_cols = [
             "ticker",
-            "name",
-            "price_intraday",
+            "price",
             "change",
             "pct_change",
             "market_cap",
-            "volume_in_currency_since_0_00_utc",
-            "volume_in_currency_24_hr",
-            "total_volume_all_currencies_24_hr",
+            "volume",
+            "volume_in_currency_24hr",
+            "total_volume_all_currencies_24h",
             "circulating_supply",
+            "change_pct_52wk",
+            "name",
         ]
-        str_cols = ["market_cap", "volume_in_currency_since_0_00_utc", "volume_in_currency_24_hr",
-                    "total_volume_all_currencies_24_hr", "circulating_supply"]
+
         df[str_cols] = df[str_cols].astype(str)
+
+        column_order = [
+            "ticker",
+            "name",
+            "price",
+            "change",
+            "pct_change",
+            "market_cap",
+            "volume",
+            "volume_in_currency_24hr",
+            "total_volume_all_currencies_24h",
+            "circulating_supply",
+            "change_pct_52wk",
+        ]
         return df[column_order]
 
     @staticmethod
@@ -318,8 +381,9 @@ class TickerDownloader:
         from requests_html import HTMLSession
 
         session = HTMLSession()
+
         resp = session.get(
-            f"https://finance.yahoo.com/crypto?offset=0&count={num_currencies}"
+            f"https://finance.yahoo.com/markets/crypto/all/?start=0&count={num_currencies}"
         )
         tables = pd.read_html(resp.html.raw_html)
         session.close()
@@ -329,28 +393,50 @@ class TickerDownloader:
             columns={
                 "Symbol": "ticker",
                 "% Change": "pct_change",
+                "Change %": "pct_change",
                 "Volume in Currency (Since 0:00 UTC)": "volume_in_currency_since_0_00_utc",
+                "Total Volume All Currencies (24hr)": "total_volume_all_currencies_24h",
+                "52 Wk Change %": "change_pct_52wk",
+                "52 Wk Range": "range_52wk",
             }
         )
+
+        df["name"] = df["ticker"].str.split(" ").apply(lambda x: x[1])
+        df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
 
         df.columns = clean_strings(df.columns)
         df = df.dropna(how="all", axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
+
+        str_cols = [
+            "ticker",
+            "price",
+            "pct_change",
+            "change",
+            "market_cap",
+            "volume",
+            "volume_in_currency_24hr",
+            "total_volume_all_currencies_24h",
+            "circulating_supply",
+            "change_pct_52wk",
+            "name",
+        ]
+
+        df[str_cols] = df[str_cols].astype(str)
+
         column_order = [
             "ticker",
             "name",
-            "price_intraday",
+            "price",
             "change",
             "pct_change",
             "market_cap",
-            "volume_in_currency_since_0_00_utc",
-            "volume_in_currency_24_hr",
-            "total_volume_all_currencies_24_hr",
+            "volume",
+            "volume_in_currency_24hr",
+            "total_volume_all_currencies_24h",
             "circulating_supply",
+            "change_pct_52wk",
         ]
-        str_cols = ["market_cap", "volume_in_currency_since_0_00_utc", "volume_in_currency_24_hr",
-                    "total_volume_all_currencies_24_hr", "circulating_supply"]
-        df[str_cols] = df[str_cols].astype(str)
         return df[column_order]
 
     @staticmethod
@@ -371,16 +457,17 @@ class TickerDownloader:
 
         df = tables[0].copy()
 
-        df = df.rename(columns={"Symbol": "ticker", "% Change": "pct_change"})
+        df = df.rename(columns={"Symbol": "ticker", "% Change": "pct_change", "Change %": "pct_change", "52 Wk Range": "range_52wk"})
         df.columns = clean_strings(df.columns)
 
-        df.loc[:, "bloomberg_ticker"] = df["name"].apply(lambda x: f"{x[4:]}-{x[0:3]}")
-
+        # df.loc[:, "bloomberg_ticker"] = df["name"].apply(lambda x: f"{x[4:]}-{x[0:3]}")
+        df["name"] = df["ticker"].str.split(" ").apply(lambda x: x[1])
+        df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
         df = df.dropna(how="all", axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
 
-        first_cols = ["ticker", "name", "bloomberg_ticker"]
-        df = df[first_cols + [i for i in df.columns if i not in first_cols]]
+        first_cols = ["ticker", "name"]
+        df = df[first_cols + [i for i in df.columns if i not in first_cols]].dropna(how="all", axis=1)
         return df
 
     @staticmethod
@@ -404,6 +491,7 @@ class TickerDownloader:
             columns={
                 "Symbol": "ticker",
                 "% Change": "pct_change",
+                "Change %": "pct_change",
                 "Unnamed: 7": "open_interest",
             }
         )
