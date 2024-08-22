@@ -24,8 +24,9 @@ class FuturesTickersStream(TickerStream):
         th.Property("ticker", th.StringType, required=True),
         th.Property("name", th.StringType),
         th.Property("last_price", th.NumberType),
+        th.Property("price", th.StringType),
         th.Property("market_time", th.StringType),
-        th.Property("change", th.NumberType),
+        th.Property("change", th.StringType),
         th.Property("pct_change", th.StringType),
         th.Property("volume", th.StringType),
         th.Property("open_interest", th.StringType),
@@ -39,7 +40,8 @@ class ForexTickersStream(TickerStream):
         th.Property("name", th.StringType),
         th.Property("bloomberg_ticker", th.StringType),
         th.Property("last_price", th.NumberType),
-        th.Property("change", th.NumberType),
+        th.Property("price", th.StringType),
+        th.Property("change", th.StringType),
         th.Property("pct_change", th.StringType),
     ).to_dict()
 
@@ -58,6 +60,7 @@ class CryptoTickersStream(TickerStream):
         th.Property("total_volume_all_currencies_24h", th.StringType),
         th.Property("circulating_supply", th.StringType),
         th.Property("change_pct_52wk", th.StringType),
+        th.Property("open_interest", th.StringType),
     ).to_dict()
 
 

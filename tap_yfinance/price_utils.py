@@ -496,8 +496,8 @@ class TickerDownloader:
             }
         )
         df.columns = clean_strings(df.columns)
-        df["volume"] = df["volume"].astype(str)
-        df["open_interest"] = df["open_interest"].astype(str)
+        str_cols = ["volume", "open_interest", "change"]
+        df[str_cols] = df[str_cols].astype(str)
         df = df.dropna(how="all", axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
         return df
