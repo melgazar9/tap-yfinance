@@ -69,7 +69,7 @@ from tap_yfinance.streams import (
     QuarterlyCashFlowStream,
     QuarterlyFinancialsStream,
     QuarterlyIncomeStmtStream,
-    UpgradesDowngradesStream
+    UpgradesDowngradesStream,
 )
 
 
@@ -129,7 +129,7 @@ STREAMS = [
     QuarterlyCashFlowStream,
     QuarterlyFinancialsStream,
     QuarterlyIncomeStmtStream,
-    UpgradesDowngradesStream
+    UpgradesDowngradesStream,
 ]
 
 

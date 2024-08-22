@@ -18,6 +18,7 @@ CUSTOM_JSON_SCHEMA = {
     "type": ["object", "null"],
 }
 
+
 class BaseStream(Stream, ABC):
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap=tap)
@@ -40,7 +41,7 @@ class BaseStream(Stream, ABC):
 
     def download_tickers(self, stream_params):
         assert (
-                self._ticker_download_calls == 0
+            self._ticker_download_calls == 0
         ), f"self._ticker_download_calls should be set to 0 but is {self._ticker_download_calls}."
 
         ticker_downloader = TickerDownloader()
@@ -56,7 +57,7 @@ class BaseStream(Stream, ABC):
         self._ticker_download_calls += 1
 
         assert (
-                self._ticker_download_calls == 1
+            self._ticker_download_calls == 1
         ), f"""
                 self.download_tickers has been called too many times.
                 It should only be called once but has been called {self._ticker_download_calls} times.
@@ -77,39 +78,42 @@ class BaseStream(Stream, ABC):
         elif self.name == "crypto_tickers_top_250":
             return "download_top_250_crypto_tickers"
         elif self.name in (
-                'actions',
-                'balance_sheet',
-                'calendar',
-                'cash_flow',
-                'dividends',
-                'earnings_dates',
-                'fast_info',
-                'financials',
-                'history_metadata',
-                'income_stmt',
-                'insider_purchases',
-                'insider_roster_holders',
-                'insider_transactions',
-                'institutional_holders',
-                'major_holders',
-                'mutualfund_holders',
-                'news',
-                'recommendations',
-                'shares_full',
-                'splits',
-                'upgrades_downgrades',
-                'option_chain',
-                'options',
-                'quarterly_balance_sheet',
-                'quarterly_cash_flow',
-                'quarterly_financials',
-                'quarterly_income_stmt'
+            "actions",
+            "balance_sheet",
+            "calendar",
+            "cash_flow",
+            "dividends",
+            "earnings_dates",
+            "fast_info",
+            "financials",
+            "history_metadata",
+            "income_stmt",
+            "insider_purchases",
+            "insider_roster_holders",
+            "insider_transactions",
+            "institutional_holders",
+            "major_holders",
+            "mutualfund_holders",
+            "news",
+            "recommendations",
+            "shares_full",
+            "splits",
+            "upgrades_downgrades",
+            "option_chain",
+            "options",
+            "quarterly_balance_sheet",
+            "quarterly_cash_flow",
+            "quarterly_financials",
+            "quarterly_income_stmt",
         ):
             return (
                 "download_valid_stock_tickers"  # only stock tickers for financial data
             )
         else:
-            raise ValueError(f"Could not determine ticker_download_method. Variable self.name is set to {self.name}")
+            raise ValueError(
+                f"Could not determine ticker_download_method. Variable self.name is set to {self.name}"
+            )
+
 
 class TickerStream(BaseStream):
     replication_key = "ticker"
@@ -132,6 +136,7 @@ class TickerStream(BaseStream):
 
         yield record
 
+
 class BasePriceStream(BaseStream):
     replication_key = "timestamp"
     is_timestamp_replication_key = True
@@ -140,7 +145,11 @@ class BasePriceStream(BaseStream):
 
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-        self.yf_params = self.stream_params.get("yf_params") if self.stream_params is not None else None
+        self.yf_params = (
+            self.stream_params.get("yf_params")
+            if self.stream_params is not None
+            else None
+        )
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
@@ -156,7 +165,12 @@ class BasePriceStream(BaseStream):
 
         yf_params["start"] = start_date
 
-        price_tap = PriceTap(schema=self.schema, config=self.config, name=self.name, ticker=context['ticker'])
+        price_tap = PriceTap(
+            schema=self.schema,
+            config=self.config,
+            name=self.name,
+            ticker=context["ticker"],
+        )
 
         df = price_tap.download_price_history(
             ticker=context["ticker"], yf_params=yf_params
@@ -172,6 +186,7 @@ class BasePriceStream(BaseStream):
             )
 
             yield record
+
 
 class StockPricesStream(BasePriceStream):
     schema = th.PropertiesList(
@@ -218,7 +233,11 @@ class PricesStreamWide(BaseStream):
 
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-        self.yf_params = self.stream_params.get("yf_params") if self.stream_params is not None else None
+        self.yf_params = (
+            self.stream_params.get("yf_params")
+            if self.stream_params is not None
+            else None
+        )
 
     @property
     def partitions(self):
@@ -252,7 +271,9 @@ class PricesStreamWide(BaseStream):
 
         price_tap = PriceTap(schema=self.schema, config=self.config, name=self.name)
 
-        df = price_tap.download_price_history_wide(tickers=self.tickers, yf_params=yf_params)
+        df = price_tap.download_price_history_wide(
+            tickers=self.tickers, yf_params=yf_params
+        )
         df.sort_values(by="timestamp", inplace=True)
 
         for record in df.to_dict(orient="records"):
@@ -266,7 +287,10 @@ class PricesStreamWide(BaseStream):
                 check_sorted=self.check_sorted,
             )
 
-            cleaned_record = {"data": str(record), self.replication_key: record["replication_key"]}
+            cleaned_record = {
+                "data": str(record),
+                self.replication_key: record["replication_key"],
+            }
             yield cleaned_record
 
 
@@ -275,13 +299,22 @@ class FinancialStream(BaseStream):
 
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-        self.yf_params = self.stream_params.get("yf_params") if self.stream_params is not None else None
+        self.yf_params = (
+            self.stream_params.get("yf_params")
+            if self.stream_params is not None
+            else None
+        )
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         logging.info(f"\n\n\n*** Running ticker {context['ticker']} *** \n\n\n")
         state = self.get_context_state(context)
 
-        financial_tap = FinancialTap(schema=self.schema, ticker=context["ticker"], config=self.config, name=self.name)
+        financial_tap = FinancialTap(
+            schema=self.schema,
+            ticker=context["ticker"],
+            config=self.config,
+            name=self.name,
+        )
         df = getattr(financial_tap, self.method_name)(ticker=context["ticker"])
 
         for record in df.to_dict(orient="records"):

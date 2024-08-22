@@ -4,8 +4,9 @@ from tap_yfinance.schema import *
 
 ###### ticker streams ######
 
+
 class StockTickersStream(TickerStream):
-    name = 'stock_tickers'
+    name = "stock_tickers"
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType, required=True),
         th.Property("google_ticker", th.StringType),
@@ -16,14 +17,16 @@ class StockTickersStream(TickerStream):
         th.Property("yahoo_valid_numerai", th.BooleanType),
     ).to_dict()
 
+
 class FuturesTickersStream(TickerStream):
-    name = 'futures_tickers'
+    name = "futures_tickers"
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType, required=True),
         th.Property("name", th.StringType),
         th.Property("last_price", th.NumberType),
+        th.Property("price", th.StringType),
         th.Property("market_time", th.StringType),
-        th.Property("change", th.NumberType),
+        th.Property("change", th.StringType),
         th.Property("pct_change", th.StringType),
         th.Property("volume", th.StringType),
         th.Property("open_interest", th.StringType),
@@ -31,165 +34,212 @@ class FuturesTickersStream(TickerStream):
 
 
 class ForexTickersStream(TickerStream):
-    name = 'forex_tickers'
+    name = "forex_tickers"
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType, required=True),
         th.Property("name", th.StringType),
         th.Property("bloomberg_ticker", th.StringType),
         th.Property("last_price", th.NumberType),
-        th.Property("change", th.NumberType),
+        th.Property("price", th.StringType),
+        th.Property("change", th.StringType),
         th.Property("pct_change", th.StringType),
     ).to_dict()
 
+
 class CryptoTickersStream(TickerStream):
-    name = 'crypto_tickers'
+    name = "crypto_tickers"
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType, required=True),
         th.Property("name", th.StringType),
-        th.Property("price_intraday", th.NumberType),
-        th.Property("change", th.NumberType),
+        th.Property("price", th.StringType),
+        th.Property("change", th.StringType),
         th.Property("pct_change", th.StringType),
         th.Property("market_cap", th.StringType),
-        th.Property("volume_in_currency_since_0_00_utc", th.StringType),
-        th.Property("volume_in_currency_24_hr", th.StringType),
-        th.Property("total_volume_all_currencies_24_hr", th.StringType),
+        th.Property("volume", th.StringType),
+        th.Property("volume_in_currency_24hr", th.StringType),
+        th.Property("total_volume_all_currencies_24h", th.StringType),
         th.Property("circulating_supply", th.StringType),
+        th.Property("change_pct_52wk", th.StringType),
+        th.Property("open_interest", th.StringType),
     ).to_dict()
 
 
 ###### price streams ######
 
+
 class CryptoTickersTop250Stream(CryptoTickersStream):
-    name = 'crypto_tickers_top_250'
+    name = "crypto_tickers_top_250"
+
 
 class StockPrices1mStream(StockPricesStream):
-    name = 'stock_prices_1m'
+    name = "stock_prices_1m"
+
 
 class StockPrices2mStream(StockPricesStream):
-    name = 'stock_prices_2m'
+    name = "stock_prices_2m"
+
 
 class StockPrices5mStream(StockPricesStream):
-    name = 'stock_prices_5m'
+    name = "stock_prices_5m"
+
 
 class StockPrices1hStream(StockPricesStream):
-    name = 'stock_prices_1h'
+    name = "stock_prices_1h"
+
 
 class StockPrices1dStream(StockPricesStream):
-    name = 'stock_prices_1d'
+    name = "stock_prices_1d"
+
 
 class FuturesPrices1mStream(DerivativePricesStream):
-    name = 'futures_prices_1m'
+    name = "futures_prices_1m"
+
 
 class FuturesPrices2mStream(DerivativePricesStream):
-    name = 'futures_prices_2m'
+    name = "futures_prices_2m"
+
 
 class FuturesPrices5mStream(DerivativePricesStream):
-    name = 'futures_prices_5m'
+    name = "futures_prices_5m"
+
 
 class FuturesPrices1hStream(DerivativePricesStream):
-    name = 'futures_prices_1h'
+    name = "futures_prices_1h"
+
 
 class FuturesPrices1dStream(DerivativePricesStream):
-    name = 'futures_prices_1d'
+    name = "futures_prices_1d"
+
 
 class ForexPrices1mStream(DerivativePricesStream):
-    name = 'forex_prices_1m'
+    name = "forex_prices_1m"
+
 
 class ForexPrices2mStream(DerivativePricesStream):
-    name = 'forex_prices_2m'
+    name = "forex_prices_2m"
+
 
 class ForexPrices5mStream(DerivativePricesStream):
-    name = 'forex_prices_5m'
+    name = "forex_prices_5m"
+
 
 class ForexPrices1hStream(DerivativePricesStream):
-    name = 'forex_prices_1h'
+    name = "forex_prices_1h"
+
 
 class ForexPrices1dStream(DerivativePricesStream):
-    name = 'forex_prices_1d'
+    name = "forex_prices_1d"
+
 
 class CryptoPrices1mStream(DerivativePricesStream):
-    name = 'crypto_prices_1m'
+    name = "crypto_prices_1m"
+
 
 class CryptoPrices2mStream(DerivativePricesStream):
-    name = 'crypto_prices_2m'
+    name = "crypto_prices_2m"
+
 
 class CryptoPrices5mStream(DerivativePricesStream):
-    name = 'crypto_prices_5m'
+    name = "crypto_prices_5m"
+
 
 class CryptoPrices1hStream(DerivativePricesStream):
-    name = 'crypto_prices_1h'
+    name = "crypto_prices_1h"
+
 
 class CryptoPrices1dStream(DerivativePricesStream):
-    name = 'crypto_prices_1d'
+    name = "crypto_prices_1d"
+
 
 ###### prices wide streams ######
 
+
 class StockPricesWide1mStream(PricesStreamWide):
-    name = 'stock_prices_wide_1m'
+    name = "stock_prices_wide_1m"
+
 
 class StockPricesWide2mStream(PricesStreamWide):
-    name = 'stock_prices_wide_2m'
+    name = "stock_prices_wide_2m"
+
 
 class StockPricesWide5mStream(PricesStreamWide):
-    name = 'stock_prices_wide_5m'
+    name = "stock_prices_wide_5m"
+
 
 class StockPricesWide1hStream(PricesStreamWide):
-    name = 'stock_prices_wide_1h'
+    name = "stock_prices_wide_1h"
+
 
 class StockPricesWide1dStream(PricesStreamWide):
-    name = 'stock_prices_wide_1d'
+    name = "stock_prices_wide_1d"
+
 
 class FuturesPricesWide1mStream(PricesStreamWide):
-    name = 'futures_prices_wide_1m'
+    name = "futures_prices_wide_1m"
+
 
 class FuturesPricesWide2mStream(PricesStreamWide):
-    name = 'futures_prices_wide_2m'
+    name = "futures_prices_wide_2m"
+
 
 class FuturesPricesWide5mStream(PricesStreamWide):
-    name = 'futures_prices_wide_5m'
+    name = "futures_prices_wide_5m"
+
 
 class FuturesPricesWide1hStream(PricesStreamWide):
-    name = 'futures_prices_wide_1h'
+    name = "futures_prices_wide_1h"
+
 
 class FuturesPricesWide1dStream(PricesStreamWide):
-    name = 'futures_prices_wide_1d'
+    name = "futures_prices_wide_1d"
+
 
 class ForexPricesWide1mStream(PricesStreamWide):
-    name = 'forex_prices_wide_1m'
+    name = "forex_prices_wide_1m"
+
 
 class ForexPricesWide2mStream(PricesStreamWide):
-    name = 'forex_prices_wide_2m'
+    name = "forex_prices_wide_2m"
+
 
 class ForexPricesWide5mStream(PricesStreamWide):
-    name = 'forex_prices_wide_5m'
+    name = "forex_prices_wide_5m"
+
 
 class ForexPricesWide1hStream(PricesStreamWide):
-    name = 'forex_prices_wide_1h'
+    name = "forex_prices_wide_1h"
+
 
 class ForexPricesWide1dStream(PricesStreamWide):
-    name = 'forex_prices_wide_1d'
+    name = "forex_prices_wide_1d"
+
 
 class CryptoPricesWide1mStream(PricesStreamWide):
-    name = 'crypto_prices_wide_1m'
+    name = "crypto_prices_wide_1m"
+
 
 class CryptoPricesWide2mStream(PricesStreamWide):
-    name = 'crypto_prices_wide_2m'
+    name = "crypto_prices_wide_2m"
+
 
 class CryptoPricesWide5mStream(PricesStreamWide):
-    name = 'crypto_prices_wide_5m'
+    name = "crypto_prices_wide_5m"
+
 
 class CryptoPricesWide1hStream(PricesStreamWide):
-    name = 'crypto_prices_wide_1h'
+    name = "crypto_prices_wide_1h"
+
 
 class CryptoPricesWide1dStream(PricesStreamWide):
-    name = 'crypto_prices_wide_1d'
+    name = "crypto_prices_wide_1d"
 
 
 ###### financial streams ######
 
+
 class ActionsStream(FinancialStream):
-    name = 'actions'
-    method_name = 'get_actions'
+    name = "actions"
+    method_name = "get_actions"
 
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
@@ -200,15 +250,16 @@ class ActionsStream(FinancialStream):
         th.Property("stock_splits", th.NumberType),
     ).to_dict()
 
+
 class BalanceSheetStream(FinancialStream):
-    name = 'balance_sheet'
-    method_name = 'get_balance_sheet'
+    name = "balance_sheet"
+    method_name = "get_balance_sheet"
     schema = BALANCE_SHEET_SCHEMA
 
 
 class CalendarStream(FinancialStream):
-    name = 'calendar'
-    method_name = 'get_calendar'
+    name = "calendar"
+    method_name = "get_calendar"
     schema = th.PropertiesList(
         th.Property("dividend_date", th.DateTimeType),
         th.Property("ex_dividend_date", th.DateTimeType),
@@ -222,14 +273,16 @@ class CalendarStream(FinancialStream):
         th.Property("revenue_average", th.NumberType),
     ).to_dict()
 
+
 class CashFlowStream(FinancialStream):
-    name = 'cash_flow'
-    method_name = 'get_cash_flow'
+    name = "cash_flow"
+    method_name = "get_cash_flow"
     schema = CASH_FLOW_SCHEMA
 
+
 class DividendsStream(FinancialStream):
-    name = 'dividends'
-    method_name = 'get_dividends'
+    name = "dividends"
+    method_name = "get_dividends"
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
         th.Property("timestamp_tz_aware", th.StringType),
@@ -238,9 +291,10 @@ class DividendsStream(FinancialStream):
         th.Property("dividends", th.NumberType),
     ).to_dict()
 
+
 class EarningsDatesStream(FinancialStream):
-    name = 'earnings_dates'
-    method_name = 'get_earnings_dates'
+    name = "earnings_dates"
+    method_name = "get_earnings_dates"
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
         th.Property("timestamp_tz_aware", th.StringType),
@@ -251,9 +305,10 @@ class EarningsDatesStream(FinancialStream):
         th.Property("pct_surprise", th.NumberType),
     ).to_dict()
 
+
 class FastInfoStream(FinancialStream):
-    name = 'fast_info'
-    method_name = 'get_fast_info'
+    name = "fast_info"
+    method_name = "get_fast_info"
     schema = th.PropertiesList(
         th.Property("currency", th.StringType),
         th.Property("day_high", th.NumberType),
@@ -280,14 +335,16 @@ class FastInfoStream(FinancialStream):
         th.Property("timestamp_tz_aware", th.StringType),
     ).to_dict()
 
+
 class FinancialsStream(FinancialStream):
-    name = 'financials'
-    method_name = 'get_financials'
+    name = "financials"
+    method_name = "get_financials"
     schema = FINANCIALS_SCHEMA
 
+
 class HistoryMetadataStream(FinancialStream):
-    name = 'history_metadata'
-    method_name = 'get_history_metadata'
+    name = "history_metadata"
+    method_name = "get_history_metadata"
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -333,17 +390,19 @@ class HistoryMetadataStream(FinancialStream):
         th.Property("fifty_two_week_low", th.NumberType),
         th.Property("regular_market_day_high", th.NumberType),
         th.Property("regular_market_day_low", th.NumberType),
-        th.Property("regular_market_volume", th.NumberType)
+        th.Property("regular_market_volume", th.NumberType),
     ).to_dict()
 
+
 class IncomeStmtStream(FinancialStream):
-    name = 'income_stmt'
-    method_name = 'get_income_stmt'
+    name = "income_stmt"
+    method_name = "get_income_stmt"
     schema = INCOME_STMT_SCHEMA
 
+
 class InsiderPurchasesStream(FinancialStream):
-    name = 'insider_purchases'
-    method_name = 'get_insider_purchases'
+    name = "insider_purchases"
+    method_name = "get_insider_purchases"
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -352,9 +411,10 @@ class InsiderPurchasesStream(FinancialStream):
         th.Property("trans", th.NumberType),
     ).to_dict()
 
+
 class InsiderRosterHoldersStream(FinancialStream):
-    name = 'insider_roster_holders'
-    method_name = 'get_insider_roster_holders'
+    name = "insider_roster_holders"
+    method_name = "get_insider_roster_holders"
     schema = th.PropertiesList(
         th.Property("latest_transaction_date", th.DateTimeType),
         th.Property("ticker", th.StringType),
@@ -368,9 +428,10 @@ class InsiderRosterHoldersStream(FinancialStream):
         th.Property("position_direct_date", th.DateTimeType),
     ).to_dict()
 
+
 class InsiderTransactionsStream(FinancialStream):
-    name = 'insider_transactions'
-    method_name = 'get_insider_transactions'
+    name = "insider_transactions"
+    method_name = "get_insider_transactions"
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType),
         th.Property("start_date", th.DateTimeType),
@@ -384,9 +445,10 @@ class InsiderTransactionsStream(FinancialStream):
         th.Property("value", th.NumberType),
     ).to_dict()
 
+
 class InstitutionalHoldersStream(FinancialStream):
-    name = 'institutional_holders'
-    method_name = 'get_institutional_holders'
+    name = "institutional_holders"
+    method_name = "get_institutional_holders"
     schema = th.PropertiesList(
         th.Property("date_reported", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -396,9 +458,10 @@ class InstitutionalHoldersStream(FinancialStream):
         th.Property("value", th.NumberType),
     ).to_dict()
 
+
 class MajorHoldersStream(FinancialStream):
-    name = 'major_holders'
-    method_name = 'get_major_holders'
+    name = "major_holders"
+    method_name = "get_major_holders"
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -406,9 +469,10 @@ class MajorHoldersStream(FinancialStream):
         th.Property("value", th.NumberType),
     ).to_dict()
 
+
 class MutualFundHoldersStream(FinancialStream):
-    name = 'mutualfund_holders'
-    method_name = 'get_mutualfund_holders'
+    name = "mutualfund_holders"
+    method_name = "get_mutualfund_holders"
     schema = th.PropertiesList(
         th.Property("date_reported", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -418,9 +482,10 @@ class MutualFundHoldersStream(FinancialStream):
         th.Property("value", th.NumberType),
     ).to_dict()
 
+
 class NewsStream(FinancialStream):
-    name = 'news'
-    method_name = 'get_news'
+    name = "news"
+    method_name = "get_news"
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -435,9 +500,10 @@ class NewsStream(FinancialStream):
         th.Property("uuid", th.StringType),
     ).to_dict()
 
+
 class RecommendationsStream(FinancialStream):
-    name = 'recommendations'
-    method_name = 'get_recommendations'
+    name = "recommendations"
+    method_name = "get_recommendations"
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType),
         th.Property("timestamp_extracted", th.DateTimeType),
@@ -449,9 +515,10 @@ class RecommendationsStream(FinancialStream):
         th.Property("strong_sell", th.NumberType),
     ).to_dict()
 
+
 class SharesFullStream(FinancialStream):
-    name = 'shares_full'
-    method_name = 'get_shares_full'
+    name = "shares_full"
+    method_name = "get_shares_full"
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
         th.Property("timestamp_tz_aware", th.StringType),
@@ -460,9 +527,10 @@ class SharesFullStream(FinancialStream):
         th.Property("amount", th.NumberType),
     ).to_dict()
 
+
 class SplitsStream(FinancialStream):
-    name = 'splits'
-    method_name = 'get_splits'
+    name = "splits"
+    method_name = "get_splits"
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
         th.Property("timestamp_tz_aware", th.StringType),
@@ -471,9 +539,10 @@ class SplitsStream(FinancialStream):
         th.Property("stock_splits", th.NumberType),
     ).to_dict()
 
+
 class OptionChainStream(FinancialStream):
-    name = 'option_chain'
-    method_name = 'option_chain'
+    name = "option_chain"
+    method_name = "option_chain"
     schema = th.PropertiesList(
         th.Property("last_trade_date", th.DateTimeType, required=True),
         th.Property("last_trade_date_tz_aware", th.StringType),
@@ -496,38 +565,44 @@ class OptionChainStream(FinancialStream):
         th.Property("metadata", th.CustomType(CUSTOM_JSON_SCHEMA)),
     ).to_dict()
 
+
 class OptionsStream(FinancialStream):
-    name = 'options'
-    method_name = 'options'
+    name = "options"
+    method_name = "options"
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
         th.Property("expiration_date", th.DateTimeType),
     ).to_dict()
 
+
 class QuarterlyBalanceSheetStream(FinancialStream):
-    name = 'quarterly_balance_sheet'
-    method_name = 'quarterly_balance_sheet'
+    name = "quarterly_balance_sheet"
+    method_name = "quarterly_balance_sheet"
     schema = BALANCE_SHEET_SCHEMA
 
+
 class QuarterlyCashFlowStream(FinancialStream):
-    name = 'quarterly_cash_flow'
-    method_name = 'quarterly_cash_flow'
+    name = "quarterly_cash_flow"
+    method_name = "quarterly_cash_flow"
     schema = CASH_FLOW_SCHEMA
 
+
 class QuarterlyFinancialsStream(FinancialStream):
-    name = 'quarterly_financials'
-    method_name = 'quarterly_financials'
+    name = "quarterly_financials"
+    method_name = "quarterly_financials"
     schema = FINANCIALS_SCHEMA
 
+
 class QuarterlyIncomeStmtStream(FinancialStream):
-    name = 'quarterly_income_stmt'
-    method_name = 'quarterly_income_stmt'
+    name = "quarterly_income_stmt"
+    method_name = "quarterly_income_stmt"
     schema = INCOME_STMT_SCHEMA
 
+
 class UpgradesDowngradesStream(FinancialStream):
-    name = 'upgrades_downgrades'
-    method_name = 'get_upgrades_downgrades'
+    name = "upgrades_downgrades"
+    method_name = "get_upgrades_downgrades"
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType),
         th.Property("grade_date", th.DateTimeType),

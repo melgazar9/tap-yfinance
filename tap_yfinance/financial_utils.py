@@ -22,7 +22,9 @@ class FinancialTap:
 
     ### TODO: date filters? ###
 
-    def __init__(self, schema, ticker, name, config=None, yf_params=None, ticker_colname="ticker"):
+    def __init__(
+        self, schema, ticker, name, config=None, yf_params=None, ticker_colname="ticker"
+    ):
         self.schema = schema
         self.ticker = ticker
         self.name = name
@@ -33,18 +35,31 @@ class FinancialTap:
         super().__init__()
 
         if self.config is not None and "yf_cache_params" in self.config.get(self.name):
-            rate_request_limit = self.config.get(self.name).get("yf_cache_params").get("rate_request_limit")
-            rate_seconds_limit = self.config.get(self.name).get("yf_cache_params").get("rate_seconds_limit")
+            rate_request_limit = (
+                self.config.get(self.name)
+                .get("yf_cache_params")
+                .get("rate_request_limit")
+            )
+            rate_seconds_limit = (
+                self.config.get(self.name)
+                .get("yf_cache_params")
+                .get("rate_seconds_limit")
+            )
 
             from requests import Session
             from requests_cache import CacheMixin, SQLiteCache
             from requests_ratelimiter import LimiterMixin, MemoryQueueBucket
             from pyrate_limiter import Duration, RequestRate, Limiter
+
             class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
                 pass
 
             self.session = CachedLimiterSession(
-                limiter=Limiter(RequestRate(rate_request_limit, Duration.SECOND * rate_seconds_limit)),
+                limiter=Limiter(
+                    RequestRate(
+                        rate_request_limit, Duration.SECOND * rate_seconds_limit
+                    )
+                ),
                 bucket_class=MemoryQueueBucket,
                 backend=SQLiteCache("yfinance.cache"),
             )
@@ -572,7 +587,9 @@ class FinancialTap:
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
             df.columns = clean_strings(df.columns)
-            df["provider_publish_time"] = pd.to_datetime(df["provider_publish_time"], unit="s")
+            df["provider_publish_time"] = pd.to_datetime(
+                df["provider_publish_time"], unit="s"
+            )
             # df["thumbnail"] = df["thumbnail"].astype(str)
             df = df.replace([np.inf, -np.inf, np.nan], None)
 
