@@ -457,17 +457,48 @@ class TickerDownloader:
 
         df = tables[0].copy()
 
-        df = df.rename(columns={"Symbol": "ticker", "% Change": "pct_change", "Change %": "pct_change", "52 Wk Range": "range_52wk"})
+        df = df.rename(
+            columns={
+                "Symbol": "ticker",
+                "% Change": "pct_change",
+                "Change %": "pct_change",
+                "52 Wk Range": "range_52wk",
+            }
+        )
         df.columns = clean_strings(df.columns)
+        if "unnamed_2" in df.columns and all(df["unnamed_2"].isnull()):
+            df = df.drop("unnamed_2", axis=1)
 
         # df.loc[:, "bloomberg_ticker"] = df["name"].apply(lambda x: f"{x[4:]}-{x[0:3]}")
-        df["name"] = df["ticker"].str.split(" ").apply(lambda x: x[1])
+        if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
+            df["name"] = df["ticker"].str.split(" ").apply(lambda x: x[1])
+        elif df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
+            df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
+
+        if len(df["price"].iloc[0].split(" ")) == 3:
+            if df["change"].isnull().any():
+                df["change"] = df["change"].fillna(
+                    df["price"].apply(lambda x: x.split(" ")[1])
+                )
+            if df["pct_change"].isnull().any():
+                df["pct_change"] = df["pct_change"].fillna(
+                    df["price"]
+                    .apply(lambda x: x.split(" ")[2])
+                    .str.replace("(", "")
+                    .str.replace(")", "")
+                )
+            # df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).str.replace(",", "").astype(float)
+            df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).astype(str)
+
         df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
         df = df.dropna(how="all", axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
 
         first_cols = ["ticker", "name"]
-        df = df[first_cols + [i for i in df.columns if i not in first_cols]].dropna(how="all", axis=1)
+        df = df[first_cols + [i for i in df.columns if i not in first_cols]].dropna(
+            how="all", axis=1
+        )
+
         return df
 
     @staticmethod
@@ -500,6 +531,7 @@ class TickerDownloader:
         df[str_cols] = df[str_cols].astype(str)
         df = df.dropna(how="all", axis=1)
         df = df.replace([np.inf, -np.inf, np.nan], None)
+
         return df
 
     def download_numerai_signals_ticker_map(
@@ -507,7 +539,6 @@ class TickerDownloader:
         numerai_ticker_link="https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/signals_ticker_map_w_bbg.csv",
         yahoo_ticker_colname="yahoo",
     ):
-
         """Download numerai to yahoo ticker mapping"""
 
         ticker_map = pd.read_csv(numerai_ticker_link)
