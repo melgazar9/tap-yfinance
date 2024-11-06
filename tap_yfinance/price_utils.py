@@ -315,6 +315,7 @@ class TickerDownloader:
         session.close()
 
         df = df.drop_duplicates().reset_index(drop=True)
+
         df = df.rename(
             columns={
                 "Symbol": "ticker",
@@ -327,15 +328,30 @@ class TickerDownloader:
             }
         )
 
-        df["name"] = (
-            df["ticker"]
-            .str.split(" ")
-            .apply(lambda x: "".join(x[1:]) if len(x) > 1 else "")
-        )
-
-        df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
         df.columns = clean_strings(df.columns)
         df = df.dropna(how="all", axis=1)
+
+        # df.loc[:, "bloomberg_ticker"] = df["name"].apply(lambda x: f"{x[4:]}-{x[0:3]}")
+        if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
+            df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
+
+        if len(df["price"].iloc[0].split(" ")) == 3:
+            if df["change"].isnull().any():
+                df["change"] = df["change"].fillna(
+                    df["price"].apply(lambda x: x.split(" ")[1])
+                )
+            if df["pct_change"].isnull().any():
+                df["pct_change"] = df["pct_change"].fillna(
+                    df["price"]
+                    .apply(lambda x: x.split(" ")[2])
+                    .str.replace("(", "")
+                    .str.replace(")", "")
+                )
+            # df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).str.replace(",", "").astype(float)
+            df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).astype(str)
+
+        # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
+
         df = df.replace([np.inf, -np.inf, np.nan], None)
 
         str_cols = [
@@ -401,11 +417,30 @@ class TickerDownloader:
             }
         )
 
-        df["name"] = df["ticker"].str.split(" ").apply(lambda x: x[1])
-        df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
+        # df["name"] = df["ticker"].str.split(" ").apply(lambda x: x[1])
+        # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
 
         df.columns = clean_strings(df.columns)
         df = df.dropna(how="all", axis=1)
+
+        if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
+            df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
+
+        if len(df["price"].iloc[0].split(" ")) == 3:
+            if df["change"].isnull().any():
+                df["change"] = df["change"].fillna(
+                    df["price"].apply(lambda x: x.split(" ")[1])
+                )
+            if df["pct_change"].isnull().any():
+                df["pct_change"] = df["pct_change"].fillna(
+                    df["price"]
+                    .apply(lambda x: x.split(" ")[2])
+                    .str.replace("(", "")
+                    .str.replace(")", "")
+                )
+            # df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).str.replace(",", "").astype(float)
+            df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).astype(str)
+
         df = df.replace([np.inf, -np.inf, np.nan], None)
 
         str_cols = [
@@ -437,6 +472,7 @@ class TickerDownloader:
             "circulating_supply",
             "change_pct_52wk",
         ]
+
         return df[column_order]
 
     @staticmethod
@@ -465,11 +501,13 @@ class TickerDownloader:
                 "52 Wk Range": "range_52wk",
             }
         )
-        df.columns = clean_strings(df.columns)
-        if "unnamed_2" in df.columns and all(df["unnamed_2"].isnull()):
-            df = df.drop("unnamed_2", axis=1)
 
-        # df.loc[:, "bloomberg_ticker"] = df["name"].apply(lambda x: f"{x[4:]}-{x[0:3]}")
+        df.columns = clean_strings(df.columns)
+        df = df.dropna(how="all", axis=1)
+
+        df.columns = clean_strings(df.columns)
+        df = df.dropna(how="all", axis=1)
+
         if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
             df["name"] = df["ticker"].str.split(" ").apply(lambda x: x[1])
         elif df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
@@ -490,9 +528,14 @@ class TickerDownloader:
             # df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).str.replace(",", "").astype(float)
             df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).astype(str)
 
-        df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
-        df = df.dropna(how="all", axis=1)
+        # df.loc[:, "bloomberg_ticker"] = df["name"].apply(lambda x: f"{x[4:]}-{x[0:3]}")
+        if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
+            df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
+
+        # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
+
         df = df.replace([np.inf, -np.inf, np.nan], None)
+        df[df.columns] = df[df.columns].astype(str)
 
         first_cols = ["ticker", "name"]
         df = df[first_cols + [i for i in df.columns if i not in first_cols]].dropna(
