@@ -587,15 +587,12 @@ class FinancialTap:
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
             df.columns = clean_strings(df.columns)
-            df["provider_publish_time"] = pd.to_datetime(
-                df["provider_publish_time"], unit="s"
-            )
-            # df["thumbnail"] = df["thumbnail"].astype(str)
             df = df.replace([np.inf, -np.inf, np.nan], None)
 
             column_order = ["timestamp_extracted", "ticker"] + sorted(
                 [i for i in df.columns if i not in ["timestamp_extracted", "ticker"]]
             )
+
             return df[column_order]
         else:
             logging.warning(
@@ -736,7 +733,7 @@ class FinancialTap:
                             date=exp_date
                         )
                         if len(option_chain_data):
-                            for ocd in option_chain_data[0:-1]:
+                            for ocd in option_chain_data[0:-1]:  # exclude metadata
                                 ocd.columns = clean_strings(ocd.columns)
                                 ocd["last_trade_date_tz_aware"] = ocd[
                                     "last_trade_date"
