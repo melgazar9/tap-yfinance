@@ -8,7 +8,7 @@ from pytickersymbols import PyTickerSymbols
 from pandas_datareader import data as pdr
 import re
 from requests.exceptions import ChunkedEncodingError
-
+import requests
 
 class PriceTap:
     """
@@ -219,8 +219,8 @@ class TickerDownloader:
     """
     Description
     -----------
-    Class to download PyTickerSymbols, Yahoo, and Numerai ticker symbols into a single dataframe.
-    A mapping between all symbols is returned when calling the method download_valid_stock_tickers().
+    Class to download PyTickerSymbols attempting to link Yahoo tickers to SEC ticker symbols into a single dataframe.
+    A mapping between all symbols is returned when calling the method generate_yahoo_sec_tickermap().
     """
 
     def __init__(self):
@@ -269,7 +269,7 @@ class TickerDownloader:
             .drop_duplicates()
         )
         all_tickers = all_tickers.replace([-np.inf, np.inf, np.nan], None)
-
+        all_tickers.columns = ["yahoo_ticker_pts", "google_ticker_pts"]
         return all_tickers
 
     @staticmethod
@@ -577,145 +577,181 @@ class TickerDownloader:
 
         return df
 
-    def download_numerai_signals_ticker_map(
-        self,
-        numerai_ticker_link="https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/signals_ticker_map_w_bbg.csv",
-        yahoo_ticker_colname="yahoo",
-    ):
-        """Download numerai to yahoo ticker mapping"""
+    @staticmethod
+    def pull_sec_tickers():
+        url = "https://www.sec.gov/files/company_tickers.json"
+        headers = {
+            "User-Agent": "MyScraper/1.1.0 (myemail2@example3.com)",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://www.sec.gov",
+            "Connection": "keep-alive",
+        }
 
-        ticker_map = pd.read_csv(numerai_ticker_link)
+        session = requests.Session()
+        session.headers.update(headers)
+        response = session.get(url)
 
-        logging.info("Number of eligible tickers in map: %s", str(ticker_map.shape[0]))
+        if response.status_code == 200:
+            df_sec_tickers = pd.DataFrame.from_dict(response.json()).T
+            df_sec_tickers.columns = ['sec_cik_str', 'sec_ticker', 'sec_title']
+        else:
+            raise f"Error fetching data from SEC: {response.status_code}"
 
-        ticker_map = ticker_map.replace([np.inf, -np.inf, np.nan], None)
-        valid_tickers = [
-            i for i in ticker_map[yahoo_ticker_colname] if i is not None and len(i) > 0
-        ]
-        logging.info(f"tickers before cleaning: %s", ticker_map.shape)
-        ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
-        logging.info(f"tickers after cleaning: %s", ticker_map.shape)
-        return ticker_map
+        return df_sec_tickers
 
-    @classmethod
-    def download_valid_stock_tickers(cls):
-        """Download the valid tickers from py-ticker-symbols"""
+    def generate_yahoo_sec_tickermap(self):
+        df_sec_tickers = self.pull_sec_tickers()
+        df_pts_tickers = self.download_pts_stock_tickers()
+        df_mapped = pd.merge(df_sec_tickers, df_pts_tickers, left_on='sec_ticker', right_on='yahoo_ticker_pts', how='outer')
+        df_mapped['ticker'] = df_mapped['sec_ticker'].fillna(df_mapped['yahoo_ticker_pts'])  # likely yahoo ticker
+        df_mapped = df_mapped.replace([np.inf, -np.inf, np.nan], None)
+        return df_mapped
 
-        def handle_duplicate_columns(columns):
-            seen_columns = {}
-            new_columns = []
 
-            for column in columns:
-                if column not in seen_columns:
-                    new_columns.append(column)
-                    seen_columns[column] = 1
-                else:
-                    seen_columns[column] += 1
-                    new_columns.append(f"{column}_{seen_columns[column]}")
-            return new_columns
+    ###### numerai deprecated their yahoo-bloomberg ticker mapping ######
 
-        df_pts_tickers = cls.download_pts_stock_tickers()
+    # def download_numerai_signals_ticker_map(
+    #     self,
+    #     numerai_ticker_link="https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/signals_ticker_map_w_bbg.csv",
+    #     yahoo_ticker_colname="yahoo",
+    # ):
+    #     """Download numerai to yahoo ticker mapping"""
+    #
+    #     ticker_map = pd.read_csv(numerai_ticker_link)
+    #
+    #     logging.info("Number of eligible tickers in map: %s", str(ticker_map.shape[0]))
+    #
+    #     ticker_map = ticker_map.replace([np.inf, -np.inf, np.nan], None)
+    #     valid_tickers = [
+    #         i for i in ticker_map[yahoo_ticker_colname] if i is not None and len(i) > 0
+    #     ]
+    #     logging.info(f"tickers before cleaning: %s", ticker_map.shape)
+    #     ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
+    #     logging.info(f"tickers after cleaning: %s", ticker_map.shape)
+    #     return ticker_map
 
-        numerai_yahoo_tickers = (
-            cls()
-            .download_numerai_signals_ticker_map()
-            .rename(columns={"yahoo": "yahoo_ticker", "ticker": "numerai_ticker"})
-        )
-
-        df1 = pd.merge(
-            df_pts_tickers, numerai_yahoo_tickers, on="yahoo_ticker", how="left"
-        ).set_index("yahoo_ticker")
-        df2 = pd.merge(
-            numerai_yahoo_tickers, df_pts_tickers, on="yahoo_ticker", how="left"
-        ).set_index("yahoo_ticker")
-        df3 = (
-            pd.merge(
-                df_pts_tickers,
-                numerai_yahoo_tickers,
-                left_on="yahoo_ticker",
-                right_on="numerai_ticker",
-                how="left",
-            )
-            .rename(
-                columns={
-                    "yahoo_ticker_x": "yahoo_ticker",
-                    "yahoo_ticker_y": "yahoo_ticker_old",
-                }
-            )
-            .set_index("yahoo_ticker")
-        )
-
-        df4 = (
-            pd.merge(
-                df_pts_tickers,
-                numerai_yahoo_tickers,
-                left_on="yahoo_ticker",
-                right_on="bloomberg_ticker",
-                how="left",
-            )
-            .rename(
-                columns={
-                    "yahoo_ticker_x": "yahoo_ticker",
-                    "yahoo_ticker_y": "yahoo_ticker_old",
-                }
-            )
-            .set_index("yahoo_ticker")
-        )
-
-        df_tickers_wide = pd.concat([df1, df2, df3, df4], axis=1)
-        df_tickers_wide.columns = handle_duplicate_columns(df_tickers_wide.columns)
-        df_tickers_wide.columns = clean_strings(df_tickers_wide.columns)
-
-        for col in df_tickers_wide.columns:
-            suffix = col[-1]
-            if suffix.isdigit():
-                root_col = col.strip("_" + suffix)
-                df_tickers_wide.loc[:, root_col] = df_tickers_wide[root_col].fillna(
-                    df_tickers_wide[col]
-                )
-
-        df_tickers = (
-            df_tickers_wide.reset_index()[
-                [
-                    "yahoo_ticker",
-                    "google_ticker",
-                    "bloomberg_ticker",
-                    "numerai_ticker",
-                    "yahoo_ticker_old",
-                ]
-            ]
-            .sort_values(
-                by=[
-                    "yahoo_ticker",
-                    "google_ticker",
-                    "bloomberg_ticker",
-                    "numerai_ticker",
-                    "yahoo_ticker_old",
-                ]
-            )
-            .drop_duplicates()
-        )
-
-        df_tickers.loc[:, "yahoo_valid_pts"] = False
-        df_tickers.loc[:, "yahoo_valid_numerai"] = False
-
-        df_tickers.loc[
-            df_tickers["yahoo_ticker"].isin(df_pts_tickers["yahoo_ticker"].tolist()),
-            "yahoo_valid_pts",
-        ] = True
-
-        df_tickers.loc[
-            df_tickers["yahoo_ticker"].isin(
-                numerai_yahoo_tickers["numerai_ticker"].tolist()
-            ),
-            "yahoo_valid_numerai",
-        ] = True
-
-        df_tickers = df_tickers.replace([np.inf, -np.inf, np.nan], None)
-        df_tickers = df_tickers.rename(
-            columns={"yahoo_ticker": "ticker"}
-        )  # necessary to allow schema partitioning
-        return df_tickers
+    # @classmethod
+    # def download_valid_stock_tickers(cls):
+    #     """Download the valid tickers from py-ticker-symbols"""
+    #
+    #     def handle_duplicate_columns(columns):
+    #         seen_columns = {}
+    #         new_columns = []
+    #
+    #         for column in columns:
+    #             if column not in seen_columns:
+    #                 new_columns.append(column)
+    #                 seen_columns[column] = 1
+    #             else:
+    #                 seen_columns[column] += 1
+    #                 new_columns.append(f"{column}_{seen_columns[column]}")
+    #         return new_columns
+    #
+    #     df_pts_tickers = cls.download_pts_stock_tickers()
+    #
+    #     numerai_yahoo_tickers = (
+    #         cls()
+    #         .download_numerai_signals_ticker_map()
+    #         .rename(columns={"yahoo": "yahoo_ticker", "ticker": "numerai_ticker"})
+    #     )
+    #
+    #     df1 = pd.merge(
+    #         df_pts_tickers, df_sec_tickers, on="yahoo_ticker", how="left"
+    #     ).set_index("yahoo_ticker")
+    #
+    #     df2 = pd.merge(
+    #         numerai_yahoo_tickers, df_pts_tickers, on="yahoo_ticker", how="left"
+    #     ).set_index("yahoo_ticker")
+    #
+    #     df3 = (
+    #         pd.merge(
+    #             df_pts_tickers,
+    #             numerai_yahoo_tickers,
+    #             left_on="yahoo_ticker",
+    #             right_on="numerai_ticker",
+    #             how="left",
+    #         )
+    #         .rename(
+    #             columns={
+    #                 "yahoo_ticker_x": "yahoo_ticker",
+    #                 "yahoo_ticker_y": "yahoo_ticker_old",
+    #             }
+    #         )
+    #         .set_index("yahoo_ticker")
+    #     )
+    #
+    #     df4 = (
+    #         pd.merge(
+    #             df_pts_tickers,
+    #             numerai_yahoo_tickers,
+    #             left_on="yahoo_ticker",
+    #             right_on="bloomberg_ticker",
+    #             how="left",
+    #         )
+    #         .rename(
+    #             columns={
+    #                 "yahoo_ticker_x": "yahoo_ticker",
+    #                 "yahoo_ticker_y": "yahoo_ticker_old",
+    #             }
+    #         )
+    #         .set_index("yahoo_ticker")
+    #     )
+    #
+    #     df_tickers_wide = pd.concat([df1, df2, df3, df4], axis=1)
+    #     df_tickers_wide.columns = handle_duplicate_columns(df_tickers_wide.columns)
+    #     df_tickers_wide.columns = clean_strings(df_tickers_wide.columns)
+    #
+    #     for col in df_tickers_wide.columns:
+    #         suffix = col[-1]
+    #         if suffix.isdigit():
+    #             root_col = col.strip("_" + suffix)
+    #             df_tickers_wide.loc[:, root_col] = df_tickers_wide[root_col].fillna(
+    #                 df_tickers_wide[col]
+    #             )
+    #
+    #     df_tickers = (
+    #         df_tickers_wide.reset_index()[
+    #             [
+    #                 "yahoo_ticker",
+    #                 "google_ticker",
+    #                 "bloomberg_ticker",
+    #                 "numerai_ticker",
+    #                 "yahoo_ticker_old",
+    #             ]
+    #         ]
+    #         .sort_values(
+    #             by=[
+    #                 "yahoo_ticker",
+    #                 "google_ticker",
+    #                 "bloomberg_ticker",
+    #                 "numerai_ticker",
+    #                 "yahoo_ticker_old",
+    #             ]
+    #         )
+    #         .drop_duplicates()
+    #     )
+    #
+    #     df_tickers.loc[:, "yahoo_valid_pts"] = False
+    #     df_tickers.loc[:, "yahoo_valid_numerai"] = False
+    #
+    #     df_tickers.loc[
+    #         df_tickers["yahoo_ticker"].isin(df_pts_tickers["yahoo_ticker"].tolist()),
+    #         "yahoo_valid_pts",
+    #     ] = True
+    #
+    #     df_tickers.loc[
+    #         df_tickers["yahoo_ticker"].isin(
+    #             numerai_yahoo_tickers["numerai_ticker"].tolist()
+    #         ),
+    #         "yahoo_valid_numerai",
+    #     ] = True
+    #
+    #     df_tickers = df_tickers.replace([np.inf, -np.inf, np.nan], None)
+    #     df_tickers = df_tickers.rename(
+    #         columns={"yahoo_ticker": "ticker"}
+    #     )  # necessary to allow schema partitioning
+    #     return df_tickers
 
 
 def get_valid_yfinance_start_timestamp(interval, start="1950-01-01 00:00:00"):

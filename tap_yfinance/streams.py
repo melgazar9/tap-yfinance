@@ -9,12 +9,11 @@ class StockTickersStream(TickerStream):
     name = "stock_tickers"
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType, required=True),
-        th.Property("google_ticker", th.StringType),
-        th.Property("bloomberg_ticker", th.StringType),
-        th.Property("numerai_ticker", th.StringType),
-        th.Property("yahoo_ticker_old", th.StringType),
-        th.Property("yahoo_valid_pts", th.BooleanType),
-        th.Property("yahoo_valid_numerai", th.BooleanType),
+        th.Property("sec_ticker", th.StringType),
+        th.Property("yahoo_ticker_pts", th.StringType),
+        th.Property("google_ticker_pts", th.StringType),
+        th.Property("sec_cik_str", th.NumberType),
+        th.Property("sec_title", th.StringType),
     ).to_dict()
 
 
