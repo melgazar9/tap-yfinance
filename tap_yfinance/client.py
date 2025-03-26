@@ -68,7 +68,7 @@ class BaseStream(Stream, ABC):
 
     def get_ticker_download_method(self):
         if self.name.startswith("stock"):
-            return "download_valid_stock_tickers"
+            return "generate_yahoo_sec_tickermap"
         elif self.name.startswith("futures"):
             return "download_futures_tickers"
         elif self.name.startswith("forex"):
@@ -107,7 +107,7 @@ class BaseStream(Stream, ABC):
             "quarterly_income_stmt",
         ):
             return (
-                "download_valid_stock_tickers"  # only stock tickers for financial data
+                "generate_yahoo_sec_tickermap"  # only stock tickers for financial data
             )
         else:
             raise ValueError(

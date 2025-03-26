@@ -586,12 +586,11 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
+            df[["id", "content"]] = df[["id", "content"]].astype(str)
             df.columns = clean_strings(df.columns)
             df = df.replace([np.inf, -np.inf, np.nan], None)
 
-            column_order = ["timestamp_extracted", "ticker"] + sorted(
-                [i for i in df.columns if i not in ["timestamp_extracted", "ticker"]]
-            )
+            column_order = ["timestamp_extracted", "ticker", "id", "content"]
 
             return df[column_order]
         else:
@@ -745,7 +744,7 @@ class FinancialTap:
                                 df["ticker"] = ticker
                                 df["timestamp_extracted"] = datetime.utcnow()
                                 df = df.drop_duplicates()
-                                df["metadata"]  = str(option_chain_data[-1])
+                                df["metadata"] = str(option_chain_data[-1])
                                 # df["metadata"] = df["metadata"].astype(str)
                         try:
                             df.columns = clean_strings(df.columns)
