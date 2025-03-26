@@ -128,6 +128,11 @@ class FinancialTap:
             df["ticker"] = ticker
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = clean_strings(df.columns)
+            df = df.rename(
+                columns={
+                    "financial_assets_designatedas_fair_value_through_profitor_loss_total": "financial_assets_designatedas_fv_thru_profitor_loss_total"
+                }
+            )
             df.columns = [i.replace("p_p_e", "ppe") for i in df.columns]
         else:
             return pd.DataFrame(columns=["date"])
@@ -822,6 +827,11 @@ class FinancialTap:
             df["ticker"] = ticker
             df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
             df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = df.rename(
+                columns={
+                    "financial_assets_designatedas_fair_value_through_profitor_loss_total": "financial_assets_designatedas_fv_thru_profitor_loss_total"
+                }
+            )
             column_order = ["date", "ticker"] + sorted(
                 [i for i in df.columns if i not in ["date", "ticker"]]
             )
