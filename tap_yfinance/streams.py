@@ -489,7 +489,7 @@ class NewsStream(FinancialStream):
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
         th.Property("id", th.StringType),
-        th.Property("content", th.DateTimeType),
+        th.Property("content", th.StringType),
     ).to_dict()
 
 
