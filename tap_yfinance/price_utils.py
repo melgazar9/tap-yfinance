@@ -10,6 +10,7 @@ import re
 from requests.exceptions import ChunkedEncodingError
 import requests
 
+
 class PriceTap:
     """
     Parameters
@@ -594,7 +595,7 @@ class TickerDownloader:
 
         if response.status_code == 200:
             df_sec_tickers = pd.DataFrame.from_dict(response.json()).T
-            df_sec_tickers.columns = ['sec_cik_str', 'sec_ticker', 'sec_title']
+            df_sec_tickers.columns = ["sec_cik_str", "sec_ticker", "sec_title"]
         else:
             raise f"Error fetching data from SEC: {response.status_code}"
 
@@ -603,11 +604,18 @@ class TickerDownloader:
     def generate_yahoo_sec_tickermap(self):
         df_sec_tickers = self.pull_sec_tickers()
         df_pts_tickers = self.download_pts_stock_tickers()
-        df_mapped = pd.merge(df_sec_tickers, df_pts_tickers, left_on='sec_ticker', right_on='yahoo_ticker_pts', how='outer')
-        df_mapped['ticker'] = df_mapped['sec_ticker'].fillna(df_mapped['yahoo_ticker_pts'])  # likely yahoo ticker
+        df_mapped = pd.merge(
+            df_sec_tickers,
+            df_pts_tickers,
+            left_on="sec_ticker",
+            right_on="yahoo_ticker_pts",
+            how="outer",
+        )
+        df_mapped["ticker"] = df_mapped["sec_ticker"].fillna(
+            df_mapped["yahoo_ticker_pts"]
+        )  # likely yahoo ticker
         df_mapped = df_mapped.replace([np.inf, -np.inf, np.nan], None)
         return df_mapped
-
 
     ###### numerai deprecated their yahoo-bloomberg ticker mapping ######
 

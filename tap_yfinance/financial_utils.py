@@ -744,7 +744,7 @@ class FinancialTap:
                                 df["ticker"] = ticker
                                 df["timestamp_extracted"] = datetime.utcnow()
                                 df = df.drop_duplicates()
-                                df["metadata"]  = str(option_chain_data[-1])
+                                df["metadata"] = str(option_chain_data[-1])
                                 # df["metadata"] = df["metadata"].astype(str)
                         try:
                             df.columns = clean_strings(df.columns)
