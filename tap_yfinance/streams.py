@@ -452,9 +452,10 @@ class InstitutionalHoldersStream(FinancialStream):
         th.Property("date_reported", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
         th.Property("holder", th.StringType),
-        th.Property("pct_out", th.NumberType),
+        th.Property("pct_held", th.NumberType),
         th.Property("shares", th.NumberType),
         th.Property("value", th.NumberType),
+        th.Property("pct_change", th.NumberType),
     ).to_dict()
 
 
@@ -479,6 +480,7 @@ class MutualFundHoldersStream(FinancialStream):
         th.Property("pct_held", th.NumberType),
         th.Property("shares", th.NumberType),
         th.Property("value", th.NumberType),
+        th.Property("pct_change", th.NumberType),
     ).to_dict()
 
 

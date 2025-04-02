@@ -498,15 +498,17 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date_reported"])
 
-        if isinstance(df, pd.DataFrame) and df.shape[0] and df.shape[1] == 5:
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
             df["ticker"] = ticker
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df = df.rename(columns={"% Out": "pct_out"})
             df.columns = clean_strings(df.columns)
-            column_order = ["date_reported", "ticker"] + sorted(
-                [i for i in df.columns if i not in ["date_reported", "ticker"]]
-            )
-
+            column_order = ['date_reported', 'ticker', 'holder', 'pct_change', 'pct_held', 'shares', 'value']
+            mismatched_columns = [i for i in df.columns if i not in column_order]
+            if len(mismatched_columns):
+                logging.warning(
+                    f"There exists columns in mutualfund_holders that are not in schema {mismatched_columns}"
+                )
             return df[column_order]
         else:
             logging.warning(
@@ -564,14 +566,14 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date_reported"])
 
-        if isinstance(df, pd.DataFrame) and df.shape[0] and df.shape[1] == 5:
-            df.rename(columns={"pctHeld": "pct_held"}, inplace=True)
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df = df.replace([np.inf, -np.inf, np.nan], None)
-            column_order = ["date_reported", "ticker"] + sorted(
-                [i for i in df.columns if i not in ["date_reported", "ticker"]]
-            )
+            column_order = ['date_reported', 'ticker', 'holder', 'pct_change', 'pct_held', 'shares', 'value']
+            mismatched_columns = [i for i in df.columns if i not in column_order]
+            if len(mismatched_columns):
+                logging.warning(f"There exists columns in mutualfund_holders that are not in schema {mismatched_columns}")
             return df[column_order]
         else:
             logging.warning(
