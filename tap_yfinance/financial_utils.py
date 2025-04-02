@@ -498,7 +498,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date_reported"])
 
-        if isinstance(df, pd.DataFrame) and df.shape[0] and df.shape[1] == 5:
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
             df["ticker"] = ticker
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df = df.rename(columns={"% Out": "pct_out"})
