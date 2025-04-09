@@ -8,6 +8,7 @@ from pytickersymbols import PyTickerSymbols
 from pandas_datareader import data as pdr
 import re
 from requests.exceptions import ChunkedEncodingError
+
 import requests
 
 
@@ -23,12 +24,13 @@ class PriceTap:
         self, schema, config, name, ticker=None, yf_params=None, ticker_colname="ticker"
     ):
         self.schema = schema
-        self.config = config
+        self.ticker = ticker
         self.name = name
-        self.column_order = list(self.schema.get("properties").keys())
+        self.config = config
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
-        self.ticker = ticker
+
+        self.column_order = list(self.schema.get("properties").keys())
 
         super().__init__()
 

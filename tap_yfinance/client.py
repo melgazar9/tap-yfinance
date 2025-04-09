@@ -79,6 +79,7 @@ class BaseStream(Stream, ABC):
             return "download_top_250_crypto_tickers"
         elif self.name in (
             "actions",
+            "analyst_price_targets",
             "balance_sheet",
             "calendar",
             "cash_flow",
@@ -98,6 +99,7 @@ class BaseStream(Stream, ABC):
             "recommendations",
             "shares_full",
             "splits",
+            "sustainability",
             "upgrades_downgrades",
             "option_chain",
             "options",

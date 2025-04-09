@@ -50,6 +50,7 @@ plugins:
 #        - forex_prices_wide_1m.*
 #        - crypto_prices_wide_1m.*
         - actions.*
+        - analyst_price_targets.*
         - balance_sheet.*
         - calendar.*
         - cash_flow.*
@@ -69,6 +70,7 @@ plugins:
         - recommendations.*
         - shares_full.*
         - splits.*
+        - sustainability.*
         - option_chain.*
         - options.*
         - quarterly_balance_sheet.*
@@ -200,6 +202,9 @@ plugins:
         actions:
           tickers: [ "AAPL", "META" ]
 
+        analyst_price_targets:
+          tickers: [ "AAPL", "META" ]
+
         balance_sheet:
           tickers: [ "AAPL", "META" ]
 
@@ -255,6 +260,9 @@ plugins:
           tickers: [ "AAPL", "META" ]
 
         splits:
+          tickers: [ "AAPL", "META" ]
+
+        sustainability:
           tickers: [ "AAPL", "META" ]
 
         option_chain:
@@ -404,6 +412,10 @@ plugins:
           replication-method: INCREMENTAL
           replication-key: timestamp
 
+        analyst_price_targets:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
         balance_sheet:
           replication-method: INCREMENTAL
           replication-key: date
@@ -479,6 +491,10 @@ plugins:
         splits:
           replication-method: INCREMENTAL
           replication-key: timestamp
+
+        sustainability:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
 
         option_chain:
           replication-method: INCREMENTAL
