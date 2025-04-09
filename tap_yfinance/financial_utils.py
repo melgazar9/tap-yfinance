@@ -7,7 +7,6 @@ from tap_yfinance.price_utils import clean_strings
 
 
 ### failed ###
-# 'analyst_price_target',
 # 'earnings',
 # 'earnings_forecasts',
 # 'earnings_trend',
@@ -83,6 +82,25 @@ class FinancialTap:
         )
         df[timestamp_column] = pd.to_datetime(df[timestamp_column], utc=True)
         return df
+
+    def get_analyst_price_targets(self, ticker):
+        try:
+            data = self.yf_ticker_obj.get_analyst_price_targets()
+        except Exception:
+            logging.warning(
+                f"Error extracting data get_actions for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+        if isinstance(data, dict) and len(data):
+            df = pd.DataFrame.from_dict(data, orient='index').T
+            df["timestamp_extracted"] = datetime.utcnow()
+            df["ticker"] = ticker
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+        else:
+            return pd.DataFrame()
+        column_order = ["timestamp_extracted", "ticker", "current", "high", "low", "mean", "median"]
+        return df[column_order]
 
     def get_actions(self, ticker):
         try:

@@ -50,6 +50,7 @@ plugins:
 #        - forex_prices_wide_1m.*
 #        - crypto_prices_wide_1m.*
         - actions.*
+        - analyst_price_targets.*
         - balance_sheet.*
         - calendar.*
         - cash_flow.*
@@ -198,6 +199,9 @@ plugins:
         ### financials ###
 
         actions:
+          tickers: [ "AAPL", "META" ]
+
+        analyst_price_targets:
           tickers: [ "AAPL", "META" ]
 
         balance_sheet:
@@ -403,6 +407,10 @@ plugins:
         actions:
           replication-method: INCREMENTAL
           replication-key: timestamp
+
+        analyst_price_targets:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
 
         balance_sheet:
           replication-method: INCREMENTAL

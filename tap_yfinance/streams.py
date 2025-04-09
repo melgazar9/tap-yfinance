@@ -249,6 +249,20 @@ class ActionsStream(FinancialStream):
         th.Property("stock_splits", th.NumberType),
     ).to_dict()
 
+class AnalystPriceTargetsStream(FinancialStream):
+    name = "analyst_price_targets"
+    method_name = "get_analyst_price_targets"
+
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("current", th.NumberType),
+        th.Property("high", th.NumberType),
+        th.Property("low", th.NumberType),
+        th.Property("mean", th.NumberType),
+        th.Property("median", th.NumberType),
+    ).to_dict()
+
 
 class BalanceSheetStream(FinancialStream):
     name = "balance_sheet"
