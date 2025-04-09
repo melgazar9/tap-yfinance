@@ -249,6 +249,7 @@ class ActionsStream(FinancialStream):
         th.Property("stock_splits", th.NumberType),
     ).to_dict()
 
+
 class AnalystPriceTargetsStream(FinancialStream):
     name = "analyst_price_targets"
     method_name = "get_analyst_price_targets"
@@ -545,6 +546,51 @@ class SplitsStream(FinancialStream):
         th.Property("timezone", th.StringType),
         th.Property("ticker", th.StringType),
         th.Property("stock_splits", th.NumberType),
+    ).to_dict()
+
+
+class SustainabilityStream(FinancialStream):
+    name = "sustainability"
+    method_name = "get_sustainability"
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("max_age", th.NumberType),
+        th.Property("total_esg", th.NumberType),
+        th.Property("environment_score", th.NumberType),
+        th.Property("social_score", th.NumberType),
+        th.Property("governance_score", th.NumberType),
+        th.Property("rating_year", th.NumberType),
+        th.Property("rating_month", th.NumberType),
+        th.Property("highest_controversy", th.NumberType),
+        th.Property("peer_count", th.NumberType),
+        th.Property("esg_performance", th.StringType),
+        th.Property("peer_group", th.StringType),
+        th.Property("related_controversy", th.StringType),
+        th.Property("peer_esg_score_performance", th.StringType),
+        th.Property("peer_governance_performance", th.StringType),
+        th.Property("peer_social_performance", th.StringType),
+        th.Property("peer_environment_performance", th.StringType),
+        th.Property("peer_highest_controversy_performance", th.StringType),
+        th.Property("percentile", th.NumberType),
+        th.Property("environment_percentile", th.NumberType),
+        th.Property("social_percentile", th.NumberType),
+        th.Property("governance_percentile", th.NumberType),
+        th.Property("adult", th.BooleanType),
+        th.Property("alcoholic", th.BooleanType),
+        th.Property("animal_testing", th.BooleanType),
+        th.Property("catholic", th.BooleanType),
+        th.Property("controversial_weapons", th.BooleanType),
+        th.Property("small_arms", th.BooleanType),
+        th.Property("fur_leather", th.BooleanType),
+        th.Property("gambling", th.BooleanType),
+        th.Property("gmo", th.BooleanType),
+        th.Property("military_contract", th.BooleanType),
+        th.Property("nuclear", th.BooleanType),
+        th.Property("pesticides", th.BooleanType),
+        th.Property("palm_oil", th.BooleanType),
+        th.Property("coal", th.BooleanType),
+        th.Property("tobacco", th.BooleanType),
     ).to_dict()
 
 

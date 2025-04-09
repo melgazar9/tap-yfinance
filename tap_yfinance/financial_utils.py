@@ -13,7 +13,6 @@ from tap_yfinance.price_utils import clean_strings
 # 'quarterly_earnings',
 # 'revenue_forecasts',
 # 'shares',
-# 'sustainability',
 # 'trend_details'
 
 
@@ -93,13 +92,21 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
         if isinstance(data, dict) and len(data):
-            df = pd.DataFrame.from_dict(data, orient='index').T
+            df = pd.DataFrame.from_dict(data, orient="index").T
             df["timestamp_extracted"] = datetime.utcnow()
             df["ticker"] = ticker
             df = df.replace([np.inf, -np.inf, np.nan], None)
         else:
             return pd.DataFrame()
-        column_order = ["timestamp_extracted", "ticker", "current", "high", "low", "mean", "median"]
+        column_order = [
+            "timestamp_extracted",
+            "ticker",
+            "current",
+            "high",
+            "low",
+            "mean",
+            "median",
+        ]
         return df[column_order]
 
     def get_actions(self, ticker):
@@ -521,7 +528,15 @@ class FinancialTap:
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df = df.rename(columns={"% Out": "pct_out"})
             df.columns = clean_strings(df.columns)
-            column_order = ['date_reported', 'ticker', 'holder', 'pct_change', 'pct_held', 'shares', 'value']
+            column_order = [
+                "date_reported",
+                "ticker",
+                "holder",
+                "pct_change",
+                "pct_held",
+                "shares",
+                "value",
+            ]
             mismatched_columns = [i for i in df.columns if i not in column_order]
             if len(mismatched_columns):
                 logging.warning(
@@ -588,10 +603,20 @@ class FinancialTap:
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df = df.replace([np.inf, -np.inf, np.nan], None)
-            column_order = ['date_reported', 'ticker', 'holder', 'pct_change', 'pct_held', 'shares', 'value']
+            column_order = [
+                "date_reported",
+                "ticker",
+                "holder",
+                "pct_change",
+                "pct_held",
+                "shares",
+                "value",
+            ]
             mismatched_columns = [i for i in df.columns if i not in column_order]
             if len(mismatched_columns):
-                logging.warning(f"There exists columns in mutualfund_holders that are not in schema {mismatched_columns}")
+                logging.warning(
+                    f"There exists columns in mutualfund_holders that are not in schema {mismatched_columns}"
+                )
             return df[column_order]
         else:
             logging.warning(
@@ -706,8 +731,36 @@ class FinancialTap:
             return pd.DataFrame(columns=column_order)
 
     def get_sustainability(self, ticker):
-        """yfinance.exceptions.YFNotImplementedError"""
-        return
+        try:
+            df = self.yf_ticker_obj.get_sustainability()
+        except Exception:
+            logging.warning(
+                f"Could not extract get_splits for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.T
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
+            df.columns = clean_strings(df.columns)
+            str_cols = [
+                "related_controversy",
+                "peer_esg_score_performance",
+                "peer_governance_performance",
+                "peer_social_performance",
+                "peer_environment_performance",
+                "peer_highest_controversy_performance",
+            ]
+            df[str_cols] = df[str_cols].astype(str)
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            column_order = ["timestamp_extracted", "ticker"] + [
+                i for i in df.columns if i not in ["timestamp_extracted", "ticker"]
+            ]
+            return df[column_order]
+        else:
+            return pd.DataFrame(columns=column_order)
+        return df[column_order]
 
     def get_trend_details(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""

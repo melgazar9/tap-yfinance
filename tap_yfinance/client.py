@@ -99,6 +99,7 @@ class BaseStream(Stream, ABC):
             "recommendations",
             "shares_full",
             "splits",
+            "sustainability",
             "upgrades_downgrades",
             "option_chain",
             "options",
