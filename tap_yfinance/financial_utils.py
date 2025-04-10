@@ -4,17 +4,7 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 from tap_yfinance.price_utils import clean_strings
-
-
-### failed ###
-# 'earnings',
-# 'earnings_forecasts',
-# 'earnings_trend',
-# 'quarterly_earnings',
-# 'revenue_forecasts',
-# 'shares',
-# 'trend_details'
-
+import re
 
 class FinancialTap:
 
@@ -203,7 +193,7 @@ class FinancialTap:
             )
 
     def get_capital_gains(self, ticker):
-        """Returns empty array."""
+        """Returns empty series"""
         return
 
     def get_cash_flow(self, ticker):
@@ -263,6 +253,66 @@ class FinancialTap:
         """yfinance.exceptions.YFNotImplementedError"""
         return
 
+    def get_earnings_estimate(self, ticker):
+        try:
+            df = self.yf_ticker_obj.get_earnings_estimate()
+        except Exception:
+            logging.warning(
+                f"Error extracting data get_earnings_estimate for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.reset_index()
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+        else:
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        df.columns = clean_strings(df.columns)
+        column_order = [
+            "timestamp_extracted",
+            "ticker",
+            "period",
+            "avg",
+            "low",
+            "high",
+            "year_ago_eps",
+            "number_of_analysts",
+            "growth",
+        ]
+        return df[column_order]
+
+    def get_earnings_history(self, ticker):
+        try:
+            df = self.yf_ticker_obj.get_earnings_history()
+        except Exception:
+            logging.warning(
+                f"Error extracting data get_earnings_history for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.reset_index()
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+        else:
+            return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
+
+        df.columns = clean_strings(df.columns)
+        column_order = [
+            "quarter",
+            "ticker",
+            "eps_actual",
+            "eps_estimate",
+            "eps_difference",
+            "surprise_percent",
+            "timestamp_extracted",
+        ]
+        return df[column_order]
+
     def get_earnings_dates(self, ticker):
         try:
             df = self.yf_ticker_obj.get_earnings_dates()
@@ -301,6 +351,104 @@ class FinancialTap:
     def get_earnings_trend(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         return
+
+    def get_eps_revisions(self, ticker):
+        try:
+            df = self.yf_ticker_obj.get_eps_revisions()
+        except Exception:
+            logging.warning(
+                f"Error extracting get_earnings_dates as dictionary for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.reset_index()
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df.columns = [
+                i.replace("last7", "last_7").replace("7d", "7_d").replace("7D", "7_d")
+                for i in clean_strings(df.columns)
+            ]
+            df.columns = [
+                i.replace("last30", "last_30")
+                .replace("30d", "30_d")
+                .replace("30D", "30_d")
+                for i in clean_strings(df.columns)
+            ]
+        else:
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        column_order = [
+            "timestamp_extracted",
+            "ticker",
+            "period",
+            "up_last_7_days",
+            "down_last_7_days",
+            "up_last_30_days",
+            "down_last_30_days",
+        ]
+
+        return df[column_order]
+
+    def get_eps_trend(self, ticker):
+        try:
+            df = self.yf_ticker_obj.get_eps_trend()
+        except Exception:
+            logging.warning(
+                f"Error extracting get_earnings_dates as dictionary for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.reset_index()
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df.columns = clean_strings([rename_days_ago(col) for col in df.columns])
+            column_order = [
+                "timestamp_extracted",
+                "ticker",
+                "period",
+                "current",
+                "days_ago_7",
+                "days_ago_30",
+                "days_ago_60",
+                "days_ago_90",
+            ]
+            return df[column_order]
+        else:
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+    def get_funds_data(self, ticker):
+        pass
+
+    def get_growth_estimates(self, ticker):
+        try:
+            df = self.yf_ticker_obj.get_growth_estimates()
+        except Exception:
+            logging.warning(
+                f"Error extracting get_growth_estimates as dictionary for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.reset_index()
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df.columns = clean_strings([rename_days_ago(col) for col in df.columns])
+            column_order = [
+                "ticker",
+                "period",
+                "stock_trend",
+                "index_trend",
+                "timestamp_extracted",
+            ]
+        else:
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        return df[column_order]
 
     def get_fast_info(self, ticker):
         try:
@@ -550,8 +698,83 @@ class FinancialTap:
             return pd.DataFrame(columns=["date_reported"])
 
     def get_isin(self, ticker):
-        """Returns NoneType."""
-        return
+        try:
+            data = self.yf_ticker_obj.get_isin()
+        except Exception:
+            logging.warning(f"Could not extract isin for ticker {ticker}. Skipping...")
+            return pd.DataFrame(columns=["timestamp_extracted"])
+        df = pd.DataFrame.from_dict({"value": data}, orient="index").T
+        df["timestamp_extracted"] = datetime.utcnow()
+        df["ticker"] = ticker
+        return df[["ticker", "timestamp_extracted", "value"]]
+
+    def get_revenue_estimate(self, ticker):
+        try:
+            df = self.yf_ticker_obj.get_revenue_estimate()
+        except Exception:
+            logging.warning(
+                f"Could not extract get_revenue_estimate for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.reset_index()
+            df.columns = clean_strings(df.columns)
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            column_order = [
+                "ticker",
+                "timestamp_extracted",
+                "period",
+                "avg",
+                "low",
+                "high",
+                "number_of_analysts",
+                "year_ago_revenue",
+                "growth",
+            ]
+        else:
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        return df[column_order]
+
+    def get_sec_filings(self, ticker):
+        try:
+            data = self.yf_ticker_obj.get_sec_filings()
+        except Exception:
+            logging.warning(
+                f"Could not extract get_sec_filings for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        if len(data):
+            try:
+                df = pd.DataFrame(data)
+            except Exception:
+                raise ValueError(
+                    "Error in get_sec_filings! Could not convert raw data to pandas df."
+                )
+            df.columns = clean_strings(df.columns)
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
+            df["exhibits"] = df["exhibits"].astype(str)
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            column_order = [
+                "ticker",
+                "date",
+                "epoch_date",
+                "type",
+                "title",
+                "edgar_url",
+                "exhibits",
+                "max_age",
+                "timestamp_extracted",
+            ]
+        else:
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        return df[column_order]
 
     def get_major_holders(self, ticker):
         try:
@@ -765,6 +988,97 @@ class FinancialTap:
     def get_trend_details(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         return
+
+    def ttm_cash_flow(self, ticker):
+        try:
+            df = self.yf_ticker_obj.ttm_cash_flow
+        except Exception:
+            logging.warning(
+                f"Could not extract ttm_cash_flow for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["date"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.T.rename_axis("date").reset_index()
+            df["ticker"] = ticker
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
+            column_order = ["date", "ticker"] + sorted(
+                [i for i in df.columns if i not in ["date", "ticker"]]
+            )
+            return df[column_order]
+        else:
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+    def ttm_cashflow(self, ticker):
+        """ duplicate of ttm_cash_flow """
+        pass
+
+    def ttm_financials(self, ticker):
+        try:
+            df = self.yf_ticker_obj.ttm_financials.T
+        except Exception:
+            logging.warning(
+                f"Error extracting ttm_financials as dictionary for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["date"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.rename_axis("date").reset_index()
+            df["ticker"] = ticker
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df.columns = [
+                i.replace("e_b_i_t_d_a", "ebitda")
+                .replace("e_p_s", "eps")
+                .replace("e_b_i_t", "ebit")
+                .replace("p_p_e", "ppe")
+                .replace(
+                    "diluted_n_i_availto_com_stockholders",
+                    "diluted_ni_availto_com_stockholders",
+                )
+                for i in clean_strings(df.columns)
+            ]
+            first_cols = ["date", "ticker"]
+        else:
+            return pd.DataFrame(columns=["date"])
+
+        column_order = first_cols + sorted(
+            [i for i in df.columns if i not in first_cols]
+        )
+        return df[column_order]
+
+    def ttm_income_stmt(self, ticker):
+        try:
+            df = self.yf_ticker_obj.ttm_income_stmt
+        except Exception:
+            logging.warning(
+                f"Could not extract ttm_income_stmt for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["date"])
+
+        if isinstance(df, pd.DataFrame) and df.shape[0]:
+            df = df.T.rename_axis("date").reset_index()
+            df["ticker"] = ticker
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df.columns = [
+                i.replace("e_b_i_t_d_a", "ebitda")
+                .replace("e_p_s", "eps")
+                .replace("e_b_i_t", "ebit")
+                .replace(
+                    "diluted_n_i_availto_com_stockholders",
+                    "diluted_ni_availto_com_stockholders",
+                )
+                for i in clean_strings(df.columns)
+            ]
+            column_order = ["date", "ticker"] + sorted(
+                [i for i in df.columns if i not in ["date", "ticker"]]
+            )
+            return df[column_order]
+        else:
+            return pd.DataFrame(columns=["timestamp"])
+
+    def ttm_incomestmt(self, ticker):
+        pass
 
     def get_upgrades_downgrades(self, ticker):
         column_order = [
@@ -1008,3 +1322,10 @@ class FinancialTap:
     def session(self, ticker):
         """Returns NoneType."""
         return
+
+
+def rename_days_ago(col):
+    match = re.match(r"^(\d+)[Dd]ays[Aa]go$", col)
+    if match:
+        return f"days_ago_{match.group(1)}"
+    return col

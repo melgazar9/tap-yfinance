@@ -56,21 +56,32 @@ plugins:
         - cash_flow.*
         - dividends.*
         - earnings_dates.*
+        - earnings_estimate.*
+        - earnings_history.*
+        - eps_revisions.*
+        - eps_trend.*
         - fast_info.*
         - financials.*
+        - growth_estimates.*
         - history_metadata.*
         - income_stmt.*
         - insider_purchases.*
         - insider_roster_holders.*
         - insider_transactions.*
         - institutional_holders.*
+        - isin.*
         - major_holders.*
         - mutualfund_holders.*
         - news.*
         - recommendations.*
+        - revenue_estimate.*
+        - sec_filings.*
         - shares_full.*
         - splits.*
         - sustainability.*
+        - ttm_cash_flow.*
+        - ttm_financials.*
+        - ttm_income_stmt.*
         - option_chain.*
         - options.*
         - quarterly_balance_sheet.*
@@ -220,10 +231,25 @@ plugins:
         earnings_dates:
           tickers: [ "AAPL", "META" ]
 
+        earnings_estimate:
+          tickers: [ "AAPL", "META" ]
+
+        earnings_history:
+          tickers: [ "AAPL", "META" ]
+
+        eps_revisions:
+          tickers: [ "AAPL", "META" ]
+
+        eps_trend:
+          tickers: [ "AAPL", "META" ]
+
         fast_info:
           tickers: [ "AAPL", "META" ]
 
         financials:
+          tickers: [ "AAPL", "META" ]
+
+        growth_estimates:
           tickers: [ "AAPL", "META" ]
 
         history_metadata:
@@ -244,6 +270,9 @@ plugins:
         institutional_holders:
           tickers: [ "AAPL", "META" ]
 
+        isin:
+          tickers: [ "AAPL", "META" ]
+
         major_holders:
           tickers: [ "AAPL", "META" ]
 
@@ -256,6 +285,12 @@ plugins:
         recommendations:
           tickers: [ "AAPL", "META" ]
 
+        revenue_estimate:
+          tickers: [ "AAPL", "META" ]
+
+        sec_filings:
+          tickers: [ "AAPL", "META" ]
+
         shares_full:
           tickers: [ "AAPL", "META" ]
 
@@ -263,6 +298,15 @@ plugins:
           tickers: [ "AAPL", "META" ]
 
         sustainability:
+          tickers: [ "AAPL", "META" ]
+
+        ttm_cash_flow:
+          tickers: [ "AAPL", "META" ]
+
+        ttm_financials:
+          tickers: [ "AAPL", "META" ]
+
+        ttm_income_stmt:
           tickers: [ "AAPL", "META" ]
 
         option_chain:
@@ -436,6 +480,22 @@ plugins:
           replication-method: INCREMENTAL
           replication-key: timestamp
 
+        earnings_estimate:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
+        earnings_history:
+          replication-method: INCREMENTAL
+          replication-key: quarter
+
+        eps_revisions:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
+        eps_trend:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
         fast_info:
           replication-method: INCREMENTAL
           replication-key: timestamp_extracted
@@ -443,6 +503,10 @@ plugins:
         financials:
           replication-method: INCREMENTAL
           replication-key: date
+
+        growth_estimates:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
 
         history_metadata:
           replication-method: INCREMENTAL
@@ -468,6 +532,10 @@ plugins:
           replication-method: INCREMENTAL
           replication-key: date_reported
 
+        isin:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
         major_holders:
           replication-method: INCREMENTAL
           replication-key: timestamp_extracted
@@ -483,6 +551,14 @@ plugins:
         recommendations:
           replication-method: INCREMENTAL
           replication-key: timestamp_extracted
+
+        revenue_estimate:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
+        sec_filings:
+          replication-method: INCREMENTAL
+          replication-key: epoch_date
 
         shares_full:
           replication-method: INCREMENTAL
@@ -512,11 +588,23 @@ plugins:
           replication-method: INCREMENTAL
           replication-key: date
 
+        ttm_cash_flow:
+          replication-method: INCREMENTAL
+          replication-key: date
+
         quarterly_financials:
           replication-method: INCREMENTAL
           replication-key: date
 
+        ttm_financials:
+          replication-method: INCREMENTAL
+          replication-key: date
+
         quarterly_income_stmt:
+          replication-method: INCREMENTAL
+          replication-key: date
+
+        ttm_income_stmt:
           replication-method: INCREMENTAL
           replication-key: date
 

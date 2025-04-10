@@ -319,6 +319,71 @@ class EarningsDatesStream(FinancialStream):
         th.Property("pct_surprise", th.NumberType),
     ).to_dict()
 
+class EarningsEstimateStream(FinancialStream):
+    name = "earnings_estimate"
+    method_name = "get_earnings_estimate"
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("period", th.StringType),
+        th.Property("avg", th.NumberType),
+        th.Property("low", th.NumberType),
+        th.Property("high", th.NumberType),
+        th.Property("year_ago_eps", th.NumberType),
+        th.Property("number_of_analysts", th.NumberType),
+        th.Property("growth", th.NumberType),
+    ).to_dict()
+
+class EarningsHistoryStream(FinancialStream):
+    name = "earnings_history"
+    method_name = "get_earnings_history"
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("quarter", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("eps_actual", th.NumberType),
+        th.Property("eps_estimate", th.NumberType),
+        th.Property("eps_difference", th.NumberType),
+        th.Property("surprise_percent", th.NumberType),
+    ).to_dict()
+
+class EarningsEpsRevisionsStream(FinancialStream):
+    name = "eps_revisions"
+    method_name = "get_eps_revisions"
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("period", th.StringType),
+        th.Property("up_last_7_days", th.NumberType),
+        th.Property("down_last_7_days", th.NumberType),
+        th.Property("up_last_30_days", th.NumberType),
+        th.Property("down_last_30_days", th.NumberType),
+    ).to_dict()
+
+class EpsTrendStream(FinancialStream):
+    name = "eps_trend"
+    method_name = "get_eps_trend"
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("period", th.StringType),
+        th.Property("current", th.NumberType),
+        th.Property("days_ago_7", th.NumberType),
+        th.Property("days_ago_30", th.NumberType),
+        th.Property("days_ago_60", th.NumberType),
+        th.Property("days_ago_90", th.NumberType),
+    ).to_dict()
+
+class GrowthEstimatesStream(FinancialStream):
+    name = "growth_estimates"
+    method_name = "get_growth_estimates"
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("period", th.StringType),
+        th.Property("stock_trend", th.NumberType),
+        th.Property("index_trend", th.NumberType),
+    ).to_dict()
 
 class FastInfoStream(FinancialStream):
     name = "fast_info"
@@ -473,6 +538,14 @@ class InstitutionalHoldersStream(FinancialStream):
         th.Property("pct_change", th.NumberType),
     ).to_dict()
 
+class IsInStream(FinancialStream):
+    name = "isin"
+    method_name = "get_isin"
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("value", th.StringType),
+    ).to_dict()
 
 class MajorHoldersStream(FinancialStream):
     name = "major_holders"
@@ -524,6 +597,35 @@ class RecommendationsStream(FinancialStream):
         th.Property("strong_sell", th.NumberType),
     ).to_dict()
 
+class RevenueEstimateStream(FinancialStream):
+    name = "revenue_estimate"
+    method_name = "get_revenue_estimate"
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("period", th.StringType),
+        th.Property("avg", th.NumberType),
+        th.Property("low", th.NumberType),
+        th.Property("high", th.NumberType),
+        th.Property("number_of_analysts", th.NumberType),
+        th.Property("year_ago_revenue", th.NumberType),
+        th.Property("growth", th.NumberType),
+    ).to_dict()
+
+class SecFilingsStream(FinancialStream):
+    name = "sec_filings"
+    method_name = "get_sec_filings"
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType, required=True),
+        th.Property("date", th.DateTimeType, required=True),
+        th.Property("epoch_date", th.NumberType, required=True),
+        th.Property("type", th.StringType),
+        th.Property("title", th.StringType),
+        th.Property("edgar_url", th.StringType),
+        th.Property("exhibits", th.StringType),
+        th.Property("max_age", th.NumberType),
+        th.Property("timestamp_extracted", th.DateTimeType),
+    ).to_dict()
 
 class SharesFullStream(FinancialStream):
     name = "shares_full"
@@ -653,6 +755,20 @@ class QuarterlyIncomeStmtStream(FinancialStream):
     method_name = "quarterly_income_stmt"
     schema = INCOME_STMT_SCHEMA
 
+class TtmCashFlowStream(FinancialStream):
+    name = "ttm_cash_flow"
+    method_name = "ttm_cash_flow"
+    schema = CASH_FLOW_SCHEMA
+
+class TtmFinancialsStream(FinancialStream):
+    name = "ttm_financials"
+    method_name = "ttm_financials"
+    schema = FINANCIALS_SCHEMA
+
+class TtmIncomeStmtStream(FinancialStream):
+    name = "ttm_income_stmt"
+    method_name = "ttm_income_stmt"
+    schema = INCOME_STMT_SCHEMA
 
 class UpgradesDowngradesStream(FinancialStream):
     name = "upgrades_downgrades"
