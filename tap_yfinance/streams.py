@@ -574,7 +574,7 @@ class InfoStream(FinancialStream):
         th.Property("last_split_date", th.NumberType),
         th.Property("enterprise_to_revenue", th.NumberType),
         th.Property("enterprise_to_ebitda", th.NumberType),
-        th.Property("52_week_change", th.NumberType),
+        th.Property("change_52wk", th.NumberType),
         th.Property("sand_p52_week_change", th.NumberType),
         th.Property("last_dividend_value", th.NumberType),
         th.Property("last_dividend_date", th.NumberType),

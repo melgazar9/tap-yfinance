@@ -576,6 +576,7 @@ class FinancialTap:
                 df.columns = clean_strings(df.columns)
                 df["timestamp_extracted"] = datetime.utcnow()
                 df["ticker"] = ticker
+                df = df.rename(columns={"52_week_change": "change_52wk"})
                 str_cols = [
                     "ticker",
                     "address1",
