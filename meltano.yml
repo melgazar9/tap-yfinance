@@ -64,6 +64,7 @@ plugins:
         - financials.*
         - growth_estimates.*
         - history_metadata.*
+        - info.*
         - income_stmt.*
         - insider_purchases.*
         - insider_roster_holders.*
@@ -74,6 +75,7 @@ plugins:
         - mutualfund_holders.*
         - news.*
         - recommendations.*
+        - recommendations_summary.*
         - revenue_estimate.*
         - sec_filings.*
         - shares_full.*
@@ -255,6 +257,9 @@ plugins:
         history_metadata:
           tickers: [ "AAPL", "META" ]
 
+        info:
+          tickers: [ "AAPL", "META" ]
+
         income_stmt:
           tickers: [ "AAPL", "META" ]
 
@@ -283,6 +288,9 @@ plugins:
           tickers: [ "AAPL", "META" ]
 
         recommendations:
+          tickers: [ "AAPL", "META" ]
+
+        recommendations_summary:
           tickers: [ "AAPL", "META" ]
 
         revenue_estimate:
@@ -512,6 +520,10 @@ plugins:
           replication-method: INCREMENTAL
           replication-key: timestamp_extracted
 
+        info:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
         income_stmt:
           replication-method: INCREMENTAL
           replication-key: date
@@ -549,6 +561,10 @@ plugins:
           replication-key: timestamp_extracted
 
         recommendations:
+          replication-method: INCREMENTAL
+          replication-key: timestamp_extracted
+
+        recommendations_summary:
           replication-method: INCREMENTAL
           replication-key: timestamp_extracted
 

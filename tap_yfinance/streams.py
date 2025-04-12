@@ -319,6 +319,7 @@ class EarningsDatesStream(FinancialStream):
         th.Property("pct_surprise", th.NumberType),
     ).to_dict()
 
+
 class EarningsEstimateStream(FinancialStream):
     name = "earnings_estimate"
     method_name = "get_earnings_estimate"
@@ -334,6 +335,7 @@ class EarningsEstimateStream(FinancialStream):
         th.Property("growth", th.NumberType),
     ).to_dict()
 
+
 class EarningsHistoryStream(FinancialStream):
     name = "earnings_history"
     method_name = "get_earnings_history"
@@ -347,6 +349,7 @@ class EarningsHistoryStream(FinancialStream):
         th.Property("surprise_percent", th.NumberType),
     ).to_dict()
 
+
 class EarningsEpsRevisionsStream(FinancialStream):
     name = "eps_revisions"
     method_name = "get_eps_revisions"
@@ -359,6 +362,7 @@ class EarningsEpsRevisionsStream(FinancialStream):
         th.Property("up_last_30_days", th.NumberType),
         th.Property("down_last_30_days", th.NumberType),
     ).to_dict()
+
 
 class EpsTrendStream(FinancialStream):
     name = "eps_trend"
@@ -374,6 +378,7 @@ class EpsTrendStream(FinancialStream):
         th.Property("days_ago_90", th.NumberType),
     ).to_dict()
 
+
 class GrowthEstimatesStream(FinancialStream):
     name = "growth_estimates"
     method_name = "get_growth_estimates"
@@ -384,6 +389,7 @@ class GrowthEstimatesStream(FinancialStream):
         th.Property("stock_trend", th.NumberType),
         th.Property("index_trend", th.NumberType),
     ).to_dict()
+
 
 class FastInfoStream(FinancialStream):
     name = "fast_info"
@@ -473,6 +479,195 @@ class HistoryMetadataStream(FinancialStream):
     ).to_dict()
 
 
+class InfoStream(FinancialStream):
+    name = "info"
+    method_name = "get_info"
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType),
+        th.Property("ticker", th.StringType),
+        th.Property("address1", th.StringType),
+        th.Property("city", th.StringType),
+        th.Property("state", th.StringType),
+        th.Property("zip", th.StringType),
+        th.Property("country", th.StringType),
+        th.Property("phone", th.StringType),
+        th.Property("website", th.StringType),
+        th.Property("industry", th.StringType),
+        th.Property("industry_key", th.StringType),
+        th.Property("industry_disp", th.StringType),
+        th.Property("sector", th.StringType),
+        th.Property("sector_key", th.StringType),
+        th.Property("sector_disp", th.StringType),
+        th.Property("long_business_summary", th.StringType),
+        th.Property("full_time_employees", th.NumberType),
+        th.Property("company_officers", th.StringType),
+        th.Property("audit_risk", th.NumberType),
+        th.Property("board_risk", th.NumberType),
+        th.Property("compensation_risk", th.NumberType),
+        th.Property("share_holder_rights_risk", th.NumberType),
+        th.Property("overall_risk", th.NumberType),
+        th.Property("governance_epoch_date", th.NumberType),
+        th.Property("compensation_as_of_epoch_date", th.NumberType),
+        th.Property("ir_website", th.StringType),
+        th.Property("executive_team", th.StringType),
+        th.Property("max_age", th.NumberType),
+        th.Property("price_hint", th.NumberType),
+        th.Property("previous_close", th.NumberType),
+        th.Property("open", th.NumberType),
+        th.Property("day_low", th.NumberType),
+        th.Property("day_high", th.NumberType),
+        th.Property("regular_market_previous_close", th.NumberType),
+        th.Property("regular_market_open", th.NumberType),
+        th.Property("regular_market_day_low", th.NumberType),
+        th.Property("regular_market_day_high", th.NumberType),
+        th.Property("dividend_rate", th.NumberType),
+        th.Property("dividend_yield", th.NumberType),
+        th.Property("ex_dividend_date", th.NumberType),
+        th.Property("payout_ratio", th.NumberType),
+        th.Property("five_year_avg_dividend_yield", th.NumberType),
+        th.Property("beta", th.NumberType),
+        th.Property("trailing_p_e", th.NumberType),
+        th.Property("forward_p_e", th.NumberType),
+        th.Property("volume", th.NumberType),
+        th.Property("regular_market_volume", th.NumberType),
+        th.Property("average_volume", th.NumberType),
+        th.Property("average_volume10days", th.NumberType),
+        th.Property("average_daily_volume10_day", th.NumberType),
+        th.Property("bid", th.NumberType),
+        th.Property("ask", th.NumberType),
+        th.Property("bid_size", th.NumberType),
+        th.Property("ask_size", th.NumberType),
+        th.Property("market_cap", th.NumberType),
+        th.Property("fifty_two_week_low", th.NumberType),
+        th.Property("fifty_two_week_high", th.NumberType),
+        th.Property("price_to_sales_trailing12_months", th.NumberType),
+        th.Property("fifty_day_average", th.NumberType),
+        th.Property("two_hundred_day_average", th.NumberType),
+        th.Property("trailing_annual_dividend_rate", th.NumberType),
+        th.Property("trailing_annual_dividend_yield", th.NumberType),
+        th.Property("currency", th.StringType),
+        th.Property("tradeable", th.BooleanType),
+        th.Property("enterprise_value", th.NumberType),
+        th.Property("profit_margins", th.NumberType),
+        th.Property("float_shares", th.NumberType),
+        th.Property("shares_outstanding", th.NumberType),
+        th.Property("shares_short", th.NumberType),
+        th.Property("shares_short_prior_month", th.NumberType),
+        th.Property("shares_short_previous_month_date", th.NumberType),
+        th.Property("date_short_interest", th.NumberType),
+        th.Property("shares_percent_shares_out", th.NumberType),
+        th.Property("held_percent_insiders", th.NumberType),
+        th.Property("held_percent_institutions", th.NumberType),
+        th.Property("short_ratio", th.NumberType),
+        th.Property("short_percent_of_float", th.NumberType),
+        th.Property("implied_shares_outstanding", th.NumberType),
+        th.Property("book_value", th.NumberType),
+        th.Property("price_to_book", th.NumberType),
+        th.Property("last_fiscal_year_end", th.NumberType),
+        th.Property("next_fiscal_year_end", th.NumberType),
+        th.Property("most_recent_quarter", th.NumberType),
+        th.Property("earnings_quarterly_growth", th.NumberType),
+        th.Property("net_income_to_common", th.NumberType),
+        th.Property("trailing_eps", th.NumberType),
+        th.Property("forward_eps", th.NumberType),
+        th.Property("last_split_factor", th.StringType),
+        th.Property("last_split_date", th.NumberType),
+        th.Property("enterprise_to_revenue", th.NumberType),
+        th.Property("enterprise_to_ebitda", th.NumberType),
+        th.Property("52_week_change", th.NumberType),
+        th.Property("sand_p52_week_change", th.NumberType),
+        th.Property("last_dividend_value", th.NumberType),
+        th.Property("last_dividend_date", th.NumberType),
+        th.Property("quote_type", th.StringType),
+        th.Property("current_price", th.NumberType),
+        th.Property("target_high_price", th.NumberType),
+        th.Property("target_low_price", th.NumberType),
+        th.Property("target_mean_price", th.NumberType),
+        th.Property("target_median_price", th.NumberType),
+        th.Property("recommendation_mean", th.NumberType),
+        th.Property("recommendation_key", th.StringType),
+        th.Property("number_of_analyst_opinions", th.NumberType),
+        th.Property("total_cash", th.NumberType),
+        th.Property("total_cash_per_share", th.NumberType),
+        th.Property("ebitda", th.NumberType),
+        th.Property("total_debt", th.NumberType),
+        th.Property("quick_ratio", th.NumberType),
+        th.Property("current_ratio", th.NumberType),
+        th.Property("total_revenue", th.NumberType),
+        th.Property("debt_to_equity", th.NumberType),
+        th.Property("revenue_per_share", th.NumberType),
+        th.Property("return_on_assets", th.NumberType),
+        th.Property("return_on_equity", th.NumberType),
+        th.Property("gross_profits", th.NumberType),
+        th.Property("free_cashflow", th.NumberType),
+        th.Property("operating_cashflow", th.NumberType),
+        th.Property("earnings_growth", th.NumberType),
+        th.Property("revenue_growth", th.NumberType),
+        th.Property("gross_margins", th.NumberType),
+        th.Property("ebitda_margins", th.NumberType),
+        th.Property("operating_margins", th.NumberType),
+        th.Property("financial_currency", th.StringType),
+        th.Property("symbol", th.StringType),
+        th.Property("language", th.StringType),
+        th.Property("region", th.StringType),
+        th.Property("type_disp", th.StringType),
+        th.Property("quote_source_name", th.StringType),
+        th.Property("triggerable", th.BooleanType),
+        th.Property("custom_price_alert_confidence", th.StringType),
+        th.Property("corporate_actions", th.StringType),
+        th.Property("post_market_time", th.StringType),
+        th.Property("regular_market_time", th.StringType),
+        th.Property("exchange", th.StringType),
+        th.Property("message_board_id", th.StringType),
+        th.Property("exchange_timezone_name", th.StringType),
+        th.Property("exchange_timezone_short_name", th.StringType),
+        th.Property("gmt_off_set_milliseconds", th.NumberType),
+        th.Property("market", th.StringType),
+        th.Property("esg_populated", th.BooleanType),
+        th.Property("regular_market_change_percent", th.NumberType),
+        th.Property("regular_market_price", th.NumberType),
+        th.Property("dividend_date", th.NumberType),
+        th.Property("earnings_timestamp", th.NumberType),
+        th.Property("earnings_timestamp_start", th.NumberType),
+        th.Property("earnings_timestamp_end", th.NumberType),
+        th.Property("earnings_call_timestamp_start", th.NumberType),
+        th.Property("earnings_call_timestamp_end", th.NumberType),
+        th.Property("is_earnings_date_estimate", th.BooleanType),
+        th.Property("eps_trailing_twelve_months", th.NumberType),
+        th.Property("eps_forward", th.NumberType),
+        th.Property("eps_current_year", th.NumberType),
+        th.Property("price_eps_current_year", th.NumberType),
+        th.Property("fifty_day_average_change", th.NumberType),
+        th.Property("fifty_day_average_change_percent", th.NumberType),
+        th.Property("two_hundred_day_average_change", th.NumberType),
+        th.Property("two_hundred_day_average_change_percent", th.NumberType),
+        th.Property("source_interval", th.NumberType),
+        th.Property("exchange_data_delayed_by", th.NumberType),
+        th.Property("average_analyst_rating", th.StringType),
+        th.Property("crypto_tradeable", th.BooleanType),
+        th.Property("has_pre_post_market_data", th.BooleanType),
+        th.Property("first_trade_date_milliseconds", th.NumberType),
+        th.Property("post_market_change_percent", th.NumberType),
+        th.Property("post_market_price", th.NumberType),
+        th.Property("post_market_change", th.NumberType),
+        th.Property("regular_market_change", th.NumberType),
+        th.Property("regular_market_day_range", th.StringType),
+        th.Property("full_exchange_name", th.StringType),
+        th.Property("average_daily_volume3_month", th.NumberType),
+        th.Property("fifty_two_week_low_change", th.NumberType),
+        th.Property("fifty_two_week_low_change_percent", th.NumberType),
+        th.Property("fifty_two_week_range", th.StringType),
+        th.Property("fifty_two_week_high_change", th.NumberType),
+        th.Property("fifty_two_week_high_change_percent", th.NumberType),
+        th.Property("fifty_two_week_change_percent", th.NumberType),
+        th.Property("short_name", th.StringType),
+        th.Property("long_name", th.StringType),
+        th.Property("market_state", th.BooleanType),
+        th.Property("display_name", th.StringType),
+        th.Property("trailing_peg_ratio", th.NumberType),
+    ).to_dict()
+
+
 class IncomeStmtStream(FinancialStream):
     name = "income_stmt"
     method_name = "get_income_stmt"
@@ -538,6 +733,7 @@ class InstitutionalHoldersStream(FinancialStream):
         th.Property("pct_change", th.NumberType),
     ).to_dict()
 
+
 class IsInStream(FinancialStream):
     name = "isin"
     method_name = "get_isin"
@@ -546,6 +742,7 @@ class IsInStream(FinancialStream):
         th.Property("ticker", th.StringType, required=True),
         th.Property("value", th.StringType),
     ).to_dict()
+
 
 class MajorHoldersStream(FinancialStream):
     name = "major_holders"
@@ -597,6 +794,22 @@ class RecommendationsStream(FinancialStream):
         th.Property("strong_sell", th.NumberType),
     ).to_dict()
 
+
+class RecommendationsSummaryStream(FinancialStream):
+    name = "recommendations_summary"
+    method_name = "get_recommendations_summary"
+    schema = th.PropertiesList(
+        th.Property("ticker", th.StringType),
+        th.Property("timestamp_extracted", th.DateTimeType),
+        th.Property("period", th.StringType),
+        th.Property("strong_buy", th.NumberType),
+        th.Property("buy", th.NumberType),
+        th.Property("hold", th.NumberType),
+        th.Property("sell", th.NumberType),
+        th.Property("strong_sell", th.NumberType),
+    ).to_dict()
+
+
 class RevenueEstimateStream(FinancialStream):
     name = "revenue_estimate"
     method_name = "get_revenue_estimate"
@@ -612,6 +825,7 @@ class RevenueEstimateStream(FinancialStream):
         th.Property("growth", th.NumberType),
     ).to_dict()
 
+
 class SecFilingsStream(FinancialStream):
     name = "sec_filings"
     method_name = "get_sec_filings"
@@ -626,6 +840,7 @@ class SecFilingsStream(FinancialStream):
         th.Property("max_age", th.NumberType),
         th.Property("timestamp_extracted", th.DateTimeType),
     ).to_dict()
+
 
 class SharesFullStream(FinancialStream):
     name = "shares_full"
@@ -755,20 +970,24 @@ class QuarterlyIncomeStmtStream(FinancialStream):
     method_name = "quarterly_income_stmt"
     schema = INCOME_STMT_SCHEMA
 
+
 class TtmCashFlowStream(FinancialStream):
     name = "ttm_cash_flow"
     method_name = "ttm_cash_flow"
     schema = CASH_FLOW_SCHEMA
+
 
 class TtmFinancialsStream(FinancialStream):
     name = "ttm_financials"
     method_name = "ttm_financials"
     schema = FINANCIALS_SCHEMA
 
+
 class TtmIncomeStmtStream(FinancialStream):
     name = "ttm_income_stmt"
     method_name = "ttm_income_stmt"
     schema = INCOME_STMT_SCHEMA
+
 
 class UpgradesDowngradesStream(FinancialStream):
     name = "upgrades_downgrades"

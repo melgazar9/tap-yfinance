@@ -6,6 +6,7 @@ import yfinance as yf
 from tap_yfinance.price_utils import clean_strings
 import re
 
+
 class FinancialTap:
 
     ### TODO: date filters? ###
@@ -560,6 +561,85 @@ class FinancialTap:
         else:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    def get_info(self, ticker):
+        try:
+            data = self.yf_ticker_obj.get_info()
+        except Exception:
+            logging.warning(
+                f"Error extracting get_info for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
+        if len(data):
+            try:
+                df = pd.DataFrame.from_dict(data, orient="index").T
+                df.columns = clean_strings(df.columns)
+                df["timestamp_extracted"] = datetime.utcnow()
+                df["ticker"] = ticker
+                str_cols = [
+                    "ticker",
+                    "address1",
+                    "city",
+                    "state",
+                    "zip",
+                    "country",
+                    "phone",
+                    "website",
+                    "industry",
+                    "industry_key",
+                    "industry_disp",
+                    "sector",
+                    "sector_key",
+                    "sector_disp",
+                    "long_business_summary",
+                    "company_officers",
+                    "ir_website",
+                    "executive_team",
+                    "currency",
+                    "last_split_factor",
+                    "quote_type",
+                    "recommendation_key",
+                    "financial_currency",
+                    "symbol",
+                    "language",
+                    "region",
+                    "type_disp",
+                    "quote_source_name",
+                    "custom_price_alert_confidence",
+                    "corporate_actions",
+                    "post_market_time",
+                    "regular_market_time",
+                    "exchange",
+                    "message_board_id",
+                    "exchange_timezone_name",
+                    "exchange_timezone_short_name",
+                    "market",
+                    "average_analyst_rating",
+                    "regular_market_day_range",
+                    "full_exchange_name",
+                    "fifty_two_week_range",
+                    "short_name",
+                    "long_name",
+                    "display_name",
+                ]
+
+                df[str_cols] = df[str_cols].astype(str)
+                df = df.replace([np.inf, -np.inf, np.nan], None)
+                column_order = ["ticker", "timestamp_extracted"] + [
+                    i for i in df.columns if i not in ["ticker", "timestamp_extracted"]
+                ]
+                return df[column_order]
+            except Exception:
+                logging.warning(
+                    f"Error parsing get_info as dictionary for ticker {ticker}. Skipping..."
+                )
+                return pd.DataFrame(columns=["timestamp_extracted"])
+        else:
+            logging.warning(
+                f"Data has no length in method get_info for ticker {ticker}. Skipping..."
+            )
+            return pd.DataFrame(columns=["timestamp_extracted"])
+
     def get_income_stmt(self, ticker):
         try:
             df = self.yf_ticker_obj.get_income_stmt()
@@ -594,10 +674,6 @@ class FinancialTap:
 
     def get_incomestmt(self, ticker):
         """Same output as the method get_income_stmt"""
-        return
-
-    def get_info(self, ticker):
-        """Returns NoneType."""
         return
 
     def get_insider_purchases(self, ticker):
@@ -894,8 +970,25 @@ class FinancialTap:
             return pd.DataFrame(columns=column_order)
 
     def get_recommendations_summary(self, ticker):
-        """yfinance.exceptions.YFNotImplementedError"""
-        return
+        column_order = [
+            "ticker",
+            "timestamp_extracted",
+            "period",
+            "strong_buy",
+            "buy",
+            "hold",
+            "sell",
+            "strong_sell",
+        ]
+        try:
+            df = self.yf_ticker_obj.get_recommendations()
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df.columns = clean_strings(df.columns)
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.utcnow()
+            return df[column_order]
+        except Exception:
+            return pd.DataFrame(columns=column_order)
 
     def get_rev_forecast(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
@@ -1011,7 +1104,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def ttm_cashflow(self, ticker):
-        """ duplicate of ttm_cash_flow """
+        """duplicate of ttm_cash_flow"""
         pass
 
     def ttm_financials(self, ticker):
