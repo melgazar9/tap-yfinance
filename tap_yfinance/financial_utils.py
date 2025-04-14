@@ -1203,50 +1203,39 @@ class FinancialTap:
             "last_trade_date",
             "last_trade_date_tz_aware",
             "timezone",
-            "timestamp_extracted",
             "ticker",
+            "option_type"
         ]
 
         num_tries = 3
         n = 0
         while n < num_tries:
             try:
-                df = pd.DataFrame()
                 option_expiration_dates = self.yf_ticker_obj.options
-                if option_expiration_dates and len(option_expiration_dates):
+                if len(option_expiration_dates):
                     for exp_date in option_expiration_dates:
                         option_chain_data = self.yf_ticker_obj.option_chain(
                             date=exp_date
                         )
-                        if len(option_chain_data):
-                            for ocd in option_chain_data[0:-1]:  # exclude metadata
-                                ocd.columns = clean_strings(ocd.columns)
-                                ocd["last_trade_date_tz_aware"] = ocd[
-                                    "last_trade_date"
-                                ].copy()
-                                ocd["last_trade_date"] = pd.to_datetime(
-                                    ocd["last_trade_date"], utc=True
-                                )
-                                df = pd.concat([df, ocd])
-                                df["ticker"] = ticker
-                                df["timestamp_extracted"] = datetime.utcnow()
-                                df = df.drop_duplicates()
-                                df["metadata"] = str(option_chain_data[-1])
-                                # df["metadata"] = df["metadata"].astype(str)
-                        try:
-                            df.columns = clean_strings(df.columns)
-                            self.extract_ticker_tz_aware_timestamp(
-                                df, "last_trade_date", ticker
-                            )
-                            df = df.replace([np.inf, -np.inf, np.nan], None)
 
-                            column_order = first_cols + [
-                                i for i in df.columns if i not in first_cols
-                            ]
-                            return df[column_order]
-
-                        except Exception:
-                            return pd.DataFrame(columns=["last_trade_date"])
+                        if len(option_chain_data) == 3:
+                            calls, puts, metadata = option_chain_data[0], option_chain_data[1], option_chain_data[2]
+                            assert isinstance(calls, pd.DataFrame) and isinstance(puts, pd.DataFrame), "calls or puts are not a dataframe!"
+                            calls["option_type"] = "call"
+                            puts["option_type"] = "put"
+                            if all(calls.columns == puts.columns):
+                                df_options = pd.concat([calls, puts]).reset_index(drop=True)
+                                df_options["metadata"] = str(metadata)
+                                df_options["timestamp_extracted"] = datetime.utcnow()
+                                self.extract_ticker_tz_aware_timestamp(df_options, "last_trade_date", ticker)
+                                df_options = df_options.replace([np.inf, -np.inf, np.nan], None)
+                                df_options.columns = clean_strings(df_options.columns)
+                                column_order = first_cols + [i for i in df_options.columns if i not in first_cols]
+                                return df_options[column_order]
+                            else:
+                                raise ValueError("Error parsing option_chain. Column order of calls and puts do not match.")
+                        else:
+                            raise ValueError("Error parsing option_chain. Check if data passed changed")
                 else:
                     return pd.DataFrame(columns=["last_trade_date"])
 

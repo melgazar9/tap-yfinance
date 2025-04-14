@@ -918,8 +918,8 @@ class OptionChainStream(FinancialStream):
         th.Property("last_trade_date", th.DateTimeType, required=True),
         th.Property("last_trade_date_tz_aware", th.StringType),
         th.Property("timezone", th.StringType),
-        th.Property("timestamp_extracted", th.DateTimeType),
         th.Property("ticker", th.StringType),
+        th.Property("option_type", th.StringType),
         th.Property("contract_symbol", th.StringType),
         th.Property("strike", th.NumberType),
         th.Property("last_price", th.NumberType),
@@ -934,6 +934,7 @@ class OptionChainStream(FinancialStream):
         th.Property("contract_size", th.StringType),
         th.Property("currency", th.StringType),
         th.Property("metadata", th.StringType),
+        th.Property("timestamp_extracted", th.DateTimeType),
     ).to_dict()
 
 
