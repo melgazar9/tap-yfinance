@@ -686,12 +686,14 @@ class FinancialTap:
             "trans",
             "timestamp_extracted",
         ]
+        num_cols = ["shares", "trans"]
         try:
             df = self.yf_ticker_obj.get_insider_purchases()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
             df["timestamp_extracted"] = datetime.now()
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
+            df[num_cols] = df[num_cols].apply(pd.to_numeric, errors="coerce")
+            df = df.replace([np.inf, -np.inf, np.nan], None)
             return df[column_order]
         except Exception:
             return pd.DataFrame(columns=column_order)
