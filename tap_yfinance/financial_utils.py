@@ -295,24 +295,31 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
 
+        possible_columns1 = ['quarter', 'eps_estimate', 'ticker', 'timestamp_extracted']
+        possible_columns2 = ['quarter', 'eps_actual', 'eps_estimate', 'eps_difference', 'surprise_percent', 'ticker', 'timestamp_extracted']
+
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.reset_index()
+            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
         else:
             return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
 
-        df.columns = clean_strings(df.columns)
-        column_order = [
-            "quarter",
-            "ticker",
-            "eps_actual",
-            "eps_estimate",
-            "eps_difference",
-            "surprise_percent",
-            "timestamp_extracted",
-        ]
+        if all(df.columns == possible_columns1):
+            column_order = ["quarter", "ticker", "eps_estimate", "timestamp_extracted"]
+        elif all(df.columns == possible_columns2):
+            column_order = [
+                "quarter",
+                "ticker",
+                "eps_estimate",
+                "eps_actual",
+                "eps_difference",
+                "surprise_percent",
+                "timestamp_extracted",
+            ]
+
         return df[column_order]
 
     def get_earnings_dates(self, ticker):

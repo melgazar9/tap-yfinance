@@ -340,13 +340,13 @@ class EarningsHistoryStream(FinancialStream):
     name = "earnings_history"
     method_name = "get_earnings_history"
     schema = th.PropertiesList(
-        th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("quarter", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
         th.Property("eps_actual", th.NumberType),
         th.Property("eps_estimate", th.NumberType),
         th.Property("eps_difference", th.NumberType),
         th.Property("surprise_percent", th.NumberType),
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
     ).to_dict()
 
 
