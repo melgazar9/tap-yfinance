@@ -307,9 +307,9 @@ class FinancialTap:
         else:
             return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
 
-        if all(df.columns == possible_columns1):
+        if len(df.columns) == len(possible_columns1) and all(df.columns == possible_columns1):
             column_order = ["quarter", "ticker", "eps_estimate", "timestamp_extracted"]
-        elif all(df.columns == possible_columns2):
+        elif len(df.columns) == len(possible_columns2) and all(df.columns == possible_columns2):
             column_order = [
                 "quarter",
                 "ticker",
@@ -319,6 +319,8 @@ class FinancialTap:
                 "surprise_percent",
                 "timestamp_extracted",
             ]
+        else:
+            raise ValueError(f"Error validating returned columns for earnings_history with ticker {ticker}.")
 
         return df[column_order]
 
