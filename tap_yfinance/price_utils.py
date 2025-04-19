@@ -161,9 +161,8 @@ class PriceTap:
                 self.failed_ticker_downloads[yf_params["interval"]].append(ticker)
                 return pd.DataFrame(columns=self.column_order)
 
-            df = df.replace(
-                [np.inf, -np.inf, np.nan], None
-            )  # None can be handled by json.dumps but inf and NaN can't be
+            df = replace_all_specified_missing(df)
+            df = df.replace([np.inf, -np.inf, np.nan], None)
             df["replication_key"] = (
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             )
@@ -271,6 +270,7 @@ class TickerDownloader:
             .sort_values(by=["yahoo_ticker", "google_ticker"])
             .drop_duplicates()
         )
+        all_tickers = replace_all_specified_missing(all_tickers)
         all_tickers = all_tickers.replace([-np.inf, np.inf, np.nan], None)
         all_tickers.columns = ["yahoo_ticker_pts", "google_ticker_pts"]
         return all_tickers
@@ -332,7 +332,9 @@ class TickerDownloader:
         )
 
         df.columns = clean_strings(df.columns)
+        df = replace_all_specified_missing(df)
         df = df.dropna(how="all", axis=1)
+        df = df.dropna(how="all", axis=0)
 
         # df.loc[:, "bloomberg_ticker"] = df["name"].apply(lambda x: f"{x[4:]}-{x[0:3]}")
         if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
@@ -424,7 +426,9 @@ class TickerDownloader:
         # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
 
         df.columns = clean_strings(df.columns)
+        df = replace_all_specified_missing(df)
         df = df.dropna(how="all", axis=1)
+        df = df.dropna(how="all", axis=0)
 
         if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
             df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
@@ -506,9 +510,7 @@ class TickerDownloader:
         )
 
         df.columns = clean_strings(df.columns)
-        df = df.dropna(how="all", axis=1)
-
-        df.columns = clean_strings(df.columns)
+        df = df.dropna(how="all", axis=0)
         df = df.dropna(how="all", axis=1)
 
         if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
@@ -536,7 +538,7 @@ class TickerDownloader:
             df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
 
         # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
-
+        df = replace_all_specified_missing(df)
         df = df.replace([np.inf, -np.inf, np.nan], None)
         df[df.columns] = df[df.columns].astype(str)
 
@@ -575,7 +577,9 @@ class TickerDownloader:
         df.columns = clean_strings(df.columns)
         str_cols = ["volume", "open_interest", "change"]
         df[str_cols] = df[str_cols].astype(str)
+        df = replace_all_specified_missing(df)
         df = df.dropna(how="all", axis=1)
+        df = df.dropna(how="all", axis=0)
         df = df.replace([np.inf, -np.inf, np.nan], None)
 
         return df
@@ -858,3 +862,29 @@ def flatten_multindex_columns(df):
         )
     )
     return new_cols
+
+
+def replace_all_specified_missing(df):
+    """
+    Replaces entire string values equal to 'nan' (case-insensitive),
+    'none' (case-insensitive), and the Python None object with np.nan
+    in a Pandas DataFrame.
+
+    Args:
+        df (pd.DataFrame): The input Pandas DataFrame.
+
+    Returns:
+        pd.DataFrame: The DataFrame with specified missing values replaced by np.nan.
+    """
+
+    def replace_in_series(series):
+        if series.dtype == "object":
+            lower_series = series.str.lower()
+            return series.where(
+                (lower_series != "nan") & (lower_series != "none") & (series.notna()),
+                np.nan,
+            )
+        else:
+            return series.where(series.notna(), np.nan)
+
+    return df.apply(replace_in_series)
