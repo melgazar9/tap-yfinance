@@ -295,8 +295,16 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
 
-        possible_columns1 = ['quarter', 'eps_estimate', 'ticker', 'timestamp_extracted']
-        possible_columns2 = ['quarter', 'eps_actual', 'eps_estimate', 'eps_difference', 'surprise_percent', 'ticker', 'timestamp_extracted']
+        possible_columns1 = ["quarter", "eps_estimate", "ticker", "timestamp_extracted"]
+        possible_columns2 = [
+            "quarter",
+            "eps_actual",
+            "eps_estimate",
+            "eps_difference",
+            "surprise_percent",
+            "ticker",
+            "timestamp_extracted",
+        ]
 
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.reset_index()
@@ -307,9 +315,13 @@ class FinancialTap:
         else:
             return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
 
-        if len(df.columns) == len(possible_columns1) and all(df.columns == possible_columns1):
+        if len(df.columns) == len(possible_columns1) and all(
+            df.columns == possible_columns1
+        ):
             column_order = ["quarter", "ticker", "eps_estimate", "timestamp_extracted"]
-        elif len(df.columns) == len(possible_columns2) and all(df.columns == possible_columns2):
+        elif len(df.columns) == len(possible_columns2) and all(
+            df.columns == possible_columns2
+        ):
             column_order = [
                 "quarter",
                 "ticker",
@@ -320,7 +332,9 @@ class FinancialTap:
                 "timestamp_extracted",
             ]
         else:
-            raise ValueError(f"Error validating returned columns for earnings_history with ticker {ticker}.")
+            raise ValueError(
+                f"Error validating returned columns for earnings_history with ticker {ticker}."
+            )
 
         return df[column_order]
 
@@ -1215,7 +1229,7 @@ class FinancialTap:
             "last_trade_date_tz_aware",
             "timezone",
             "ticker",
-            "option_type"
+            "option_type",
         ]
 
         num_tries = 3
@@ -1230,23 +1244,41 @@ class FinancialTap:
                         )
 
                         if len(option_chain_data) == 3:
-                            calls, puts, metadata = option_chain_data[0], option_chain_data[1], option_chain_data[2]
-                            assert isinstance(calls, pd.DataFrame) and isinstance(puts, pd.DataFrame), "calls or puts are not a dataframe!"
+                            calls, puts, metadata = (
+                                option_chain_data[0],
+                                option_chain_data[1],
+                                option_chain_data[2],
+                            )
+                            assert isinstance(calls, pd.DataFrame) and isinstance(
+                                puts, pd.DataFrame
+                            ), "calls or puts are not a dataframe!"
                             calls["option_type"] = "call"
                             puts["option_type"] = "put"
                             if all(calls.columns == puts.columns):
-                                df_options = pd.concat([calls, puts]).reset_index(drop=True)
+                                df_options = pd.concat([calls, puts]).reset_index(
+                                    drop=True
+                                )
                                 df_options["metadata"] = str(metadata)
                                 df_options["timestamp_extracted"] = datetime.utcnow()
-                                self.extract_ticker_tz_aware_timestamp(df_options, "last_trade_date", ticker)
-                                df_options = df_options.replace([np.inf, -np.inf, np.nan], None)
+                                self.extract_ticker_tz_aware_timestamp(
+                                    df_options, "last_trade_date", ticker
+                                )
+                                df_options = df_options.replace(
+                                    [np.inf, -np.inf, np.nan], None
+                                )
                                 df_options.columns = clean_strings(df_options.columns)
-                                column_order = first_cols + [i for i in df_options.columns if i not in first_cols]
+                                column_order = first_cols + [
+                                    i for i in df_options.columns if i not in first_cols
+                                ]
                                 return df_options[column_order]
                             else:
-                                raise ValueError("Error parsing option_chain. Column order of calls and puts do not match.")
+                                raise ValueError(
+                                    "Error parsing option_chain. Column order of calls and puts do not match."
+                                )
                         else:
-                            raise ValueError("Error parsing option_chain. Check if data passed changed")
+                            raise ValueError(
+                                "Error parsing option_chain. Check if data passed changed"
+                            )
                 else:
                     return pd.DataFrame(columns=["last_trade_date"])
 
