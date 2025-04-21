@@ -1102,7 +1102,7 @@ class FinancialTap:
             ]
             return df[column_order]
         else:
-            return pd.DataFrame(columns=column_order)
+            return pd.DataFrame(columns=["timestamp_extracted"])
         return df[column_order]
 
     def get_trend_details(self, ticker):
