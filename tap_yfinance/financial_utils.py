@@ -62,6 +62,7 @@ class FinancialTap:
     @staticmethod
     def extract_ticker_tz_aware_timestamp(df, timestamp_column, ticker):
         """transformations are applied inplace to reduce memory usage"""
+        logging.info(f"*** Running function extract_ticker_tz_aware_timestamp for ticker {ticker})")
         assert (
             "timezone" not in df.columns
         ), "timezone cannot be a pre-existing column in the extracted df."
@@ -75,6 +76,7 @@ class FinancialTap:
         return df
 
     def get_analyst_price_targets(self, ticker):
+        logging.info(f"*** Running function get_analyst_price_targets for ticker {ticker})")
         try:
             data = self.yf_ticker_obj.get_analyst_price_targets()
         except Exception:
@@ -102,6 +104,7 @@ class FinancialTap:
         return df[column_order]
 
     def get_actions(self, ticker):
+        logging.info(f"*** Running function get_actions for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_actions()
         except Exception:
@@ -129,9 +132,11 @@ class FinancialTap:
 
     def get_analyst_price_target(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
+        logging.info(f"*** Running function get_analyst_price_target for ticker {ticker})")
         return
 
     def get_balance_sheet(self, ticker):
+        logging.info(f"*** Running function get_balance_sheet for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_balance_sheet()
         except Exception:
@@ -161,13 +166,17 @@ class FinancialTap:
 
     def get_balancesheet(self, ticker):
         """Same output as the method get_balance_sheet"""
+        logging.info(f"*** Running function get_balancesheet for ticker {ticker})")
         return
 
     def basic_info(self, ticker):
         """Useless information"""
+        logging.info(f"*** Running function basic_info for ticker {ticker})")
         return
 
     def get_calendar(self, ticker):
+        """Returns calendar df"""
+        logging.info(f"*** Running function get_calendar for ticker {ticker})")
         try:
             df = pd.DataFrame(self.yf_ticker_obj.get_calendar())
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -196,9 +205,11 @@ class FinancialTap:
 
     def get_capital_gains(self, ticker):
         """Returns empty series"""
+        logging.info(f"*** Running function get_capital_gains for ticker {ticker})")
         return
 
     def get_cash_flow(self, ticker):
+        logging.info(f"*** Running function get_cash_flow for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_cash_flow()
             if isinstance(df, pd.DataFrame) and df.shape[0]:
@@ -227,9 +238,11 @@ class FinancialTap:
 
     def get_cashflow(self, ticker):
         """Same output as the method get_cash_flow"""
+        logging.info(f"*** Running function get_cashflow for ticker {ticker})")
         return
 
     def get_dividends(self, ticker):
+        logging.info(f"*** Running function get_dividends for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_dividends()
         except Exception:
@@ -253,9 +266,11 @@ class FinancialTap:
 
     def get_earnings(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
+        logging.info(f"*** Running function get_earnings for ticker {ticker})")
         return
 
     def get_earnings_estimate(self, ticker):
+        logging.info(f"*** Running function get_earnings_estimate for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_earnings_estimate()
         except Exception:
@@ -287,6 +302,7 @@ class FinancialTap:
         return df[column_order]
 
     def get_earnings_history(self, ticker):
+        logging.info(f"*** Running function get_earnings_history for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_earnings_history()
         except Exception:
@@ -339,6 +355,7 @@ class FinancialTap:
         return df[column_order]
 
     def get_earnings_dates(self, ticker):
+        logging.info(f"*** Running function get_earnings_dates for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_earnings_dates()
         except Exception:
@@ -371,13 +388,16 @@ class FinancialTap:
 
     def get_earnings_forecast(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
+        logging.info(f"*** Running function get_earnings_forecast for ticker {ticker})")
         return
 
     def get_earnings_trend(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
+        logging.info(f"*** Running function get_earnings_trend for ticker {ticker})")
         return
 
     def get_eps_revisions(self, ticker):
+        logging.info(f"*** Running function get_eps_revisions for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_eps_revisions()
         except Exception:
@@ -417,6 +437,7 @@ class FinancialTap:
         return df[column_order]
 
     def get_eps_trend(self, ticker):
+        logging.info(f"*** Running function get_eps_trend for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_eps_trend()
         except Exception:
@@ -446,9 +467,11 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
     def get_funds_data(self, ticker):
+        logging.info(f"*** Running function get_funds_data for ticker {ticker})")
         pass
 
     def get_growth_estimates(self, ticker):
+        logging.info(f"*** Running function get_growth_estimates for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_growth_estimates()
         except Exception:
@@ -476,6 +499,7 @@ class FinancialTap:
         return df[column_order]
 
     def get_fast_info(self, ticker):
+        logging.info(f"*** Running function get_fast_info for ticker {ticker})")
         try:
             df = pd.DataFrame.from_dict(
                 dict(self.yf_ticker_obj.get_fast_info()), orient="index"
@@ -506,6 +530,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_financials(self, ticker):
+        logging.info(f"*** Running function get_financials for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_financials().T
         except Exception:
@@ -539,6 +564,7 @@ class FinancialTap:
         return df[column_order]
 
     def get_history_metadata(self, ticker):
+        logging.info(f"*** Running function get_history_metadata for ticker {ticker})")
         try:
             data = self.yf_ticker_obj.get_history_metadata()
         except Exception:
@@ -586,6 +612,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_info(self, ticker):
+        logging.info(f"*** Running function get_info for ticker {ticker})")
         try:
             data = self.yf_ticker_obj.get_info()
         except Exception:
@@ -666,6 +693,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_income_stmt(self, ticker):
+        logging.info(f"*** Running function get_income_stmt for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_income_stmt()
         except Exception:
@@ -699,9 +727,11 @@ class FinancialTap:
 
     def get_incomestmt(self, ticker):
         """Same output as the method get_income_stmt"""
+        logging.info(f"*** Running function get_incomestmt for ticker {ticker})")
         return
 
     def get_insider_purchases(self, ticker):
+        logging.info(f"*** Running function get_insider_purchases for ticker {ticker})")
         column_order = [
             "ticker",
             "insider_purchases_last_6m",
@@ -722,6 +752,7 @@ class FinancialTap:
             return pd.DataFrame(columns=column_order)
 
     def get_insider_roster_holders(self, ticker):
+        logging.info(f"*** Running function get_insider_roster_holders for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_insider_roster_holders()
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -744,6 +775,7 @@ class FinancialTap:
             return pd.DataFrame()
 
     def get_insider_transactions(self, ticker):
+        logging.info(f"*** Running function get_insider_transactions for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_insider_transactions()
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -766,6 +798,7 @@ class FinancialTap:
             return pd.DataFrame()
 
     def get_institutional_holders(self, ticker):
+        logging.info(f"*** Running function get_institutional_holders for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_institutional_holders()
         except Exception:
@@ -801,6 +834,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["date_reported"])
 
     def get_isin(self, ticker):
+        logging.info(f"*** Running function get_isin for ticker {ticker})")
         try:
             data = self.yf_ticker_obj.get_isin()
         except Exception:
@@ -812,6 +846,7 @@ class FinancialTap:
         return df[["ticker", "timestamp_extracted", "value"]]
 
     def get_revenue_estimate(self, ticker):
+        logging.info(f"*** Running function get_revenue_estimate for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_revenue_estimate()
         except Exception:
@@ -843,6 +878,7 @@ class FinancialTap:
         return df[column_order]
 
     def get_sec_filings(self, ticker):
+        logging.info(f"*** Running function get_sec_filings for ticker {ticker})")
         try:
             data = self.yf_ticker_obj.get_sec_filings()
         except Exception:
@@ -880,6 +916,7 @@ class FinancialTap:
         return df[column_order]
 
     def get_major_holders(self, ticker):
+        logging.info(f"*** Running function get_major_holders for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_major_holders()
         except Exception:
@@ -917,6 +954,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_mutualfund_holders(self, ticker):
+        logging.info(f"*** Running function get_mutualfund_holders for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_mutualfund_holders()
         except Exception:
@@ -951,6 +989,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["date_reported"])
 
     def get_news(self, ticker):
+        logging.info(f"*** Running function get_news for ticker {ticker})")
         try:
             df = pd.DataFrame(self.yf_ticker_obj.get_news())
         except Exception:
@@ -976,6 +1015,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_recommendations(self, ticker):
+        logging.info(f"*** Running function get_recommendations for ticker {ticker})")
         column_order = [
             "ticker",
             "timestamp_extracted",
@@ -997,6 +1037,7 @@ class FinancialTap:
             return pd.DataFrame(columns=column_order)
 
     def get_recommendations_summary(self, ticker):
+        logging.info(f"*** Running function get_recommendations_summary for ticker {ticker})")
         column_order = [
             "ticker",
             "timestamp_extracted",
@@ -1019,13 +1060,16 @@ class FinancialTap:
 
     def get_rev_forecast(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
+        logging.info(f"*** Running function get_rev_forecast for ticker {ticker})")
         return
 
     def get_shares(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
+        logging.info(f"*** Running function get_shares for ticker {ticker})")
         return
 
     def get_shares_full(self, ticker):
+        logging.info(f"*** Running function get_shares_full for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_shares_full()
         except Exception:
@@ -1047,6 +1091,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp"])
 
     def get_splits(self, ticker):
+        logging.info(f"*** Running function get_splits for ticker {ticker})")
         column_order = [
             "timestamp",
             "timestamp_tz_aware",
@@ -1074,6 +1119,7 @@ class FinancialTap:
             return pd.DataFrame(columns=column_order)
 
     def get_sustainability(self, ticker):
+        logging.info(f"*** Running function get_sustainability for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_sustainability()
         except Exception:
@@ -1103,13 +1149,14 @@ class FinancialTap:
             return df[column_order]
         else:
             return pd.DataFrame(columns=["timestamp_extracted"])
-        return df[column_order]
 
     def get_trend_details(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
+        logging.info(f"*** Running function get_trend_details for ticker {ticker})")
         return
 
     def ttm_cash_flow(self, ticker):
+        logging.info(f"*** Running function ttm_cash_flow for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.ttm_cash_flow
         except Exception:
@@ -1132,9 +1179,11 @@ class FinancialTap:
 
     def ttm_cashflow(self, ticker):
         """duplicate of ttm_cash_flow"""
+        logging.info(f"*** Running function ttm_cashflow for ticker {ticker})")
         pass
 
     def ttm_financials(self, ticker):
+        logging.info(f"*** Running function ttm_financials for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.ttm_financials.T
         except Exception:
@@ -1168,6 +1217,7 @@ class FinancialTap:
         return df[column_order]
 
     def ttm_income_stmt(self, ticker):
+        logging.info(f"*** Running function ttm_income_stmt for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.ttm_income_stmt
         except Exception:
@@ -1198,9 +1248,12 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp"])
 
     def ttm_incomestmt(self, ticker):
+        """duplicate of ttm_income_stmt"""
+        logging.info(f"*** Running function ttm_incomestmt for ticker {ticker})")
         pass
 
     def get_upgrades_downgrades(self, ticker):
+        logging.info(f"*** Running function get_upgrades_downgrades for ticker {ticker})")
         column_order = [
             "grade_date",
             "ticker",
@@ -1222,7 +1275,7 @@ class FinancialTap:
         return pd.DataFrame(columns=column_order)
 
     def option_chain(self, ticker):
-        # TODO: clean option extraction
+        logging.info(f"*** Running function option_chain for ticker {ticker})")
 
         first_cols = [
             "last_trade_date",
@@ -1295,6 +1348,7 @@ class FinancialTap:
                     return pd.DataFrame(columns=["last_trade_date"])
 
     def options(self, ticker):
+        logging.info(f"*** Running function options for ticker {ticker})")
         num_tries = 3
         n = 0
         while n < num_tries:
@@ -1328,6 +1382,7 @@ class FinancialTap:
                     )
 
     def quarterly_balance_sheet(self, ticker):
+        logging.info(f"*** Running function quarterly_balance_sheet for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.quarterly_balance_sheet
         except Exception:
@@ -1355,9 +1410,11 @@ class FinancialTap:
 
     def quarterly_balancesheet(self, ticker):
         """Same output as the method quarterly_balance_sheet"""
+        logging.info(f"*** Running function quarterly_balancesheet for ticker {ticker})")
         return
 
     def quarterly_cash_flow(self, ticker):
+        logging.info(f"*** Running function quarterly_cash_flow for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.quarterly_cash_flow
         except Exception:
@@ -1380,9 +1437,11 @@ class FinancialTap:
 
     def quarterly_cashflow(self, ticker):
         """Same output as the method quarterly_cash_flow"""
+        logging.info(f"*** Running function quarterly_cashflow for ticker {ticker})")
         return
 
     def quarterly_financials(self, ticker):
+        logging.info(f"*** Running function quarterly_financials for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.quarterly_financials
         except Exception:
@@ -1413,6 +1472,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["date"])
 
     def quarterly_income_stmt(self, ticker):
+        logging.info(f"*** Running function quarterly_income_stmt for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.quarterly_income_stmt
         except Exception:
@@ -1444,10 +1504,12 @@ class FinancialTap:
 
     def quarterly_incomestmt(self, ticker):
         """Same output as the method quarterly_income_stmt"""
+        logging.info(f"*** Running function quarterly_incomestmt for ticker {ticker})")
         return
 
     def session(self, ticker):
         """Returns NoneType."""
+        logging.info(f"*** Running function session for ticker {ticker})")
         return
 
 
