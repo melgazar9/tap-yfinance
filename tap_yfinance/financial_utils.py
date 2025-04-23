@@ -5,7 +5,7 @@ import numpy as np
 import yfinance as yf
 from tap_yfinance.price_utils import clean_strings
 import re
-from tap_yfinance.config import *
+from tap_yfinance.expected_schema import *
 
 
 class FinancialTap:
@@ -62,7 +62,9 @@ class FinancialTap:
     @staticmethod
     def extract_ticker_tz_aware_timestamp(df, timestamp_column, ticker):
         """transformations are applied inplace to reduce memory usage"""
-        logging.info(f"*** Running function extract_ticker_tz_aware_timestamp for ticker {ticker})")
+        logging.info(
+            f"*** Running function extract_ticker_tz_aware_timestamp for ticker {ticker})"
+        )
         assert (
             "timezone" not in df.columns
         ), "timezone cannot be a pre-existing column in the extracted df."
@@ -76,7 +78,9 @@ class FinancialTap:
         return df
 
     def get_analyst_price_targets(self, ticker):
-        logging.info(f"*** Running function get_analyst_price_targets for ticker {ticker})")
+        logging.info(
+            f"*** Running function get_analyst_price_targets for ticker {ticker})"
+        )
         try:
             data = self.yf_ticker_obj.get_analyst_price_targets()
         except Exception:
@@ -101,9 +105,7 @@ class FinancialTap:
             "mean",
             "median",
         ]
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+
         return df[[i for i in column_order if i in df.columns]]
 
     def get_actions(self, ticker):
@@ -132,15 +134,13 @@ class FinancialTap:
             "stock_splits",
         ]
 
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
-
         return df[[i for i in column_order if i in df.columns]]
 
     def get_analyst_price_target(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
-        logging.info(f"*** Running function get_analyst_price_target for ticker {ticker})")
+        logging.info(
+            f"*** Running function get_analyst_price_target for ticker {ticker})"
+        )
         return
 
     def get_balance_sheet(self, ticker):
@@ -168,9 +168,6 @@ class FinancialTap:
             return pd.DataFrame(columns=["date"])
 
         column_order = BALANCE_SHEET_COLUMNS
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
 
         return df[[i for i in column_order if i in df.columns]]
 
@@ -274,10 +271,14 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp"])
 
         df.columns = clean_strings(df.columns)
-        column_order = ["timestamp", "timestamp_tz_aware", "timezone", "ticker", "dividends"]
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+        column_order = [
+            "timestamp",
+            "timestamp_tz_aware",
+            "timezone",
+            "ticker",
+            "dividends",
+        ]
+
         return df[[i for i in column_order if i in df.columns]]
 
     def get_earnings(self, ticker):
@@ -315,9 +316,7 @@ class FinancialTap:
             "number_of_analysts",
             "growth",
         ]
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+
         return df[[i for i in column_order if i in df.columns]]
 
     def get_earnings_history(self, ticker):
@@ -371,10 +370,6 @@ class FinancialTap:
                 f"Error validating returned columns for earnings_history with ticker {ticker}."
             )
 
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
-
         return df[[i for i in column_order if i in df.columns]]
 
     def get_earnings_dates(self, ticker):
@@ -406,10 +401,6 @@ class FinancialTap:
             "reported_eps",
             "pct_surprise",
         ]
-
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
 
         return df[[i for i in column_order if i in df.columns]]
 
@@ -460,10 +451,6 @@ class FinancialTap:
             "up_last_30_days",
             "down_last_30_days",
         ]
-
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
 
         return df[[i for i in column_order if i in df.columns]]
 
@@ -530,9 +517,6 @@ class FinancialTap:
         else:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
         return df[[i for i in column_order if i in df.columns]]
 
     def get_fast_info(self, ticker):
@@ -626,9 +610,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["date"])
 
         column_order = FINANCIAL_COLUMNS
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+
         return df[[i for i in column_order if i in df.columns]]
 
     def get_history_metadata(self, ticker):
@@ -793,9 +775,7 @@ class FinancialTap:
             column_order = INCOME_STMT_COLUMNS
         else:
             return pd.DataFrame(columns=["date"])
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+
         return df[[i for i in column_order if i in df.columns]]
 
     def get_incomestmt(self, ticker):
@@ -828,7 +808,9 @@ class FinancialTap:
             return pd.DataFrame(columns=column_order)
 
     def get_insider_roster_holders(self, ticker):
-        logging.info(f"*** Running function get_insider_roster_holders for ticker {ticker})")
+        logging.info(
+            f"*** Running function get_insider_roster_holders for ticker {ticker})"
+        )
         try:
             df = self.yf_ticker_obj.get_insider_roster_holders()
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -854,7 +836,9 @@ class FinancialTap:
             return pd.DataFrame()
 
     def get_insider_transactions(self, ticker):
-        logging.info(f"*** Running function get_insider_transactions for ticker {ticker})")
+        logging.info(
+            f"*** Running function get_insider_transactions for ticker {ticker})"
+        )
         try:
             df = self.yf_ticker_obj.get_insider_transactions()
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -880,7 +864,9 @@ class FinancialTap:
             return pd.DataFrame()
 
     def get_institutional_holders(self, ticker):
-        logging.info(f"*** Running function get_institutional_holders for ticker {ticker})")
+        logging.info(
+            f"*** Running function get_institutional_holders for ticker {ticker})"
+        )
         try:
             df = self.yf_ticker_obj.get_institutional_holders()
         except Exception:
@@ -924,9 +910,7 @@ class FinancialTap:
         df["timestamp_extracted"] = datetime.utcnow()
         df["ticker"] = ticker
         column_order = ["ticker", "timestamp_extracted", "value"]
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+
         return df[[i for i in column_order if i in df.columns]]
 
     def get_revenue_estimate(self, ticker):
@@ -958,10 +942,6 @@ class FinancialTap:
             ]
         else:
             return pd.DataFrame(columns=["timestamp_extracted"])
-
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
 
         return df[[i for i in column_order if i in df.columns]]
 
@@ -1001,9 +981,6 @@ class FinancialTap:
         else:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
         return df[[i for i in column_order if i in df.columns]]
 
     def get_major_holders(self, ticker):
@@ -1048,7 +1025,9 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_mutualfund_holders(self, ticker):
-        logging.info(f"*** Running function get_mutualfund_holders for ticker {ticker})")
+        logging.info(
+            f"*** Running function get_mutualfund_holders for ticker {ticker})"
+        )
         try:
             df = self.yf_ticker_obj.get_mutualfund_holders()
         except Exception:
@@ -1135,7 +1114,9 @@ class FinancialTap:
             return pd.DataFrame(columns=column_order)
 
     def get_recommendations_summary(self, ticker):
-        logging.info(f"*** Running function get_recommendations_summary for ticker {ticker})")
+        logging.info(
+            f"*** Running function get_recommendations_summary for ticker {ticker})"
+        )
         column_order = [
             "ticker",
             "timestamp_extracted",
@@ -1185,7 +1166,13 @@ class FinancialTap:
             df["ticker"] = ticker
             self.extract_ticker_tz_aware_timestamp(df, "timestamp", ticker)
             df = df.replace([np.inf, -np.inf, np.nan], None)
-            column_order = ["timestamp", "timestamp_tz_aware", "timezone", "ticker", "amount"]
+            column_order = [
+                "timestamp",
+                "timestamp_tz_aware",
+                "timezone",
+                "ticker",
+                "amount",
+            ]
             missing_columns = check_missing_columns(df, column_order)
             if len(missing_columns):
                 logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
@@ -1279,11 +1266,11 @@ class FinancialTap:
                 "coal",
                 "tobacco",
             ]
-            
+
             missing_columns = check_missing_columns(df, column_order)
             if len(missing_columns):
                 logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
-            
+
             str_cols = [
                 "related_controversy",
                 "peer_esg_score_performance",
@@ -1292,7 +1279,7 @@ class FinancialTap:
                 "peer_environment_performance",
                 "peer_highest_controversy_performance",
             ]
-            
+
             str_cols = [i for i in str_cols if i in df.columns]
             df[str_cols] = df[str_cols].astype(str)
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -1363,9 +1350,7 @@ class FinancialTap:
             return pd.DataFrame(columns=["date"])
 
         column_order = FINANCIAL_COLUMNS
-        missing_columns = check_missing_columns(df, column_order)
-        if len(missing_columns):
-            logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+
         return df[[i for i in column_order if i in df.columns]]
 
     def ttm_income_stmt(self, ticker):
@@ -1406,7 +1391,9 @@ class FinancialTap:
         pass
 
     def get_upgrades_downgrades(self, ticker):
-        logging.info(f"*** Running function get_upgrades_downgrades for ticker {ticker})")
+        logging.info(
+            f"*** Running function get_upgrades_downgrades for ticker {ticker})"
+        )
         column_order = [
             "grade_date",
             "ticker",
@@ -1498,9 +1485,13 @@ class FinancialTap:
                                     "metadata",
                                     "timestamp_extracted",
                                 ]
-                                missing_columns = check_missing_columns(df, column_order)
+                                missing_columns = check_missing_columns(
+                                    df, column_order
+                                )
                                 if len(missing_columns):
-                                    logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+                                    logging.warning(
+                                        f"*** MISSING COLUMNS: {missing_columns} ***"
+                                    )
                                 return df_options[column_order]
                             else:
                                 raise ValueError(
@@ -1564,7 +1555,9 @@ class FinancialTap:
                     )
 
     def quarterly_balance_sheet(self, ticker):
-        logging.info(f"*** Running function quarterly_balance_sheet for ticker {ticker})")
+        logging.info(
+            f"*** Running function quarterly_balance_sheet for ticker {ticker})"
+        )
         try:
             df = self.yf_ticker_obj.quarterly_balance_sheet
         except Exception:
@@ -1593,7 +1586,9 @@ class FinancialTap:
 
     def quarterly_balancesheet(self, ticker):
         """Same output as the method quarterly_balance_sheet"""
-        logging.info(f"*** Running function quarterly_balancesheet for ticker {ticker})")
+        logging.info(
+            f"*** Running function quarterly_balancesheet for ticker {ticker})"
+        )
         return
 
     def quarterly_cash_flow(self, ticker):
@@ -1705,14 +1700,19 @@ def rename_days_ago(col):
         return f"days_ago_{match.group(1)}"
     return col
 
+
 def check_missing_columns(df, column_order):
     df_columns = set(df.columns)
     expected_columns = set(column_order)
 
     missing_in_df = expected_columns - df_columns
     missing_in_order = df_columns - expected_columns
-
-    return {
+    missing_columns = {
         "missing_in_df": missing_in_df,
-        "missing_in_column_order": missing_in_order
+        "missing_in_column_order": missing_in_order,
     }
+
+    if len(missing_columns):
+        logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+
+    return missing_columns
