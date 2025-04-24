@@ -166,6 +166,7 @@ class PriceTap:
             df["replication_key"] = (
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             )
+            check_missing_columns(df, self.column_order)
             df = df[self.column_order]
             return df
 
@@ -208,6 +209,7 @@ class PriceTap:
         df["timestamp_tz_aware"] = df["timestamp_tz_aware"].dt.strftime(
             "%Y-%m-%d %H:%M:%S%z"
         )
+
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 
         if df is not None and not df.shape[0]:
@@ -388,6 +390,7 @@ class TickerDownloader:
             "circulating_supply",
             "change_pct_52wk",
         ]
+        check_missing_columns(df, column_order)
         return df[column_order]
 
     @staticmethod
@@ -480,6 +483,7 @@ class TickerDownloader:
             "change_pct_52wk",
         ]
 
+        check_missing_columns(df, self.column_order)
         return df[column_order]
 
     @staticmethod
@@ -888,3 +892,19 @@ def replace_all_specified_missing(df):
             return series.where(series.notna(), np.nan)
 
     return df.apply(replace_in_series)
+
+def check_missing_columns(df, column_order):
+    df_columns = set(df.columns)
+    expected_columns = set(column_order)
+
+    missing_in_df = expected_columns - df_columns
+    missing_in_order = df_columns - expected_columns
+    missing_columns = {
+        "missing_in_df": missing_in_df,
+        "missing_in_column_order": missing_in_order,
+    }
+
+    if len(missing_columns):
+        logging.warning(f"*** MISSING COLUMNS: {missing_columns} ***")
+
+    return missing_columns
