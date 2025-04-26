@@ -161,7 +161,7 @@ class PriceTap:
                 self.failed_ticker_downloads[yf_params["interval"]].append(ticker)
                 return pd.DataFrame(columns=self.column_order)
 
-            df = replace_all_specified_missing(df)
+            df = replace_all_specified_missing(df, exclude_columns=["ticker"])
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df["replication_key"] = (
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -334,7 +334,7 @@ class TickerDownloader:
         )
 
         df.columns = clean_strings(df.columns)
-        df = replace_all_specified_missing(df)
+        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
         df = df.dropna(how="all", axis=1)
         df = df.dropna(how="all", axis=0)
 
@@ -429,7 +429,7 @@ class TickerDownloader:
         # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
 
         df.columns = clean_strings(df.columns)
-        df = replace_all_specified_missing(df)
+        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
         df = df.dropna(how="all", axis=1)
         df = df.dropna(how="all", axis=0)
 
@@ -542,7 +542,7 @@ class TickerDownloader:
             df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
 
         # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
-        df = replace_all_specified_missing(df)
+        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
         df = df.replace([np.inf, -np.inf, np.nan], None)
         df[df.columns] = df[df.columns].astype(str)
 
@@ -581,7 +581,7 @@ class TickerDownloader:
         df.columns = clean_strings(df.columns)
         str_cols = ["volume", "open_interest", "change"]
         df[str_cols] = df[str_cols].astype(str)
-        df = replace_all_specified_missing(df)
+        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
         df = df.dropna(how="all", axis=1)
         df = df.dropna(how="all", axis=0)
         df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -868,7 +868,7 @@ def flatten_multindex_columns(df):
     return new_cols
 
 
-def replace_all_specified_missing(df):
+def replace_all_specified_missing(df, exclude_columns=None):
     """
     Replaces entire string values equal to 'nan' (case-insensitive),
     'none' (case-insensitive), and the Python None object with np.nan
@@ -876,12 +876,18 @@ def replace_all_specified_missing(df):
 
     Args:
         df (pd.DataFrame): The input Pandas DataFrame.
+        exclude_columns (list, optional): List of columns to exclude. Defaults to None.
 
     Returns:
         pd.DataFrame: The DataFrame with specified missing values replaced by np.nan.
     """
 
+    if exclude_columns is None:
+        exclude_columns = []
+
     def replace_in_series(series):
+        if series.name in exclude_columns:
+            return series
         if series.dtype == "object":
             lower_series = series.str.lower()
             return series.where(
