@@ -484,6 +484,10 @@ HISTORY_METADATA_COLUMNS = [
     "regular_market_day_high",
     "regular_market_day_low",
     "regular_market_volume",
+    "trading_periods",
+    "current_trading_period",
+    "long_name",
+    "short_name",
 ]
 
 INFO_COLUMNS = [
@@ -669,4 +673,7 @@ INFO_COLUMNS = [
     "market_state",
     "display_name",
     "trailing_peg_ratio",
+    "ipo_expected_date",
+    "prev_name",
+    "name_change_date",
 ]

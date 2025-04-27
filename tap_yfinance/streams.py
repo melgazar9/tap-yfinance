@@ -476,6 +476,8 @@ class HistoryMetadataStream(FinancialStream):
         th.Property("regular_market_day_high", th.NumberType),
         th.Property("regular_market_day_low", th.NumberType),
         th.Property("regular_market_volume", th.NumberType),
+        th.Property("long_name", th.StringType),
+        th.Property("short_name", th.StringType),
     ).to_dict()
 
 
@@ -665,6 +667,9 @@ class InfoStream(FinancialStream):
         th.Property("market_state", th.BooleanType),
         th.Property("display_name", th.StringType),
         th.Property("trailing_peg_ratio", th.NumberType),
+        th.Property("ipo_expected_date", th.DateTimeType),
+        th.Property("prev_name", th.StringType),
+        th.Property("name_change_date", th.DateTimeType),
     ).to_dict()
 
 
