@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import yfinance as yf
-from tap_yfinance.price_utils import clean_strings, check_missing_columns
+from tap_yfinance.price_utils import clean_strings, check_missing_columns, get_method_name
 import re
 from tap_yfinance.expected_schema import *
 
@@ -62,12 +62,11 @@ class FinancialTap:
     @staticmethod
     def extract_ticker_tz_aware_timestamp(df, timestamp_column, ticker):
         """transformations are applied inplace to reduce memory usage"""
-        logging.info(
-            f"*** Running function extract_ticker_tz_aware_timestamp for ticker {ticker})"
-        )
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         assert (
             "timezone" not in df.columns
-        ), "timezone cannot be a pre-existing column in the extracted df."
+        ), f"timezone cannot be a pre-existing column in the extracted df for ticker {ticker}."
         df["ticker"] = ticker
         df.columns = clean_strings(df.columns)
         df["timezone"] = str(df[timestamp_column].dt.tz)
@@ -78,14 +77,13 @@ class FinancialTap:
         return df
 
     def get_analyst_price_targets(self, ticker):
-        logging.info(
-            f"*** Running function get_analyst_price_targets for ticker {ticker})"
-        )
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             data = self.yf_ticker_obj.get_analyst_price_targets()
         except Exception:
             logging.warning(
-                f"Error extracting data get_actions for ticker {ticker}. Skipping..."
+                f"Error extracting data {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
@@ -109,12 +107,13 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def get_actions(self, ticker):
-        logging.info(f"*** Running function get_actions for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_actions()
         except Exception:
             logging.warning(
-                f"Error extracting data get_actions for ticker {ticker}. Skipping..."
+                f"Error extracting data {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp"])
 
@@ -138,18 +137,18 @@ class FinancialTap:
 
     def get_analyst_price_target(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
-        logging.info(
-            f"*** Running function get_analyst_price_target for ticker {ticker})"
-        )
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_balance_sheet(self, ticker):
-        logging.info(f"*** Running function get_balance_sheet for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_balance_sheet()
         except Exception:
             logging.warning(
-                f"Error extracting data get_balance_sheet for ticker {ticker}. Skipping..."
+                f"Error extracting data get_balance_sheet for method {method} and ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -173,17 +172,21 @@ class FinancialTap:
 
     def get_balancesheet(self, ticker):
         """Same output as the method get_balance_sheet"""
-        logging.info(f"*** Running function get_balancesheet for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def basic_info(self, ticker):
         """Useless information"""
-        logging.info(f"*** Running function basic_info for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_calendar(self, ticker):
         """Returns calendar df"""
-        logging.info(f"*** Running function get_calendar for ticker {ticker})")
+
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = pd.DataFrame(self.yf_ticker_obj.get_calendar())
             df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -201,12 +204,12 @@ class FinancialTap:
                 "revenue_low",
                 "revenue_average",
             ]
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         except Exception:
             logging.warning(
-                f"Error extracting data get_calendar for ticker {ticker}. Skipping..."
+                f"Error extracting data from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(
                 columns=["dividend_date", "ex_dividend_date", "earnings_date"]
@@ -214,11 +217,13 @@ class FinancialTap:
 
     def get_capital_gains(self, ticker):
         """Returns empty series"""
-        logging.info(f"*** Running function get_capital_gains for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_cash_flow(self, ticker):
-        logging.info(f"*** Running function get_cash_flow for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_cash_flow()
             if isinstance(df, pd.DataFrame) and df.shape[0]:
@@ -236,27 +241,29 @@ class FinancialTap:
             else:
                 return pd.DataFrame(columns=["date"])
             column_order = CASH_FLOW_COLUMNS
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         except Exception:
             logging.warning(
-                f"Error extracting data get_cash_flow for ticker {ticker}. Skipping..."
+                f"Error extracting data from {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
     def get_cashflow(self, ticker):
         """Same output as the method get_cash_flow"""
-        logging.info(f"*** Running function get_cashflow for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_dividends(self, ticker):
-        logging.info(f"*** Running function get_dividends for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_dividends()
         except Exception:
             logging.warning(
-                f"Error extracting data get_dividends for ticker {ticker}. Skipping..."
+                f"Error extracting data from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp"])
 
@@ -281,16 +288,18 @@ class FinancialTap:
 
     def get_earnings(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
-        logging.info(f"*** Running function get_earnings for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_earnings_estimate(self, ticker):
-        logging.info(f"*** Running function get_earnings_estimate for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_earnings_estimate()
         except Exception:
             logging.warning(
-                f"Error extracting data get_earnings_estimate for ticker {ticker}. Skipping..."
+                f"Error extracting data from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -318,12 +327,13 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def get_earnings_history(self, ticker):
-        logging.info(f"*** Running function get_earnings_history for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_earnings_history()
         except Exception:
             logging.warning(
-                f"Error extracting data get_earnings_history for ticker {ticker}. Skipping..."
+                f"Error extracting data from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
 
@@ -371,12 +381,13 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def get_earnings_dates(self, ticker):
-        logging.info(f"*** Running function get_earnings_dates for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_earnings_dates()
         except Exception:
             logging.warning(
-                f"Error extracting get_earnings_dates as dictionary for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} as dictionary for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -404,21 +415,24 @@ class FinancialTap:
 
     def get_earnings_forecast(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
-        logging.info(f"*** Running function get_earnings_forecast for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_earnings_trend(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
-        logging.info(f"*** Running function get_earnings_trend for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_eps_revisions(self, ticker):
-        logging.info(f"*** Running function get_eps_revisions for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_eps_revisions()
         except Exception:
             logging.warning(
-                f"Error extracting get_earnings_dates as dictionary for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} as dictionary for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -453,12 +467,13 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def get_eps_trend(self, ticker):
-        logging.info(f"*** Running function get_eps_trend for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_eps_trend()
         except Exception:
             logging.warning(
-                f"Error extracting get_earnings_dates as dictionary for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} as dictionary for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
@@ -478,23 +493,25 @@ class FinancialTap:
                 "days_ago_60",
                 "days_ago_90",
             ]
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
     def get_funds_data(self, ticker):
-        logging.info(f"*** Running function get_funds_data for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         pass
 
     def get_growth_estimates(self, ticker):
-        logging.info(f"*** Running function get_growth_estimates for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_growth_estimates()
         except Exception:
             logging.warning(
-                f"Error extracting get_growth_estimates as dictionary for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} as dictionary for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -517,14 +534,15 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def get_fast_info(self, ticker):
-        logging.info(f"*** Running function get_fast_info for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = pd.DataFrame.from_dict(
                 dict(self.yf_ticker_obj.get_fast_info()), orient="index"
             ).T
         except Exception:
             logging.warning(
-                f"Error extracting get_fast_info as dictionary for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} as dictionary for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -569,7 +587,7 @@ class FinancialTap:
                 "timestamp_tz_aware",
             ]
 
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df
 
@@ -577,12 +595,13 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_financials(self, ticker):
-        logging.info(f"*** Running function get_financials for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_financials().T
         except Exception:
             logging.warning(
-                f"Error extracting get_financials as dictionary for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} as dictionary for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -610,12 +629,13 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def get_history_metadata(self, ticker):
-        logging.info(f"*** Running function get_history_metadata for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             data = self.yf_ticker_obj.get_history_metadata()
         except Exception:
             logging.warning(
-                f"Error extracting get_history_metadata as dictionary for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} as dictionary for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -644,12 +664,12 @@ class FinancialTap:
                 df["timestamp_extracted"] = datetime.utcnow()
 
                 column_order = HISTORY_METADATA_COLUMNS
-                check_missing_columns(df, column_order)
+                check_missing_columns(df, column_order, method_name)
                 
                 return df[[i for i in column_order if i in df.columns]]
             except Exception:
                 logging.warning(
-                    f"Error parsing get_history_metadata as dictionary for ticker {ticker}. Skipping..."
+                    f"Error parsing from method {method} as dictionary for ticker {ticker}. Skipping..."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -657,12 +677,13 @@ class FinancialTap:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_info(self, ticker):
-        logging.info(f"*** Running function get_info for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             data = self.yf_ticker_obj.get_info()
         except Exception:
             logging.warning(
-                f"Error extracting get_info for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -676,7 +697,7 @@ class FinancialTap:
                 df = df.replace([np.inf, -np.inf, np.nan], None)
 
                 column_order = INFO_COLUMNS
-                check_missing_columns(df, column_order)
+                check_missing_columns(df, column_order, method_name)
                 
 
                 str_cols = [
@@ -732,22 +753,23 @@ class FinancialTap:
                 return df[[i for i in column_order if i in df.columns]]
             except Exception:
                 logging.warning(
-                    f"Error parsing get_info as dictionary for ticker {ticker}. Skipping..."
+                    f"Error parsing method {method} as dictionary for ticker {ticker}. Skipping..."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         else:
             logging.warning(
-                f"Data has no length in method get_info for ticker {ticker}. Skipping..."
+                f"Data has no length in method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_income_stmt(self, ticker):
-        logging.info(f"*** Running function get_income_stmt for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_income_stmt()
         except Exception:
             logging.warning(
-                f"Error extracting get_income_stmt as dictionary for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} as dictionary for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -774,11 +796,13 @@ class FinancialTap:
 
     def get_incomestmt(self, ticker):
         """Same output as the method get_income_stmt"""
-        logging.info(f"*** Running function get_incomestmt for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_insider_purchases(self, ticker):
-        logging.info(f"*** Running function get_insider_purchases for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         column_order = [
             "ticker",
             "insider_purchases_last_6m",
@@ -794,7 +818,7 @@ class FinancialTap:
             df["ticker"] = ticker
             df[num_cols] = df[num_cols].apply(pd.to_numeric, errors="coerce")
             df = df.replace([np.inf, -np.inf, np.nan], None)
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         except Exception:
@@ -802,7 +826,7 @@ class FinancialTap:
 
     def get_insider_roster_holders(self, ticker):
         logging.info(
-            f"*** Running function get_insider_roster_holders for ticker {ticker})"
+            f"*** Running method {method} for ticker {ticker})"
         )
         try:
             df = self.yf_ticker_obj.get_insider_roster_holders()
@@ -821,7 +845,7 @@ class FinancialTap:
                 "shares_owned_directly",
                 "position_direct_date",
             ]
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         except Exception:
@@ -829,7 +853,7 @@ class FinancialTap:
 
     def get_insider_transactions(self, ticker):
         logging.info(
-            f"*** Running function get_insider_transactions for ticker {ticker})"
+            f"*** Running method {method} for ticker {ticker})"
         )
         try:
             df = self.yf_ticker_obj.get_insider_transactions()
@@ -848,7 +872,7 @@ class FinancialTap:
                 "ownership",
                 "value",
             ]
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         except Exception:
@@ -856,13 +880,13 @@ class FinancialTap:
 
     def get_institutional_holders(self, ticker):
         logging.info(
-            f"*** Running function get_institutional_holders for ticker {ticker})"
+            f"*** Running method {method} for ticker {ticker})"
         )
         try:
             df = self.yf_ticker_obj.get_institutional_holders()
         except Exception:
             logging.warning(
-                f"Could not extract institutional_holders for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date_reported"])
 
@@ -880,21 +904,22 @@ class FinancialTap:
                 "shares",
                 "value",
             ]
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
             logging.warning(
-                f"Inconsistent fields for institutional_holders for ticker {ticker}. Skipping..."
+                f"Inconsistent fields in method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date_reported"])
 
     def get_isin(self, ticker):
-        logging.info(f"*** Running function get_isin for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             data = self.yf_ticker_obj.get_isin()
         except Exception:
-            logging.warning(f"Could not extract isin for ticker {ticker}. Skipping...")
+            logging.warning(f"Could not extract from method {method} for ticker {ticker}. Skipping...")
             return pd.DataFrame(columns=["timestamp_extracted"])
         df = pd.DataFrame.from_dict({"value": data}, orient="index").T
         df["timestamp_extracted"] = datetime.utcnow()
@@ -904,12 +929,13 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def get_revenue_estimate(self, ticker):
-        logging.info(f"*** Running function get_revenue_estimate for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_revenue_estimate()
         except Exception:
             logging.warning(
-                f"Could not extract get_revenue_estimate for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -936,12 +962,13 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def get_sec_filings(self, ticker):
-        logging.info(f"*** Running function get_sec_filings for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             data = self.yf_ticker_obj.get_sec_filings()
         except Exception:
             logging.warning(
-                f"Could not extract get_sec_filings for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -974,12 +1001,13 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def get_major_holders(self, ticker):
-        logging.info(f"*** Running function get_major_holders for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_major_holders()
         except Exception:
             logging.warning(
-                f"Could not extract get_major_holders for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -1004,24 +1032,24 @@ class FinancialTap:
             df["timestamp_extracted"] = datetime.utcnow()
             df = df.replace([np.inf, -np.inf, np.nan], None)
             column_order = ["timestamp_extracted", "ticker", "breakdown", "value"]
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
             logging.warning(
-                f"Inconsistent fields for get_major_holders for ticker {ticker}. Skipping..."
+                f"Inconsistent fields for method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_mutualfund_holders(self, ticker):
         logging.info(
-            f"*** Running function get_mutualfund_holders for ticker {ticker})"
+            f"*** Running method {method} for ticker {ticker})"
         )
         try:
             df = self.yf_ticker_obj.get_mutualfund_holders()
         except Exception:
             logging.warning(
-                f"Could not extract get_mutualfund_holders for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date_reported"])
 
@@ -1039,22 +1067,23 @@ class FinancialTap:
                 "value",
             ]
 
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
             logging.warning(
-                f"Inconsistent fields for get_mutualfund_holders for ticker {ticker}. Skipping..."
+                f"Inconsistent fields for method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date_reported"])
 
     def get_news(self, ticker):
-        logging.info(f"*** Running function get_news for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = pd.DataFrame(self.yf_ticker_obj.get_news())
         except Exception:
             logging.warning(
-                f"Could not extract get_news for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date_reported"])
 
@@ -1066,17 +1095,18 @@ class FinancialTap:
             df = df.replace([np.inf, -np.inf, np.nan], None)
 
             column_order = ["timestamp_extracted", "ticker", "id", "content"]
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
             logging.warning(
-                f"Inconsistent fields for get_news for ticker {ticker}. Skipping..."
+                f"Inconsistent fields from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_recommendations(self, ticker):
-        logging.info(f"*** Running function get_recommendations for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         column_order = [
             "ticker",
             "timestamp_extracted",
@@ -1093,7 +1123,7 @@ class FinancialTap:
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         except Exception:
@@ -1101,7 +1131,7 @@ class FinancialTap:
 
     def get_recommendations_summary(self, ticker):
         logging.info(
-            f"*** Running function get_recommendations_summary for ticker {ticker})"
+            f"*** Running method {method} for ticker {ticker})"
         )
         column_order = [
             "ticker",
@@ -1119,7 +1149,7 @@ class FinancialTap:
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         except Exception:
@@ -1127,21 +1157,24 @@ class FinancialTap:
 
     def get_rev_forecast(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
-        logging.info(f"*** Running function get_rev_forecast for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_shares(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
-        logging.info(f"*** Running function get_shares for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def get_shares_full(self, ticker):
-        logging.info(f"*** Running function get_shares_full for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_shares_full()
         except Exception:
             logging.warning(
-                f"Could not extract get_shares_full for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp"])
 
@@ -1158,14 +1191,15 @@ class FinancialTap:
                 "ticker",
                 "amount",
             ]
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
             return pd.DataFrame(columns=["timestamp"])
 
     def get_splits(self, ticker):
-        logging.info(f"*** Running function get_splits for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         column_order = [
             "timestamp",
             "timestamp_tz_aware",
@@ -1178,7 +1212,7 @@ class FinancialTap:
             df = self.yf_ticker_obj.get_splits()
         except Exception:
             logging.warning(
-                f"Could not extract get_splits for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp"])
 
@@ -1188,19 +1222,20 @@ class FinancialTap:
             self.extract_ticker_tz_aware_timestamp(df, "timestamp", ticker)
             df.columns = clean_strings(df.columns)
             df = df.replace([np.inf, -np.inf, np.nan], None)
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
             return pd.DataFrame(columns=column_order)
 
     def get_sustainability(self, ticker):
-        logging.info(f"*** Running function get_sustainability for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_sustainability()
         except Exception:
             logging.warning(
-                f"Could not extract get_splits for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -1250,7 +1285,7 @@ class FinancialTap:
                 "tobacco",
             ]
 
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
 
             str_cols = [
@@ -1271,16 +1306,18 @@ class FinancialTap:
 
     def get_trend_details(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
-        logging.info(f"*** Running function get_trend_details for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def ttm_cash_flow(self, ticker):
-        logging.info(f"*** Running function ttm_cash_flow for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.ttm_cash_flow
         except Exception:
             logging.warning(
-                f"Could not extract ttm_cash_flow for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -1290,7 +1327,7 @@ class FinancialTap:
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
             column_order = CASH_FLOW_COLUMNS
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
@@ -1298,16 +1335,18 @@ class FinancialTap:
 
     def ttm_cashflow(self, ticker):
         """duplicate of ttm_cash_flow"""
-        logging.info(f"*** Running function ttm_cashflow for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         pass
 
     def ttm_financials(self, ticker):
-        logging.info(f"*** Running function ttm_financials for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.ttm_financials.T
         except Exception:
             logging.warning(
-                f"Error extracting ttm_financials as dictionary for ticker {ticker}. Skipping..."
+                f"Error extracting from method {method} as dictionary for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -1335,12 +1374,13 @@ class FinancialTap:
         return df[[i for i in column_order if i in df.columns]]
 
     def ttm_income_stmt(self, ticker):
-        logging.info(f"*** Running function ttm_income_stmt for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.ttm_income_stmt
         except Exception:
             logging.warning(
-                f"Could not extract ttm_income_stmt for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -1359,7 +1399,7 @@ class FinancialTap:
                 for i in clean_strings(df.columns)
             ]
             column_order = INCOME_STMT_COLUMNS
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
@@ -1367,12 +1407,13 @@ class FinancialTap:
 
     def ttm_incomestmt(self, ticker):
         """duplicate of ttm_income_stmt"""
-        logging.info(f"*** Running function ttm_incomestmt for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         pass
 
     def get_upgrades_downgrades(self, ticker):
         logging.info(
-            f"*** Running function get_upgrades_downgrades for ticker {ticker})"
+            f"*** Running method {method} for ticker {ticker})"
         )
         column_order = [
             "grade_date",
@@ -1387,17 +1428,18 @@ class FinancialTap:
             df = df.reset_index()
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         except Exception:
             logging.warning(
-                f"Could not extract get_upgrades_downgrades for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
         return pd.DataFrame(columns=column_order)
 
     def option_chain(self, ticker):
-        logging.info(f"*** Running function option_chain for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
 
         first_cols = [
             "last_trade_date",
@@ -1464,7 +1506,7 @@ class FinancialTap:
                                     "metadata",
                                     "timestamp_extracted",
                                 ]
-                                check_missing_columns(df, column_order)
+                                check_missing_columns(df, column_order, method_name)
                                 return df_options[column_order]
                             else:
                                 raise ValueError(
@@ -1481,16 +1523,17 @@ class FinancialTap:
                 n += 1
                 if n < num_tries:
                     logging.warning(
-                        f"try-catch failed {n} times for method option_chain for ticker {ticker}. Trying again..."
+                        f"try-catch failed {n} times for method {method} for ticker {ticker}. Trying again..."
                     )
                 else:
                     logging.warning(
-                        f"try-catch failed {n} times for method option_chain for ticker {ticker}. Skipping..."
+                        f"try-catch failed {n} times for method {method} for ticker {ticker}. Skipping..."
                     )
                     return pd.DataFrame(columns=["last_trade_date"])
 
     def options(self, ticker):
-        logging.info(f"*** Running function options for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         num_tries = 3
         n = 0
         while n < num_tries:
@@ -1505,7 +1548,7 @@ class FinancialTap:
                     df["expiration_date"] = pd.to_datetime(df["expiration_date"])
                     df = df.replace([np.inf, -np.inf, np.nan], None)
                     column_order = ["timestamp_extracted", "ticker", "expiration_date"]
-                    check_missing_columns(df, column_order)
+                    check_missing_columns(df, column_order, method_name)
                     return df[[i for i in column_order if i in df.columns]]
                 else:
                     return pd.DataFrame(
@@ -1515,11 +1558,11 @@ class FinancialTap:
                 n += 1
                 if n < num_tries:
                     logging.warning(
-                        f"try-catch failed {n} times for method options for ticker {ticker}. Trying again..."
+                        f"try-catch failed {n} times for method {method} for ticker {ticker}. Trying again..."
                     )
                 else:
                     logging.warning(
-                        f"try-catch failed {n} times for method options for ticker {ticker}. Skipping..."
+                        f"try-catch failed {n} times for method {method} for ticker {ticker}. Skipping..."
                     )
                     return pd.DataFrame(
                         columns=["timestamp_extracted", "ticker", "expiration_date"]
@@ -1527,13 +1570,13 @@ class FinancialTap:
 
     def quarterly_balance_sheet(self, ticker):
         logging.info(
-            f"*** Running function quarterly_balance_sheet for ticker {ticker})"
+            f"*** Running method {method} for ticker {ticker})"
         )
         try:
             df = self.yf_ticker_obj.quarterly_balance_sheet
         except Exception:
             logging.warning(
-                f"Could not extract quarterly_balance_sheet for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -1548,7 +1591,7 @@ class FinancialTap:
                 }
             )
             column_order = BALANCE_SHEET_COLUMNS
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
@@ -1557,17 +1600,18 @@ class FinancialTap:
     def quarterly_balancesheet(self, ticker):
         """Same output as the method quarterly_balance_sheet"""
         logging.info(
-            f"*** Running function quarterly_balancesheet for ticker {ticker})"
+            f"*** Running method {method} for ticker {ticker})"
         )
         return
 
     def quarterly_cash_flow(self, ticker):
-        logging.info(f"*** Running function quarterly_cash_flow for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.quarterly_cash_flow
         except Exception:
             logging.warning(
-                f"Could not extract quarterly_cash_flow for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -1577,7 +1621,7 @@ class FinancialTap:
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
             column_order = CASH_FLOW_COLUMNS
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
@@ -1585,16 +1629,18 @@ class FinancialTap:
 
     def quarterly_cashflow(self, ticker):
         """Same output as the method quarterly_cash_flow"""
-        logging.info(f"*** Running function quarterly_cashflow for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def quarterly_financials(self, ticker):
-        logging.info(f"*** Running function quarterly_financials for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.quarterly_financials
         except Exception:
             logging.warning(
-                f"Could not extract quarterly_financials for ticker {ticker}. Skipping..."
+                f"Could not extract from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -1613,19 +1659,20 @@ class FinancialTap:
                 for i in clean_strings(df.columns)
             ]
             column_order = FINANCIAL_COLUMNS
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
             return pd.DataFrame(columns=["date"])
 
     def quarterly_income_stmt(self, ticker):
-        logging.info(f"*** Running function quarterly_income_stmt for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.quarterly_income_stmt
         except Exception:
             logging.warning(
-                f"Could not extract quarterly_income_stmt for ticker {ticker}. Skipping..."
+                f"Could not extract {from method {method} for ticker {ticker}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
@@ -1644,7 +1691,7 @@ class FinancialTap:
                 for i in clean_strings(df.columns)
             ]
             column_order = INCOME_STMT_COLUMNS
-            check_missing_columns(df, column_order)
+            check_missing_columns(df, column_order, method_name)
             
             return df[[i for i in column_order if i in df.columns]]
         else:
@@ -1652,12 +1699,14 @@ class FinancialTap:
 
     def quarterly_incomestmt(self, ticker):
         """Same output as the method quarterly_income_stmt"""
-        logging.info(f"*** Running function quarterly_incomestmt for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
     def session(self, ticker):
         """Returns NoneType."""
-        logging.info(f"*** Running function session for ticker {ticker})")
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
 
