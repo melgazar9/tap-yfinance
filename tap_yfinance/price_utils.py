@@ -8,8 +8,8 @@ from pytickersymbols import PyTickerSymbols
 from pandas_datareader import data as pdr
 import re
 from requests.exceptions import ChunkedEncodingError
-
 import requests
+import inspect
 
 
 class PriceTap:
@@ -124,7 +124,8 @@ class PriceTap:
             - Clean column names
             - Set tz_aware timestamp column to be a string
         """
-
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
         yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
         assert (
             "interval" in yf_params.keys()
@@ -161,11 +162,12 @@ class PriceTap:
                 self.failed_ticker_downloads[yf_params["interval"]].append(ticker)
                 return pd.DataFrame(columns=self.column_order)
 
-            df = replace_all_specified_missing(df)
+            df = replace_all_specified_missing(df, exclude_columns=["ticker"])
             df = df.replace([np.inf, -np.inf, np.nan], None)
             df["replication_key"] = (
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             )
+            check_missing_columns(df, column_order, method)
             df = df[self.column_order]
             return df
 
@@ -174,6 +176,8 @@ class PriceTap:
             return pd.DataFrame(columns=self.column_order)
 
     def download_price_history_wide(self, tickers, yf_params):
+        method = get_method_name()
+        logging.info(f"Running {method} for ticker {ticker}")
         yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
 
         assert (
@@ -208,6 +212,7 @@ class PriceTap:
         df["timestamp_tz_aware"] = df["timestamp_tz_aware"].dt.strftime(
             "%Y-%m-%d %H:%M:%S%z"
         )
+
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 
         if df is not None and not df.shape[0]:
@@ -235,6 +240,8 @@ class TickerDownloader:
         -----------
         Download py-ticker-symbols tickers
         """
+        method = get_method_name()
+        logging.info(f"Running method {method}")
         pts = PyTickerSymbols()
         all_getters = list(
             filter(
@@ -282,7 +289,8 @@ class TickerDownloader:
         -----------
         Download cryptocurrency pairs
         """
-
+        method = get_method_name()
+        logging.info(f"Running method {method}")
         from requests_html import HTMLSession
 
         session = HTMLSession()
@@ -311,7 +319,9 @@ class TickerDownloader:
                 seen_symbols.update(set(df_i["Symbol"]))
                 start += num_currencies_per_loop
             except ChunkedEncodingError as e:
-                logging.warning(f"ChunkedEncodingError encountered: {e}. Retrying...")
+                logging.warning(
+                    f"ChunkedEncodingError encountered: {e} for ticker {ticker} and method {method}. Retrying..."
+                )
                 time.sleep(5)
                 continue
 
@@ -332,7 +342,7 @@ class TickerDownloader:
         )
 
         df.columns = clean_strings(df.columns)
-        df = replace_all_specified_missing(df)
+        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
         df = df.dropna(how="all", axis=1)
         df = df.dropna(how="all", axis=0)
 
@@ -388,6 +398,7 @@ class TickerDownloader:
             "circulating_supply",
             "change_pct_52wk",
         ]
+        check_missing_columns(df, column_order, method)
         return df[column_order]
 
     @staticmethod
@@ -399,6 +410,8 @@ class TickerDownloader:
         Note: At the time of coding, setting num_currencies higher than 250 results in only 25 crypto tickers returned.
         """
 
+        method = get_method_name()
+        logging.info(f"Running method {method}")
         from requests_html import HTMLSession
 
         session = HTMLSession()
@@ -426,7 +439,7 @@ class TickerDownloader:
         # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
 
         df.columns = clean_strings(df.columns)
-        df = replace_all_specified_missing(df)
+        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
         df = df.dropna(how="all", axis=1)
         df = df.dropna(how="all", axis=0)
 
@@ -480,6 +493,7 @@ class TickerDownloader:
             "change_pct_52wk",
         ]
 
+        check_missing_columns(df, column_order, method)
         return df[column_order]
 
     @staticmethod
@@ -490,6 +504,9 @@ class TickerDownloader:
         Download the yfinance forex pair ticker names
         Note: At the time of coding, setting num_currencies higher than 250 results in only 25 crypto tickers returned.
         """
+
+        method = get_method_name()
+        logging.info(f"Running method {method}")
 
         from requests_html import HTMLSession
 
@@ -538,7 +555,7 @@ class TickerDownloader:
             df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
 
         # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
-        df = replace_all_specified_missing(df)
+        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
         df = df.replace([np.inf, -np.inf, np.nan], None)
         df[df.columns] = df[df.columns].astype(str)
 
@@ -557,6 +574,9 @@ class TickerDownloader:
         Download the yfinance future contract ticker names
         Note: At the time of coding, setting num_currencies higher than 250 results in only 25 crypto tickers returned.
         """
+
+        method = get_method_name()
+        logging.info(f"Running method {method}")
 
         from requests_html import HTMLSession
 
@@ -577,7 +597,7 @@ class TickerDownloader:
         df.columns = clean_strings(df.columns)
         str_cols = ["volume", "open_interest", "change"]
         df[str_cols] = df[str_cols].astype(str)
-        df = replace_all_specified_missing(df)
+        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
         df = df.dropna(how="all", axis=1)
         df = df.dropna(how="all", axis=0)
         df = df.replace([np.inf, -np.inf, np.nan], None)
@@ -586,6 +606,9 @@ class TickerDownloader:
 
     @staticmethod
     def pull_sec_tickers():
+        method = get_method_name()
+        logging.info(f"Running method {method}")
+
         url = "https://www.sec.gov/files/company_tickers.json"
         headers = {
             "User-Agent": "MyScraper/1.1.0 (myemail2@example3.com)",
@@ -608,6 +631,8 @@ class TickerDownloader:
         return df_sec_tickers
 
     def generate_yahoo_sec_tickermap(self):
+        method = get_method_name()
+        logging.info(f"Running method {method}")
         df_sec_tickers = self.pull_sec_tickers()
         df_pts_tickers = self.download_pts_stock_tickers()
         df_mapped = pd.merge(
@@ -864,7 +889,7 @@ def flatten_multindex_columns(df):
     return new_cols
 
 
-def replace_all_specified_missing(df):
+def replace_all_specified_missing(df, exclude_columns=None):
     """
     Replaces entire string values equal to 'nan' (case-insensitive),
     'none' (case-insensitive), and the Python None object with np.nan
@@ -872,12 +897,18 @@ def replace_all_specified_missing(df):
 
     Args:
         df (pd.DataFrame): The input Pandas DataFrame.
+        exclude_columns (list, optional): List of columns to exclude. Defaults to None.
 
     Returns:
         pd.DataFrame: The DataFrame with specified missing values replaced by np.nan.
     """
 
+    if exclude_columns is None:
+        exclude_columns = []
+
     def replace_in_series(series):
+        if series.name in exclude_columns:
+            return series
         if series.dtype == "object":
             lower_series = series.str.lower()
             return series.where(
@@ -888,3 +919,35 @@ def replace_all_specified_missing(df):
             return series.where(series.notna(), np.nan)
 
     return df.apply(replace_in_series)
+
+
+def check_missing_columns(df, column_order, method_name):
+    df_columns = set(df.columns)
+    expected_columns = set(column_order)
+
+    missing_in_df = expected_columns - df_columns
+    missing_in_schema = df_columns - expected_columns
+
+    missing_in_df_msg = (
+        f"\n*** MISSING EXPECTED COLUMNS IN DF: {missing_in_df} ***"
+        if len(missing_in_df)
+        else ""
+    )
+    missing_in_schema_msg = (
+        f"\n*** URGENT!!! MISSING EXPECTED COLUMNS IN SCHEMA: {missing_in_schema} ***"
+        if len(missing_in_schema)
+        else ""
+    )
+    warning_message = (
+        f"*** For method {method_name} and ticker {df['ticker'].iloc[0]} ***"
+        + "".join(filter(None, [missing_in_df_msg, missing_in_schema_msg]))
+    )
+
+    if warning_message:
+        logging.warning(warning_message)
+
+    return {"missing_in_df": missing_in_df, "missing_in_schema": missing_in_schema}
+
+
+def get_method_name():
+    return inspect.currentframe().f_back.f_code.co_name
