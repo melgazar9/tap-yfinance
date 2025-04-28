@@ -748,6 +748,9 @@ class FinancialTap:
                     "short_name",
                     "long_name",
                     "display_name",
+                    "fax",
+                    "uuid",
+                    "underlying_symbol",
                 ]
 
                 str_cols = [i for i in str_cols if i in df.columns]
@@ -846,10 +849,18 @@ class FinancialTap:
                 "position_indirect_date",
                 "shares_owned_directly",
                 "position_direct_date",
+                "position_summary",
+                "position_summary_date",
             ]
+
             check_missing_columns(df, column_order, method)
 
+            abnormal_cols = ["position_summary", "position_summary_date"]
+            if abnormal_cols in df.columns:
+                df[abnormal_cols] = df[abnormal_cols].astype(str)
+
             return df[[i for i in column_order if i in df.columns]]
+
         except Exception:
             return pd.DataFrame()
 

@@ -436,6 +436,13 @@ INCOME_STMT_COLUMNS = [
     "net_income_from_tax_loss_carryforward",
     "depletion_income_statement",
     "depreciation",
+    "policyholder_benefits_gross",
+    "net_policyholder_benefits_and_claims",
+    "policyholder_benefits_ceded",
+    "loss_adjustment_expense",
+    "other_non_interest_expense",
+    "occupancy_and_equipment",
+    "professional_expense_and_contract_services_expense",
 ]
 
 HISTORY_METADATA_COLUMNS = [
@@ -677,4 +684,7 @@ INFO_COLUMNS = [
     "ipo_expected_date",
     "prev_name",
     "name_change_date",
+    "fax",
+    "uuid",
+    "underlying_symbol",
 ]
