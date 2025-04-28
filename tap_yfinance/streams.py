@@ -488,6 +488,7 @@ class InfoStream(FinancialStream):
         th.Property("timestamp_extracted", th.DateTimeType),
         th.Property("ticker", th.StringType),
         th.Property("address1", th.StringType),
+        th.Property("address2", th.StringType),
         th.Property("city", th.StringType),
         th.Property("state", th.StringType),
         th.Property("zip", th.StringType),

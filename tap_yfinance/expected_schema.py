@@ -494,6 +494,7 @@ INFO_COLUMNS = [
     "timestamp_extracted",
     "ticker",
     "address1",
+    "address2",
     "city",
     "state",
     "zip",
