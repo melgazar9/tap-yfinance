@@ -924,28 +924,24 @@ def replace_all_specified_missing(df, exclude_columns=None):
 def check_missing_columns(df, column_order, method_name):
     df_columns = set(df.columns)
     expected_columns = set(column_order)
-
     missing_in_df = expected_columns - df_columns
     missing_in_schema = df_columns - expected_columns
-
     missing_in_df_msg = (
-        f"\n*** MISSING EXPECTED COLUMNS IN DF: {missing_in_df} ***"
+        f"*** MISSING EXPECTED COLUMNS IN DF: {missing_in_df} ***"
         if len(missing_in_df)
         else ""
     )
     missing_in_schema_msg = (
-        f"\n*** URGENT!!! MISSING EXPECTED COLUMNS IN SCHEMA: {missing_in_schema} ***"
+        f"*** URGENT!!! MISSING EXPECTED COLUMNS IN SCHEMA: {missing_in_schema} ***"
         if len(missing_in_schema)
         else ""
     )
     warning_message = (
         f"*** For method {method_name} and ticker {df['ticker'].iloc[0]} ***"
-        + "".join(filter(None, [missing_in_df_msg, missing_in_schema_msg]))
+        + " ".join(filter(None, [missing_in_df_msg, missing_in_schema_msg]))
     )
-
     if warning_message:
         logging.warning(warning_message)
-
     return {"missing_in_df": missing_in_df, "missing_in_schema": missing_in_schema}
 
 
