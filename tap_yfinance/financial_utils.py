@@ -3,13 +3,14 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import yfinance as yf
+import re
+from tap_yfinance.expected_schema import *
 from tap_yfinance.price_utils import (
     clean_strings,
     check_missing_columns,
     get_method_name,
+    fix_empty_values,
 )
-import re
-from tap_yfinance.expected_schema import *
 
 
 class FinancialTap:
@@ -95,7 +96,7 @@ class FinancialTap:
             df = pd.DataFrame.from_dict(data, orient="index").T
             df["timestamp_extracted"] = datetime.utcnow()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
         else:
             return pd.DataFrame()
         column_order = [
@@ -124,7 +125,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.reset_index().rename(columns={"Date": "timestamp"})
             self.extract_ticker_tz_aware_timestamp(df, "timestamp", ticker)
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
         else:
             return pd.DataFrame(columns=["timestamp"])
 
@@ -159,7 +160,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis("date").reset_index()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = clean_strings(df.columns)
             df = df.rename(
                 columns={
@@ -193,7 +194,7 @@ class FinancialTap:
         logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = pd.DataFrame(self.yf_ticker_obj.get_calendar())
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             column_order = [
@@ -241,7 +242,7 @@ class FinancialTap:
                     .replace("c_f_i", "cfi")
                     for i in df.columns
                 ]
-                df = df.replace([np.inf, -np.inf, np.nan], None)
+                df = fix_empty_values(df)
             else:
                 return pd.DataFrame(columns=["date"])
             column_order = CASH_FLOW_COLUMNS
@@ -275,7 +276,7 @@ class FinancialTap:
             df = df.rename_axis("timestamp").reset_index()
             df["ticker"] = ticker
             self.extract_ticker_tz_aware_timestamp(df, "timestamp", ticker)
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
         else:
             return pd.DataFrame(columns=["timestamp"])
 
@@ -311,7 +312,7 @@ class FinancialTap:
             df = df.reset_index()
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
         else:
             return pd.DataFrame(columns=["timestamp_extracted"])
 
@@ -354,7 +355,7 @@ class FinancialTap:
 
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.reset_index()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
@@ -399,7 +400,7 @@ class FinancialTap:
             df = df.rename_axis("timestamp").reset_index()
             df["ticker"] = ticker
             self.extract_ticker_tz_aware_timestamp(df, "timestamp", ticker)
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [i.replace("e_p_s", "eps") for i in clean_strings(df.columns)]
             df.rename(columns={"surprise": "pct_surprise"}, inplace=True)
         else:
@@ -444,7 +445,7 @@ class FinancialTap:
             df = df.reset_index()
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [
                 i.replace("last7", "last_7").replace("7d", "7_d").replace("7D", "7_d")
                 for i in clean_strings(df.columns)
@@ -485,7 +486,7 @@ class FinancialTap:
             df = df.reset_index()
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = clean_strings([rename_days_ago(col) for col in df.columns])
             column_order = [
                 "timestamp_extracted",
@@ -523,7 +524,7 @@ class FinancialTap:
             df = df.reset_index()
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = clean_strings([rename_days_ago(col) for col in df.columns])
             column_order = [
                 "ticker",
@@ -562,7 +563,7 @@ class FinancialTap:
                 axis=1,
             )
 
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = clean_strings(df.columns)
 
             column_order = [
@@ -612,7 +613,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.rename_axis("date").reset_index()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [
                 i.replace("e_b_i_t_d_a", "ebitda")
                 .replace("e_p_s", "eps")
@@ -650,7 +651,7 @@ class FinancialTap:
                 df = pd.Series({key: data[key] for key in data.keys()}).to_frame().T
                 df.columns = clean_strings(df.columns)
                 df = df.rename(columns={"symbol": "ticker"})
-                df = df.replace([np.inf, -np.inf, np.nan], None)
+                df = fix_empty_values(df)
 
                 if "current_trading_period" in df.columns:
                     df_ctp = pd.json_normalize(df["current_trading_period"])
@@ -697,9 +698,15 @@ class FinancialTap:
                 df.columns = clean_strings(df.columns)
                 df["timestamp_extracted"] = datetime.utcnow()
                 df["ticker"] = ticker
-                df = df.rename(columns={"52_week_change": "change_52wk"})
-                df = df.replace([np.inf, -np.inf, np.nan], None)
+                df = df.rename(
+                    columns={
+                        "52_week_change": "change_52wk",
+                        "forward_p_e": "forward_pe",
+                        "trailing_p_e": "trailing_pe",
+                    }
+                )
 
+                df = fix_empty_values(df)
                 column_order = INFO_COLUMNS
                 check_missing_columns(df, column_order, method)
 
@@ -748,6 +755,9 @@ class FinancialTap:
                     "short_name",
                     "long_name",
                     "display_name",
+                    "fax",
+                    "uuid",
+                    "underlying_symbol",
                 ]
 
                 str_cols = [i for i in str_cols if i in df.columns]
@@ -779,7 +789,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis("date").reset_index()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [
                 i.replace("e_b_i_t_d_a", "ebitda")
                 .replace("e_p_s", "eps")
@@ -820,7 +830,7 @@ class FinancialTap:
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df[num_cols] = df[num_cols].apply(pd.to_numeric, errors="coerce")
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             check_missing_columns(df, column_order, method)
 
             return df[[i for i in column_order if i in df.columns]]
@@ -832,7 +842,7 @@ class FinancialTap:
         logging.info(f"*** Running method {method} for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_insider_roster_holders()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [i.replace("u_r_l", "url") for i in clean_strings(df.columns)]
             df["ticker"] = ticker
             column_order = [
@@ -846,10 +856,18 @@ class FinancialTap:
                 "position_indirect_date",
                 "shares_owned_directly",
                 "position_direct_date",
+                "position_summary",
+                "position_summary_date",
             ]
+
             check_missing_columns(df, column_order, method)
 
+            abnormal_cols = ["position_summary", "position_summary_date"]
+            if abnormal_cols in df.columns:
+                df[abnormal_cols] = df[abnormal_cols].astype(str)
+
             return df[[i for i in column_order if i in df.columns]]
+
         except Exception:
             return pd.DataFrame()
 
@@ -858,7 +876,7 @@ class FinancialTap:
         logging.info(f"*** Running method {method} for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_insider_transactions()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [i.replace("u_r_l", "url") for i in clean_strings(df.columns)]
             df["ticker"] = ticker
             column_order = [
@@ -892,7 +910,7 @@ class FinancialTap:
 
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df = df.rename(columns={"% Out": "pct_out"})
             df.columns = clean_strings(df.columns)
             column_order = [
@@ -946,7 +964,7 @@ class FinancialTap:
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             column_order = [
                 "ticker",
                 "timestamp_extracted",
@@ -985,7 +1003,7 @@ class FinancialTap:
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
             df["exhibits"] = df["exhibits"].astype(str)
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             column_order = [
                 "ticker",
                 "date",
@@ -1017,7 +1035,7 @@ class FinancialTap:
             df.columns = ["value", "breakdown"]
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             column_order = ["timestamp_extracted", "ticker", "breakdown", "value"]
             return df[[i for i in column_order if i in df.columns]]
         if (
@@ -1032,7 +1050,7 @@ class FinancialTap:
             )
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             column_order = ["timestamp_extracted", "ticker", "breakdown", "value"]
             check_missing_columns(df, column_order, method)
 
@@ -1057,7 +1075,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             column_order = [
                 "date_reported",
                 "ticker",
@@ -1093,7 +1111,7 @@ class FinancialTap:
             df["timestamp_extracted"] = datetime.utcnow()
             df[["id", "content"]] = df[["id", "content"]].astype(str)
             df.columns = clean_strings(df.columns)
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
 
             column_order = ["timestamp_extracted", "ticker", "id", "content"]
             check_missing_columns(df, column_order, method)
@@ -1120,7 +1138,7 @@ class FinancialTap:
         ]
         try:
             df = self.yf_ticker_obj.get_recommendations()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
@@ -1145,7 +1163,7 @@ class FinancialTap:
         ]
         try:
             df = self.yf_ticker_obj.get_recommendations()
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = clean_strings(df.columns)
             df["ticker"] = ticker
             df["timestamp_extracted"] = datetime.utcnow()
@@ -1183,7 +1201,7 @@ class FinancialTap:
             df.columns = ["timestamp", "amount"]
             df["ticker"] = ticker
             self.extract_ticker_tz_aware_timestamp(df, "timestamp", ticker)
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             column_order = [
                 "timestamp",
                 "timestamp_tz_aware",
@@ -1221,7 +1239,7 @@ class FinancialTap:
             df["ticker"] = ticker
             self.extract_ticker_tz_aware_timestamp(df, "timestamp", ticker)
             df.columns = clean_strings(df.columns)
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             check_missing_columns(df, column_order, method)
 
             return df[[i for i in column_order if i in df.columns]]
@@ -1298,7 +1316,7 @@ class FinancialTap:
 
             str_cols = [i for i in str_cols if i in df.columns]
             df[str_cols] = df[str_cols].astype(str)
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             return df[[i for i in column_order if i in df.columns]]
         else:
             return pd.DataFrame(columns=["timestamp_extracted"])
@@ -1323,7 +1341,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis("date").reset_index()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
             column_order = CASH_FLOW_COLUMNS
             check_missing_columns(df, column_order, method)
@@ -1352,7 +1370,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.rename_axis("date").reset_index()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [
                 i.replace("e_b_i_t_d_a", "ebitda")
                 .replace("e_p_s", "eps")
@@ -1386,7 +1404,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis("date").reset_index()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [
                 i.replace("e_b_i_t_d_a", "ebitda")
                 .replace("e_p_s", "eps")
@@ -1544,7 +1562,7 @@ class FinancialTap:
                     df["ticker"] = ticker
                     df["timestamp_extracted"] = datetime.utcnow()
                     df["expiration_date"] = pd.to_datetime(df["expiration_date"])
-                    df = df.replace([np.inf, -np.inf, np.nan], None)
+                    df = fix_empty_values(df)
                     column_order = ["timestamp_extracted", "ticker", "expiration_date"]
                     check_missing_columns(df, column_order, method)
                     return df[[i for i in column_order if i in df.columns]]
@@ -1581,7 +1599,7 @@ class FinancialTap:
             df = df.T.rename_axis("date").reset_index()
             df["ticker"] = ticker
             df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df = df.rename(
                 columns={
                     "financial_assets_designatedas_fair_value_through_profitor_loss_total": "financial_assets_designatedas_fv_thru_profitor_loss_total"
@@ -1613,7 +1631,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis("date").reset_index()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
             column_order = CASH_FLOW_COLUMNS
             check_missing_columns(df, column_order, method)
@@ -1642,7 +1660,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis("date").reset_index()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [
                 i.replace("e_b_i_t_d_a", "ebitda")
                 .replace("e_p_s", "eps")
@@ -1674,7 +1692,7 @@ class FinancialTap:
         if isinstance(df, pd.DataFrame) and df.shape[0]:
             df = df.T.rename_axis("date").reset_index()
             df["ticker"] = ticker
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df.columns = [
                 i.replace("e_b_i_t_d_a", "ebitda")
                 .replace("e_p_s", "eps")

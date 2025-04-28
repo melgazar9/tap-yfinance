@@ -529,8 +529,8 @@ class InfoStream(FinancialStream):
         th.Property("payout_ratio", th.NumberType),
         th.Property("five_year_avg_dividend_yield", th.NumberType),
         th.Property("beta", th.NumberType),
-        th.Property("trailing_p_e", th.NumberType),
-        th.Property("forward_p_e", th.NumberType),
+        th.Property("trailing_pe", th.NumberType),
+        th.Property("forward_pe", th.NumberType),
         th.Property("volume", th.NumberType),
         th.Property("regular_market_volume", th.NumberType),
         th.Property("average_volume", th.NumberType),
@@ -671,6 +671,9 @@ class InfoStream(FinancialStream):
         th.Property("ipo_expected_date", th.DateTimeType),
         th.Property("prev_name", th.StringType),
         th.Property("name_change_date", th.DateTimeType),
+        th.Property("fax", th.StringType),
+        th.Property("uuid", th.StringType),
+        th.Property("underlying_symbol", th.StringType),
     ).to_dict()
 
 
@@ -689,6 +692,7 @@ class InsiderPurchasesStream(FinancialStream):
         th.Property("insider_purchases_last_6m", th.StringType),
         th.Property("shares", th.NumberType),
         th.Property("trans", th.NumberType),
+        th.Property("insider_purchases_last", th.NumberType),
     ).to_dict()
 
 
@@ -706,6 +710,8 @@ class InsiderRosterHoldersStream(FinancialStream):
         th.Property("position_indirect_date", th.NumberType),
         th.Property("shares_owned_directly", th.NumberType),
         th.Property("position_direct_date", th.DateTimeType),
+        th.Property("position_summary", th.NumberType),
+        th.Property("position_summary_date", th.StringType),
     ).to_dict()
 
 

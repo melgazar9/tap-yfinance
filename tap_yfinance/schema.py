@@ -89,6 +89,13 @@ INCOME_STMT_SCHEMA = th.PropertiesList(
     th.Property("net_income_from_tax_loss_carryforward", th.NumberType),
     th.Property("depletion_income_statement", th.NumberType),
     th.Property("depreciation", th.NumberType),
+    th.Property("policyholder_benefits_gross", th.NumberType),
+    th.Property("net_policyholder_benefits_and_claims", th.NumberType),
+    th.Property("policyholder_benefits_ceded", th.NumberType),
+    th.Property("loss_adjustment_expense", th.NumberType),
+    th.Property("other_non_interest_expense", th.NumberType),
+    th.Property("occupancy_and_equipment", th.NumberType),
+    th.Property("professional_expense_and_contract_services_expense", th.NumberType),
 ).to_dict()
 
 
