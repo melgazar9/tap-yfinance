@@ -163,7 +163,7 @@ class PriceTap:
                 return pd.DataFrame(columns=self.column_order)
 
             df = replace_all_specified_missing(df, exclude_columns=["ticker"])
-            df = df.replace([np.inf, -np.inf, np.nan], None)
+            df = fix_empty_values(df)
             df["replication_key"] = (
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             )
@@ -218,7 +218,7 @@ class PriceTap:
         if df is not None and not df.shape[0]:
             self.failed_ticker_downloads[yf_params["interval"]].append(ticker)
             return pd.DataFrame(columns=self.column_order)
-        df = df.replace([np.inf, -np.inf, np.nan], None)
+        df = fix_empty_values(df)
         return df
 
 
@@ -367,7 +367,7 @@ class TickerDownloader:
 
         # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
 
-        df = df.replace([np.inf, -np.inf, np.nan], None)
+        df = fix_empty_values(df)
 
         str_cols = [
             "ticker",
@@ -461,7 +461,7 @@ class TickerDownloader:
             # df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).str.replace(",", "").astype(float)
             df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).astype(str)
 
-        df = df.replace([np.inf, -np.inf, np.nan], None)
+        df = fix_empty_values(df)
 
         str_cols = [
             "ticker",
@@ -556,7 +556,7 @@ class TickerDownloader:
 
         # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
         df = replace_all_specified_missing(df, exclude_columns=["ticker"])
-        df = df.replace([np.inf, -np.inf, np.nan], None)
+        df = fix_empty_values(df)
         df[df.columns] = df[df.columns].astype(str)
 
         first_cols = ["ticker", "name"]
@@ -600,7 +600,7 @@ class TickerDownloader:
         df = replace_all_specified_missing(df, exclude_columns=["ticker"])
         df = df.dropna(how="all", axis=1)
         df = df.dropna(how="all", axis=0)
-        df = df.replace([np.inf, -np.inf, np.nan], None)
+        df = fix_empty_values(df)
 
         return df
 
@@ -947,3 +947,10 @@ def check_missing_columns(df, column_order, method_name):
 
 def get_method_name():
     return inspect.currentframe().f_back.f_code.co_name
+
+
+def fix_empty_values(df):
+    df = df.replace(
+        [np.inf, -np.inf, np.nan, r"(?i)^(nan|none|infinity)$"], None, regex=True
+    )
+    return df
