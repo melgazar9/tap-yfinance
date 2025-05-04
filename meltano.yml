@@ -112,23 +112,23 @@ plugins:
         ### prices (long) ###
 
         stock_prices_1m:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
           yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
 
         stock_prices_2m:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
           yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
 
         stock_prices_5m:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
           yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
 
         stock_prices_1h:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
           yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
 
         stock_prices_1d:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
           yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
 
         futures_prices_1m:
@@ -194,7 +194,7 @@ plugins:
         ### wide ###
 
         stock_prices_wide_1m:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
           yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
 
         futures_prices_wide_1m:
@@ -213,130 +213,130 @@ plugins:
         ### financials ###
 
         actions:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         analyst_price_targets:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         balance_sheet:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         cash_flow:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         calendar:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         dividends:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         earnings_dates:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         earnings_estimate:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         earnings_history:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         eps_revisions:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         eps_trend:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         fast_info:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         financials:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         growth_estimates:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         history_metadata:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         info:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         income_stmt:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         insider_purchases:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         insider_roster_holders:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         insider_transactions:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         institutional_holders:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         isin:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         major_holders:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         mutualfund_holders:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         news:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         recommendations:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         recommendations_summary:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         revenue_estimate:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         sec_filings:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         shares_full:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         splits:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         sustainability:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AGD" ]
 
         ttm_cash_flow:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         ttm_financials:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         ttm_income_stmt:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         option_chain:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         options:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         quarterly_balance_sheet:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         quarterly_cash_flow:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         quarterly_financials:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         quarterly_income_stmt:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
         upgrades_downgrades:
-          tickers: [ "AAPL", "META" ]
+          tickers: [ "AAPL", "META", "AGD" ]
 
 
       metadata:

@@ -12,6 +12,8 @@ import requests
 import inspect
 
 
+pd.set_option('future.no_silent_downcasting', True)
+
 class PriceTap:
     """
     Parameters
@@ -950,7 +952,14 @@ def get_method_name():
 
 
 def fix_empty_values(df):
-    df = df.replace(
-        [np.inf, -np.inf, np.nan, r"(?i)^(nan|none|infinity)$"], None, regex=True
+    df = df.replace([np.inf, -np.inf, np.nan], None)
+
+    # need to replace string versions of nan and inf/-inf safely without changing values from the previous step
+    regex_pattern = r"(?i)^(nan|none|infinity)$"
+    mask_to_replace = df.map(
+        lambda x: isinstance(x, str) and re.fullmatch(regex_pattern, x) is not None
     )
+    df = df.mask(mask_to_replace, None)
+
+    df.replace(r"(?i)^(nan|none|infinity)$", None, regex=True)
     return df

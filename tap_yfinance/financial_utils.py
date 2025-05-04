@@ -12,6 +12,7 @@ from tap_yfinance.price_utils import (
     fix_empty_values,
 )
 
+pd.set_option('future.no_silent_downcasting', True)
 
 class FinancialTap:
 
