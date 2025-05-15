@@ -169,7 +169,7 @@ class PriceTap:
             df["replication_key"] = (
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             )
-            check_missing_columns(df, column_order, method)
+            check_missing_columns(df, self.column_order, method)
             df = df[self.column_order]
             return df
 
