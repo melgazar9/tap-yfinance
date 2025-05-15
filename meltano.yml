@@ -225,7 +225,7 @@ plugins:
           tickers: [ "AAPL", "META", "AGD" ]
 
         calendar:
-          tickers: [ "AAPL", "META", "AGD" ]
+          tickers: [ "AAPL", "META", "AGD", "013A.F" ]
 
         dividends:
           tickers: [ "AAPL", "META", "AGD" ]
@@ -478,7 +478,7 @@ plugins:
 
         calendar:
           replication-method: INCREMENTAL
-          replication-key: dividend_date
+          replication-key: earnings_date
 
         dividends:
           replication-method: INCREMENTAL
