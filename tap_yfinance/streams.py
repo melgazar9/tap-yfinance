@@ -1012,4 +1012,6 @@ class UpgradesDowngradesStream(FinancialStream):
         th.Property("to_grade", th.StringType),
         th.Property("from_grade", th.StringType),
         th.Property("action", th.StringType),
+        th.Property("price_target_action", th.StringType),
+        th.Property("current_price_target", th.NumberType),
     ).to_dict()
