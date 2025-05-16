@@ -174,6 +174,7 @@ class PriceTap:
             cols_to_drop_from_no_div_sp = ['dividends', 'stock_splits']
             cols_to_drop = cols_to_drop_from_no_div_sp if any(
                 self.name.startswith(prefix) for prefix in prefixes_no_div_sp) else []
+
             if cols_to_drop:
                 df = df.drop(columns=cols_to_drop, axis=1, errors='ignore')
 
