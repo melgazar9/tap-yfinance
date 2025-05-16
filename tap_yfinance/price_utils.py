@@ -12,7 +12,8 @@ import requests
 import inspect
 
 
-pd.set_option('future.no_silent_downcasting', True)
+pd.set_option("future.no_silent_downcasting", True)
+
 
 class PriceTap:
     """
@@ -170,13 +171,16 @@ class PriceTap:
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             )
 
-            prefixes_no_div_sp = ['forex_prices', 'futures_prices', 'crypto_prices']
-            cols_to_drop_from_no_div_sp = ['dividends', 'stock_splits']
-            cols_to_drop = cols_to_drop_from_no_div_sp if any(
-                self.name.startswith(prefix) for prefix in prefixes_no_div_sp) else []
+            prefixes_no_div_sp = ["forex_prices", "futures_prices", "crypto_prices"]
+            cols_to_drop_from_no_div_sp = ["dividends", "stock_splits"]
+            cols_to_drop = (
+                cols_to_drop_from_no_div_sp
+                if any(self.name.startswith(prefix) for prefix in prefixes_no_div_sp)
+                else []
+            )
 
             if cols_to_drop:
-                df = df.drop(columns=cols_to_drop, axis=1, errors='ignore')
+                df = df.drop(columns=cols_to_drop, axis=1, errors="ignore")
 
             check_missing_columns(df, self.column_order, method)
             df = df[self.column_order]
@@ -957,7 +961,6 @@ def check_missing_columns(df, column_order, method_name):
         logging.warning(warning_message)
 
     return {"missing_in_df": missing_in_df, "missing_in_schema": missing_in_schema}
-
 
 
 def get_method_name():

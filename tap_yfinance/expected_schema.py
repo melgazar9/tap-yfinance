@@ -145,6 +145,7 @@ BALANCE_SHEET_COLUMNS = [
     "dueto_related_parties_non_current",
     "restricted_common_stock",
     "other_capital_stock",
+    "cash_cash_equivalents_and_federal_funds_sold",
 ]
 
 CASH_FLOW_COLUMNS = [
@@ -495,6 +496,7 @@ HISTORY_METADATA_COLUMNS = [
     "current_trading_period",
     "long_name",
     "short_name",
+    "last_trade",
 ]
 
 INFO_COLUMNS = [

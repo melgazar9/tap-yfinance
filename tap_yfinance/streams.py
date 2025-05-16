@@ -478,6 +478,7 @@ class HistoryMetadataStream(FinancialStream):
         th.Property("regular_market_volume", th.NumberType),
         th.Property("long_name", th.StringType),
         th.Property("short_name", th.StringType),
+        th.Property("last_trade", th.StringType),
     ).to_dict()
 
 

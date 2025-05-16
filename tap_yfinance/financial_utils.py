@@ -12,7 +12,8 @@ from tap_yfinance.price_utils import (
     fix_empty_values,
 )
 
-pd.set_option('future.no_silent_downcasting', True)
+pd.set_option("future.no_silent_downcasting", True)
+
 
 class FinancialTap:
 
@@ -104,7 +105,9 @@ class FinancialTap:
 
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
             logging.error(
@@ -131,10 +134,14 @@ class FinancialTap:
                 ]
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp"])
 
     def get_analyst_price_target(self, ticker):
@@ -163,10 +170,14 @@ class FinancialTap:
 
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def get_balancesheet(self, ticker):
@@ -207,7 +218,9 @@ class FinancialTap:
 
             return df[[i for i in column_order if i in df.columns]]
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(
                 columns=["dividend_date", "ex_dividend_date", "earnings_date"]
             )
@@ -239,10 +252,14 @@ class FinancialTap:
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def get_cashflow(self, ticker):
@@ -271,10 +288,14 @@ class FinancialTap:
                 ]
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp"])
 
     def get_earnings(self, ticker):
@@ -307,10 +328,14 @@ class FinancialTap:
                 ]
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_earnings_history(self, ticker):
@@ -318,7 +343,12 @@ class FinancialTap:
         logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             df = self.yf_ticker_obj.get_earnings_history()
-            possible_columns1 = ["quarter", "eps_estimate", "ticker", "timestamp_extracted"]
+            possible_columns1 = [
+                "quarter",
+                "eps_estimate",
+                "ticker",
+                "timestamp_extracted",
+            ]
             possible_columns2 = [
                 "quarter",
                 "eps_actual",
@@ -336,11 +366,16 @@ class FinancialTap:
                 df["ticker"] = ticker
                 df["timestamp_extracted"] = datetime.utcnow()
                 if len(df.columns) == len(possible_columns1) and all(
-                        df.columns == possible_columns1
+                    df.columns == possible_columns1
                 ):
-                    column_order = ["quarter", "ticker", "eps_estimate", "timestamp_extracted"]
+                    column_order = [
+                        "quarter",
+                        "ticker",
+                        "eps_estimate",
+                        "timestamp_extracted",
+                    ]
                 elif len(df.columns) == len(possible_columns2) and all(
-                        df.columns == possible_columns2
+                    df.columns == possible_columns2
                 ):
                     column_order = [
                         "quarter",
@@ -358,10 +393,14 @@ class FinancialTap:
 
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
 
     def get_earnings_dates(self, ticker):
@@ -374,7 +413,9 @@ class FinancialTap:
                 df["ticker"] = ticker
                 self.extract_ticker_tz_aware_timestamp(df, "timestamp", ticker)
                 df = fix_empty_values(df)
-                df.columns = [i.replace("e_p_s", "eps") for i in clean_strings(df.columns)]
+                df.columns = [
+                    i.replace("e_p_s", "eps") for i in clean_strings(df.columns)
+                ]
                 df.rename(columns={"surprise": "pct_surprise"}, inplace=True)
                 column_order = [
                     "timestamp",
@@ -387,10 +428,14 @@ class FinancialTap:
                 ]
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_earnings_forecast(self, ticker):
@@ -416,7 +461,9 @@ class FinancialTap:
                 df["timestamp_extracted"] = datetime.utcnow()
                 df = fix_empty_values(df)
                 df.columns = [
-                    i.replace("last7", "last_7").replace("7d", "7_d").replace("7D", "7_d")
+                    i.replace("last7", "last_7")
+                    .replace("7d", "7_d")
+                    .replace("7D", "7_d")
                     for i in clean_strings(df.columns)
                 ]
                 df.columns = [
@@ -437,10 +484,14 @@ class FinancialTap:
 
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_eps_trend(self, ticker):
@@ -467,10 +518,14 @@ class FinancialTap:
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
     def get_funds_data(self, ticker):
@@ -498,10 +553,14 @@ class FinancialTap:
                 ]
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_fast_info(self, ticker):
@@ -555,10 +614,14 @@ class FinancialTap:
                 check_missing_columns(df, column_order, method)
                 return df
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_financials(self, ticker):
@@ -584,10 +647,14 @@ class FinancialTap:
                 column_order = FINANCIAL_COLUMNS
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def get_history_metadata(self, ticker):
@@ -614,7 +681,9 @@ class FinancialTap:
 
                     if "trading_periods" in df.columns:
                         df_tp = pd.DataFrame().from_dict(df["trading_periods"].iloc[0])
-                        df_tp = df_tp.add_prefix("trading_period_").reset_index(drop=True)
+                        df_tp = df_tp.add_prefix("trading_period_").reset_index(
+                            drop=True
+                        )
                         df = pd.concat([df, df_tp], axis=1).ffill()
                         df = df.drop("trading_periods", axis=1)
 
@@ -622,15 +691,23 @@ class FinancialTap:
 
                     column_order = HISTORY_METADATA_COLUMNS
                     check_missing_columns(df, column_order, method)
+                    if "last_trade" in df.columns:
+                        df["last_trade"] = df["last_trade"].astype(str)
                     return df[[i for i in column_order if i in df.columns]]
                 except Exception as e:
-                    logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+                    logging.error(
+                        f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+                    )
                     return pd.DataFrame(columns=["timestamp_extracted"])
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_info(self, ticker):
@@ -711,13 +788,19 @@ class FinancialTap:
 
                     return df[[i for i in column_order if i in df.columns]]
                 except Exception as e:
-                    logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+                    logging.error(
+                        f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+                    )
                     return pd.DataFrame(columns=["timestamp_extracted"])
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_income_stmt(self, ticker):
@@ -743,12 +826,15 @@ class FinancialTap:
                 column_order = INCOME_STMT_COLUMNS
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
-
 
     def get_incomestmt(self, ticker):
         """Same output as the method get_income_stmt"""
@@ -761,6 +847,7 @@ class FinancialTap:
         logging.info(f"*** Running {method} for ticker {ticker}")
         column_order = [
             "ticker",
+            "insider_purchases_last",
             "insider_purchases_last_6m",
             "shares",
             "trans",
@@ -777,7 +864,9 @@ class FinancialTap:
             check_missing_columns(df, column_order, method)
             return df[[i for i in column_order if i in df.columns]]
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=column_order)
 
     def get_insider_roster_holders(self, ticker):
@@ -806,11 +895,15 @@ class FinancialTap:
             check_missing_columns(df, column_order, method)
 
             abnormal_cols = ["position_summary", "position_summary_date"]
-            df.loc[:, df.columns.intersection(abnormal_cols)] = df[df.columns.intersection(abnormal_cols)].astype(str)
+            df.loc[:, df.columns.intersection(abnormal_cols)] = df[
+                df.columns.intersection(abnormal_cols)
+            ].astype(str)
             return df[[i for i in column_order if i in df.columns]]
 
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame()
 
     def get_insider_transactions(self, ticker):
@@ -837,7 +930,9 @@ class FinancialTap:
 
             return df[[i for i in column_order if i in df.columns]]
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame()
 
     def get_institutional_holders(self, ticker):
@@ -862,10 +957,14 @@ class FinancialTap:
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date_reported"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date_reported"])
 
     def get_isin(self, ticker):
@@ -879,7 +978,9 @@ class FinancialTap:
             column_order = ["ticker", "timestamp_extracted", "value"]
             return df[[i for i in column_order if i in df.columns]]
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_revenue_estimate(self, ticker):
@@ -906,10 +1007,14 @@ class FinancialTap:
                 ]
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_sec_filings(self, ticker):
@@ -942,10 +1047,14 @@ class FinancialTap:
                 ]
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_major_holders(self, ticker):
@@ -961,9 +1070,9 @@ class FinancialTap:
                 column_order = ["timestamp_extracted", "ticker", "breakdown", "value"]
                 return df[[i for i in column_order if i in df.columns]]
             if (
-                    isinstance(df, (pd.DataFrame, pd.Series))
-                    and df.shape[0]
-                    and df.shape[1] == 1
+                isinstance(df, (pd.DataFrame, pd.Series))
+                and df.shape[0]
+                and df.shape[1] == 1
             ):
                 df = (
                     df.rename_axis("breakdown")
@@ -977,10 +1086,14 @@ class FinancialTap:
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_mutualfund_holders(self, ticker):
@@ -1005,10 +1118,14 @@ class FinancialTap:
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date_reported"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date_reported"])
 
     def get_news(self, ticker):
@@ -1028,10 +1145,14 @@ class FinancialTap:
 
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date_reported"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date_reported"])
 
     def get_recommendations(self, ticker):
@@ -1056,7 +1177,9 @@ class FinancialTap:
             check_missing_columns(df, column_order, method)
             return df[[i for i in column_order if i in df.columns]]
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=column_order)
 
     def get_recommendations_summary(self, ticker):
@@ -1082,7 +1205,9 @@ class FinancialTap:
 
             return df[[i for i in column_order if i in df.columns]]
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=column_order)
 
     def get_rev_forecast(self, ticker):
@@ -1119,10 +1244,14 @@ class FinancialTap:
 
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp"])
 
     def get_splits(self, ticker):
@@ -1147,10 +1276,14 @@ class FinancialTap:
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp"])
 
     def get_sustainability(self, ticker):
@@ -1220,10 +1353,14 @@ class FinancialTap:
                 df = fix_empty_values(df)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["timestamp_extracted"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
     def get_trend_details(self, ticker):
@@ -1241,16 +1378,22 @@ class FinancialTap:
                 df = df.T.rename_axis("date").reset_index()
                 df["ticker"] = ticker
                 df = fix_empty_values(df)
-                df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
+                df.columns = [
+                    i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)
+                ]
                 column_order = CASH_FLOW_COLUMNS
                 check_missing_columns(df, column_order, method)
 
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def ttm_cashflow(self, ticker):
@@ -1282,10 +1425,14 @@ class FinancialTap:
                 ]
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def ttm_income_stmt(self, ticker):
@@ -1312,10 +1459,14 @@ class FinancialTap:
 
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def ttm_incomestmt(self, ticker):
@@ -1345,7 +1496,9 @@ class FinancialTap:
             check_missing_columns(df, column_order, method)
             return df[[i for i in column_order if i in df.columns]]
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=column_order)
 
     def option_chain(self, ticker):
@@ -1479,7 +1632,9 @@ class FinancialTap:
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df = df.T.rename_axis("date").reset_index()
                 df["ticker"] = ticker
-                df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
+                df.columns = [
+                    i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)
+                ]
                 df = fix_empty_values(df)
                 df = df.rename(
                     columns={
@@ -1490,10 +1645,14 @@ class FinancialTap:
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def quarterly_balancesheet(self, ticker):
@@ -1510,15 +1669,21 @@ class FinancialTap:
                 df = df.T.rename_axis("date").reset_index()
                 df["ticker"] = ticker
                 df = fix_empty_values(df)
-                df.columns = [i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)]
+                df.columns = [
+                    i.replace("p_p_e", "ppe") for i in clean_strings(df.columns)
+                ]
                 column_order = CASH_FLOW_COLUMNS
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def quarterly_cashflow(self, ticker):
@@ -1550,10 +1715,14 @@ class FinancialTap:
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def quarterly_income_stmt(self, ticker):
@@ -1580,10 +1749,14 @@ class FinancialTap:
 
                 return df[[i for i in column_order if i in df.columns]]
             else:
-                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                logging.warning(
+                    f"No data found for method {method} and ticker {ticker}."
+                )
                 return pd.DataFrame(columns=["date"])
         except Exception as e:
-            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            logging.error(
+                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+            )
             return pd.DataFrame(columns=["date"])
 
     def quarterly_incomestmt(self, ticker):
