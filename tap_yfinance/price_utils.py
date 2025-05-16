@@ -169,6 +169,15 @@ class PriceTap:
             df["replication_key"] = (
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             )
+
+            prefixes_no_div_sp = ['forex_prices', 'futures_prices', 'crypto_prices']
+            cols_to_drop_from_no_div_sp = ['dividends', 'stock_splits']
+            cols_to_drop = cols_to_drop_from_no_div_sp if any(
+                self.name.startswith(prefix) for prefix in prefixes_no_div_sp) else []
+
+            if cols_to_drop:
+                df = df.drop(columns=cols_to_drop, axis=1, errors='ignore')
+
             check_missing_columns(df, self.column_order, method)
             df = df[self.column_order]
             return df
