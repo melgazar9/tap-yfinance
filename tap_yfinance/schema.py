@@ -253,6 +253,7 @@ BALANCE_SHEET_SCHEMA = th.PropertiesList(
     th.Property("dueto_related_parties_non_current", th.NumberType),
     th.Property("restricted_common_stock", th.NumberType),
     th.Property("other_capital_stock", th.NumberType),
+    th.Property("cash_cash_equivalents_and_federal_funds_sold", th.NumberType),
 ).to_dict()
 
 

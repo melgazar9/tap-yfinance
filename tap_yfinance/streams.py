@@ -478,6 +478,7 @@ class HistoryMetadataStream(FinancialStream):
         th.Property("regular_market_volume", th.NumberType),
         th.Property("long_name", th.StringType),
         th.Property("short_name", th.StringType),
+        th.Property("last_trade", th.StringType),
     ).to_dict()
 
 
@@ -1012,4 +1013,6 @@ class UpgradesDowngradesStream(FinancialStream):
         th.Property("to_grade", th.StringType),
         th.Property("from_grade", th.StringType),
         th.Property("action", th.StringType),
+        th.Property("price_target_action", th.StringType),
+        th.Property("current_price_target", th.NumberType),
     ).to_dict()

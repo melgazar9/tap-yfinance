@@ -12,7 +12,8 @@ import requests
 import inspect
 
 
-pd.set_option('future.no_silent_downcasting', True)
+pd.set_option("future.no_silent_downcasting", True)
+
 
 class PriceTap:
     """
@@ -136,7 +137,7 @@ class PriceTap:
         if yf_params["interval"] not in self.failed_ticker_downloads.keys():
             self.failed_ticker_downloads[yf_params["interval"]] = []
 
-        if "start" not in yf_params.keys():
+        if "start" not in yf_params.keys() or yf_params["start"] is None:
             yf_params["start"] = "1950-01-01 00:00:00"
             logging.info(
                 f"\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n"
@@ -170,19 +171,23 @@ class PriceTap:
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             )
 
-            prefixes_no_div_sp = ['forex_prices', 'futures_prices', 'crypto_prices']
-            cols_to_drop_from_no_div_sp = ['dividends', 'stock_splits']
-            cols_to_drop = cols_to_drop_from_no_div_sp if any(
-                self.name.startswith(prefix) for prefix in prefixes_no_div_sp) else []
+            prefixes_no_div_sp = ["forex_prices", "futures_prices", "crypto_prices"]
+            cols_to_drop_from_no_div_sp = ["dividends", "stock_splits"]
+            cols_to_drop = (
+                cols_to_drop_from_no_div_sp
+                if any(self.name.startswith(prefix) for prefix in prefixes_no_div_sp)
+                else []
+            )
 
             if cols_to_drop:
-                df = df.drop(columns=cols_to_drop, axis=1, errors='ignore')
+                df = df.drop(columns=cols_to_drop, axis=1, errors="ignore")
 
             check_missing_columns(df, self.column_order, method)
             df = df[self.column_order]
             return df
 
-        except Exception:
+        except Exception as e:
+            logging.error(f"Error for ticker {ticker} failed with error: {e}")
             self.failed_ticker_downloads[yf_params["interval"]].append(ticker)
             return pd.DataFrame(columns=self.column_order)
 
@@ -921,9 +926,9 @@ def replace_all_specified_missing(df, exclude_columns=None):
         if series.name in exclude_columns:
             return series
         if series.dtype == "object":
-            lower_series = series.str.lower()
+            coerced = series.astype(str).str.lower()
             return series.where(
-                (lower_series != "nan") & (lower_series != "none") & (series.notna()),
+                (coerced != "nan") & (coerced != "none") & (series.notna()),
                 np.nan,
             )
         else:
@@ -937,22 +942,24 @@ def check_missing_columns(df, column_order, method_name):
     expected_columns = set(column_order)
     missing_in_df = expected_columns - df_columns
     missing_in_schema = df_columns - expected_columns
-    missing_in_df_msg = (
-        f"*** MISSING EXPECTED COLUMNS IN DF: {missing_in_df} ***"
-        if len(missing_in_df)
-        else ""
-    )
-    missing_in_schema_msg = (
-        f"*** URGENT!!! MISSING EXPECTED COLUMNS IN SCHEMA: {missing_in_schema} ***"
-        if len(missing_in_schema)
-        else ""
-    )
-    warning_message = (
-        f"*** For method {method_name} and ticker {df['ticker'].iloc[0]} ***"
-        + " ".join(filter(None, [missing_in_df_msg, missing_in_schema_msg]))
-    )
-    if warning_message:
+
+    if missing_in_df or missing_in_schema:
+        missing_in_df_msg = (
+            f"*** MISSING EXPECTED COLUMNS IN DF: {missing_in_df} ***"
+            if missing_in_df
+            else ""
+        )
+        missing_in_schema_msg = (
+            f"*** URGENT!!! MISSING EXPECTED COLUMNS IN SCHEMA: {missing_in_schema} ***"
+            if missing_in_schema
+            else ""
+        )
+        warning_message = (
+            f"*** For method {method_name} and ticker {df['ticker'].iloc[0]} *** "
+            + " ".join(filter(None, [missing_in_df_msg, missing_in_schema_msg]))
+        )
         logging.warning(warning_message)
+
     return {"missing_in_df": missing_in_df, "missing_in_schema": missing_in_schema}
 
 
