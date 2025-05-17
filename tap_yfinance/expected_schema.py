@@ -88,7 +88,7 @@ BALANCE_SHEET_COLUMNS = [
     "non_current_prepaid_assets",
     "non_current_deferred_taxes_assets",
     "financial_assets",
-    "financial_assets_designatedas_fv_thru_profitor_loss_total",
+    "financial_assets_designated_as_fv_thru_profitor_loss_total",
     "investmentsin_associatesat_cost",
     "hedging_assets_current",
     "finished_goods",

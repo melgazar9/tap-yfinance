@@ -194,7 +194,7 @@ BALANCE_SHEET_SCHEMA = th.PropertiesList(
     th.Property("non_current_deferred_taxes_assets", th.NumberType),
     th.Property("financial_assets", th.NumberType),
     th.Property(
-        "financial_assets_designatedas_fv_thru_profitor_loss_total",
+        "financial_assets_designated_as_fv_thru_profitor_loss_total",
         th.NumberType,
     ),
     th.Property("investmentsin_associatesat_cost", th.NumberType),
