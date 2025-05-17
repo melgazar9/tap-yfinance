@@ -10,10 +10,10 @@ import re
 from requests.exceptions import ChunkedEncodingError
 import requests
 import inspect
-from tap_yfinance.session import *
 
 
 pd.set_option("future.no_silent_downcasting", True)
+
 
 class PriceTap:
     """
@@ -24,7 +24,7 @@ class PriceTap:
     """
 
     def __init__(
-        self, schema, config, name, ticker=None, yf_params=None, ticker_colname="ticker", session=SESSION,
+        self, schema, config, name, ticker=None, yf_params=None, ticker_colname="ticker"
     ):
         self.schema = schema
         self.ticker = ticker
@@ -32,7 +32,6 @@ class PriceTap:
         self.config = config
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
-        self.session = session
 
         self.column_order = list(self.schema.get("properties").keys())
 
@@ -76,7 +75,6 @@ class PriceTap:
 
         elif self.ticker is not None:
             self.yf_ticker_obj = yf.Ticker(self.ticker)
-            self.yf_ticker_obj.session = self.session
         else:
             self.yf_ticker_obj = None
 
