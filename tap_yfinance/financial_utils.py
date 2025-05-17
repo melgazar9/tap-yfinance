@@ -874,7 +874,6 @@ class FinancialTap:
         logging.info(f"*** Running method {method} for ticker {ticker})")
         try:
             df = self.yf_ticker_obj.get_insider_roster_holders()
-            df = fix_empty_values(df)
             df.columns = [i.replace("u_r_l", "url") for i in clean_strings(df.columns)]
             df["ticker"] = ticker
             column_order = [
@@ -897,7 +896,8 @@ class FinancialTap:
             abnormal_cols = ["position_summary", "position_summary_date"]
             df.loc[:, df.columns.intersection(abnormal_cols)] = df[
                 df.columns.intersection(abnormal_cols)
-            ].astype(str)
+            ].apply(pd.to_numeric, errors='coerce')
+            df = fix_empty_values(df)
             return df[[i for i in column_order if i in df.columns]]
 
         except Exception as e:

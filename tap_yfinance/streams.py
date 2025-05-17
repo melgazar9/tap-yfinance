@@ -712,7 +712,7 @@ class InsiderRosterHoldersStream(FinancialStream):
         th.Property("shares_owned_directly", th.NumberType),
         th.Property("position_direct_date", th.DateTimeType),
         th.Property("position_summary", th.NumberType),
-        th.Property("position_summary_date", th.StringType),
+        th.Property("position_summary_date", th.NumberType),
     ).to_dict()
 
 
