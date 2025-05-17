@@ -12,6 +12,8 @@ from tap_yfinance.price_utils import (
     fix_empty_values,
 )
 
+from tap_yfinance.session import SESSION
+
 pd.set_option("future.no_silent_downcasting", True)
 
 
@@ -20,7 +22,7 @@ class FinancialTap:
     ### TODO: date filters? ###
 
     def __init__(
-        self, schema, ticker, name, config=None, yf_params=None, ticker_colname="ticker"
+        self, schema, ticker, name, config=None, yf_params=None, ticker_colname="ticker", session=SESSION,
     ):
         self.schema = schema
         self.ticker = ticker
@@ -28,6 +30,7 @@ class FinancialTap:
         self.config = config
         self.yf_params = {} if yf_params is None else yf_params
         self.ticker_colname = ticker_colname
+        self.session = session
 
         super().__init__()
 
@@ -64,7 +67,8 @@ class FinancialTap:
             self.yf_ticker_obj = yf.Ticker(self.ticker, session=self.session)
 
         else:
-            self.yf_ticker_obj = yf.Ticker(self.ticker)
+            self.yf_ticker_obj = yf.Ticker(self.ticker, session)
+            self.yf_ticker_obj.session = session
 
     @staticmethod
     def extract_ticker_tz_aware_timestamp(df, timestamp_column, ticker):
