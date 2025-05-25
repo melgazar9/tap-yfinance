@@ -155,7 +155,7 @@ class TickerStream(BaseStream):
 class BasePriceStream(BaseStream):
     replication_key = "timestamp"
     is_timestamp_replication_key = True
-    # primary_keys = ["timestamp", "ticker"]
+    primary_keys = ["timestamp", "ticker"]
     # is_sorted = True  #  TODO: Test with is_sorted = True and add @backoff rate limiter
 
     def __init__(self, tap: Tap) -> None:
