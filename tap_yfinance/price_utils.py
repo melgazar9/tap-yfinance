@@ -414,17 +414,23 @@ class TickerDownloader:
         all_stocks = pts.get_all_stocks()
         df_all_stocks = pd.json_normalize(
             all_stocks,
-            record_path=['symbols'],
+            record_path=["symbols"],
             meta=[
-                'name', 'symbol', 'country', 'indices', 'industries', 'isins', 'akas',
-                ['metadata', 'founded'], ['metadata', 'employees']
+                "name",
+                "symbol",
+                "country",
+                "indices",
+                "industries",
+                "isins",
+                "akas",
+                ["metadata", "founded"],
+                ["metadata", "employees"],
             ],
-            errors='ignore'
+            errors="ignore",
         )
-        df_all_stocks = df_all_stocks.rename(columns={
-            'metadata.founded': 'founded',
-            'metadata.employees': 'employees'
-        }).rename(columns={"yahoo": "yahoo_ticker", "google": "google_ticker"})
+        df_all_stocks = df_all_stocks.rename(
+            columns={"metadata.founded": "founded", "metadata.employees": "employees"}
+        ).rename(columns={"yahoo": "yahoo_ticker", "google": "google_ticker"})
         df_all_stocks["segment"] = "stocks"
 
         all_indices = pts.get_all_indices()
@@ -439,22 +445,31 @@ class TickerDownloader:
         df_countries = pd.DataFrame({"ticker": None, "name": countries})
         df_countries["segment"] = "countries"
 
-        df_final = pd.concat([
-            all_tickers,
-            df_all_stocks,
-            df_all_indices,
-            df_all_industries,
-            df_countries
-        ], ignore_index=True)
+        df_final = pd.concat(
+            [
+                all_tickers,
+                df_all_stocks,
+                df_all_indices,
+                df_all_industries,
+                df_countries,
+            ],
+            ignore_index=True,
+        )
 
-        df_final["ticker"] = df_final["ticker"].fillna(df_final["yahoo_ticker"]).fillna(df_final["google_ticker"])
+        df_final["ticker"] = (
+            df_final["ticker"]
+            .fillna(df_final["yahoo_ticker"])
+            .fillna(df_final["google_ticker"])
+        )
         df_final = df_final.dropna(how="all", axis=1)
         df_final = df_final.dropna(how="all", axis=0)
         df_final = fix_empty_values(df_final)
         list_cols = ["indices", "industries", "isins", "akas"]
         for col in list_cols:
             if col in df_final.columns:
-                df_final[col] = df_final[col].apply(lambda x: tuple(x) if isinstance(x, list) else x)
+                df_final[col] = df_final[col].apply(
+                    lambda x: tuple(x) if isinstance(x, list) else x
+                )
         return df_final
 
     # def generate_yahoo_sec_tickermap(self):

@@ -134,7 +134,9 @@ class BaseStream(Stream, ABC):
                     logging.info(f"Pulling all tickers for segment {segment}...")
                     if segment == "stock_tickers":
                         df = TickerDownloader.download_pts_stock_tickers()
-                        df = df[["ticker", "name", "segment"]].drop_duplicates(subset=["ticker", "segment"])
+                        df = df[["ticker", "name", "segment"]].drop_duplicates(
+                            subset=["ticker", "segment"]
+                        )
                     else:
                         df = TickerDownloader.download_yahoo_tickers(segment)
                         if "segment" not in df.columns:
@@ -356,7 +358,9 @@ class AllTickersStream(TickerStream):
                         df = TickerDownloader.download_pts_stock_tickers()
                         if "ticker" not in df.columns and "yahoo_ticker" in df.columns:
                             df = df.rename(columns={"yahoo_ticker": "ticker"})
-                        df = df[["ticker", "name", "segment"]].drop_duplicates(subset=["ticker", "segment"])
+                        df = df[["ticker", "name", "segment"]].drop_duplicates(
+                            subset=["ticker", "segment"]
+                        )
                     else:
                         df = TickerDownloader.download_yahoo_tickers(segment)
                         if "segment" not in df.columns:
