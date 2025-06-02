@@ -409,8 +409,53 @@ class TickerDownloader:
         )
         all_tickers = replace_all_specified_missing(all_tickers)
         all_tickers = all_tickers.replace([-np.inf, np.inf, np.nan], None)
-        all_tickers.columns = ["yahoo_ticker_pts", "google_ticker_pts"]
-        return all_tickers
+        all_tickers.columns = ["yahoo_ticker", "google_ticker"]
+
+        all_stocks = pts.get_all_stocks()
+        df_all_stocks = pd.json_normalize(
+            all_stocks,
+            record_path=['symbols'],
+            meta=[
+                'name', 'symbol', 'country', 'indices', 'industries', 'isins', 'akas',
+                ['metadata', 'founded'], ['metadata', 'employees']
+            ],
+            errors='ignore'
+        )
+        df_all_stocks = df_all_stocks.rename(columns={
+            'metadata.founded': 'founded',
+            'metadata.employees': 'employees'
+        }).rename(columns={"yahoo": "yahoo_ticker", "google": "google_ticker"})
+        df_all_stocks["segment"] = "stocks"
+
+        all_indices = pts.get_all_indices()
+        df_all_indices = pd.DataFrame({"ticker": all_indices, "name": None})
+        df_all_indices["segment"] = "indices"
+
+        industries = pts.get_all_industries()
+        df_all_industries = pd.DataFrame({"ticker": None, "name": industries})
+        df_all_industries["segment"] = "industries"
+
+        countries = pts.get_all_countries()
+        df_countries = pd.DataFrame({"ticker": None, "name": countries})
+        df_countries["segment"] = "countries"
+
+        df_final = pd.concat([
+            all_tickers,
+            df_all_stocks,
+            df_all_indices,
+            df_all_industries,
+            df_countries
+        ], ignore_index=True)
+
+        df_final["ticker"] = df_final["ticker"].fillna(df_final["yahoo_ticker"]).fillna(df_final["google_ticker"])
+        df_final = df_final.dropna(how="all", axis=1)
+        df_final = df_final.dropna(how="all", axis=0)
+        df_final = fix_empty_values(df_final)
+        list_cols = ["indices", "industries", "isins", "akas"]
+        for col in list_cols:
+            if col in df_final.columns:
+                df_final[col] = df_final[col].apply(lambda x: tuple(x) if isinstance(x, list) else x)
+        return df_final
 
     # def generate_yahoo_sec_tickermap(self):
     #     method = get_method_name()

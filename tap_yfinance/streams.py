@@ -84,6 +84,22 @@ class StockTickersStream(TickerStream):
 
 class StockTickersPTSStream(TickerStream):
     name = "stock_tickers_pts"
+    schema = th.PropertiesList(
+        th.Property("yahoo_ticker", th.StringType),
+        th.Property("google_ticker", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("currency", th.StringType),
+        th.Property("symbol", th.StringType),
+        th.Property("country", th.StringType),
+        th.Property("indices", th.ArrayType(th.StringType)),
+        th.Property("industries", th.ArrayType(th.StringType)),
+        th.Property("isins", th.ArrayType(th.StringType)),
+        th.Property("akas", th.ArrayType(th.StringType)),
+        th.Property("founded", th.IntegerType),
+        th.Property("employees", th.StringType),
+        th.Property("segment", th.StringType),
+        th.Property("ticker", th.StringType),
+    ).to_dict()
 
 
 class IndicesTickersStream(TickerStream):

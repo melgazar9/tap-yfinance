@@ -21,6 +21,7 @@ CUSTOM_JSON_SCHEMA = {
 
 ALL_SEGMENTS = [
     "stock_tickers",
+    "stock_tickers_pts",
     "bonds_tickers",
     "forex_tickers",
     "futures_tickers",
@@ -131,10 +132,15 @@ class BaseStream(Stream, ABC):
             if segment not in self._tap.ticker_cache:
                 try:
                     logging.info(f"Pulling all tickers for segment {segment}...")
-                    df = TickerDownloader.download_yahoo_tickers(segment)
+                    if segment == "stock_tickers":
+                        df = TickerDownloader.download_pts_stock_tickers()
+                        df = df[["ticker", "name", "segment"]].drop_duplicates(subset=["ticker", "segment"])
+                    else:
+                        df = TickerDownloader.download_yahoo_tickers(segment)
+                        if "segment" not in df.columns:
+                            df["segment"] = segment
+                        df = df[["ticker", "name", "segment"]].drop_duplicates()
                     df = fix_empty_values(df)
-                    if "segment" not in df.columns:
-                        df["segment"] = segment
                     self._tap.ticker_cache[segment] = df
                 except Exception as e:
                     self._tap.logger.warning(f"Could not download {segment}: {e}")
@@ -340,15 +346,23 @@ class AllTickersStream(TickerStream):
     name = "all_tickers"
 
     def fetch_and_cache_tickers(self):
-        # Only fetch all segments once per tap run
         if not hasattr(self._tap, "ticker_cache"):
             self._tap.ticker_cache = {}
         if "all_tickers" not in self._tap.ticker_cache:
             all_dfs = []
             for segment in ALL_SEGMENTS:
                 try:
-                    df = TickerDownloader.download_yahoo_tickers(segment)
-                    df["segment"] = segment
+                    if segment == "stock_tickers_pts":
+                        df = TickerDownloader.download_pts_stock_tickers()
+                        if "ticker" not in df.columns and "yahoo_ticker" in df.columns:
+                            df = df.rename(columns={"yahoo_ticker": "ticker"})
+                        df = df[["ticker", "name", "segment"]].drop_duplicates(subset=["ticker", "segment"])
+                    else:
+                        df = TickerDownloader.download_yahoo_tickers(segment)
+                        if "segment" not in df.columns:
+                            df["segment"] = segment
+                        df = df[["ticker", "name", "segment"]].drop_duplicates()
+                    df = fix_empty_values(df)
                     all_dfs.append(df)
                 except Exception as e:
                     self._tap.logger.warning(f"Could not download {segment}: {e}")

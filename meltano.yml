@@ -116,6 +116,8 @@ plugins:
           tickers: "*"
         stock_tickers:
           tickers: '*'
+        stock_tickers_pts:
+          tickers: '*'
         futures_tickers:
           tickers: '*'
         forex_tickers:
