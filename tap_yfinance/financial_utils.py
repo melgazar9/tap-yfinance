@@ -1,15 +1,17 @@
 import logging
-from datetime import datetime
-import pandas as pd
-import numpy as np
-import yfinance as yf
 import re
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import yfinance as yf
+
 from tap_yfinance.expected_schema import *
 from tap_yfinance.price_utils import (
-    clean_strings,
     check_missing_columns,
-    get_method_name,
+    clean_strings,
     fix_empty_values,
+    get_method_name,
 )
 
 pd.set_option("future.no_silent_downcasting", True)
@@ -43,10 +45,10 @@ class FinancialTap:
                 .get("rate_seconds_limit")
             )
 
+            from pyrate_limiter import Duration, Limiter, RequestRate
             from requests import Session
             from requests_cache import CacheMixin, SQLiteCache
             from requests_ratelimiter import LimiterMixin, MemoryQueueBucket
-            from pyrate_limiter import Duration, RequestRate, Limiter
 
             class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
                 pass
@@ -162,7 +164,10 @@ class FinancialTap:
                 df.columns = clean_strings(df.columns)
                 df = df.rename(
                     columns={
-                        "financial_assets_designatedas_fair_value_through_profitor_loss_total": "financial_assets_designated_as_fv_thru_profitor_loss_total"
+                        # fmt: off
+                        "financial_assets_designatedas_fair_value_through_profitor_loss_total":
+                            "financial_assets_designated_as_fv_thru_profitor_loss_total"
+                        # fmt: on
                     }
                 )
                 df.columns = [i.replace("p_p_e", "ppe") for i in df.columns]
@@ -886,7 +891,9 @@ class FinancialTap:
         try:
             df = self.yf_ticker_obj.get_insider_roster_holders()
             if isinstance(df, pd.DataFrame) and len(df):
-                df.columns = [i.replace("u_r_l", "url") for i in clean_strings(df.columns)]
+                df.columns = [
+                    i.replace("u_r_l", "url") for i in clean_strings(df.columns)
+                ]
                 df["ticker"] = ticker
                 column_order = [
                     "latest_transaction_date",
@@ -908,7 +915,7 @@ class FinancialTap:
                 abnormal_cols = ["position_summary", "position_summary_date"]
                 df.loc[:, df.columns.intersection(abnormal_cols)] = df[
                     df.columns.intersection(abnormal_cols)
-                ].apply(pd.to_numeric, errors='coerce')
+                ].apply(pd.to_numeric, errors="coerce")
                 df = fix_empty_values(df)
                 return df[[i for i in column_order if i in df.columns]]
             else:
@@ -930,7 +937,9 @@ class FinancialTap:
             df = self.yf_ticker_obj.get_insider_transactions()
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df = fix_empty_values(df)
-                df.columns = [i.replace("u_r_l", "url") for i in clean_strings(df.columns)]
+                df.columns = [
+                    i.replace("u_r_l", "url") for i in clean_strings(df.columns)
+                ]
                 df["ticker"] = ticker
                 column_order = [
                     "ticker",
@@ -1624,11 +1633,13 @@ class FinancialTap:
                 n += 1
                 if n < num_tries:
                     logging.error(
-                        f"try-catch failed {n} times for method {method} for ticker {ticker}. Failed with error: {e}. Trying again..."
+                        f"try-catch failed {n} times for method {method} for ticker {ticker}."
+                        f"Failed with error: {e}. Trying again..."
                     )
                 else:
                     logging.error(
-                        f"try-catch failed {n} times for method {method} for ticker {ticker}. Failed with error: {e}. Skipping..."
+                        f"try-catch failed {n} times for method {method} for ticker {ticker}."
+                        f"Failed with error: {e}. Skipping..."
                     )
                     return pd.DataFrame(columns=["last_trade_date"])
 
@@ -1659,11 +1670,13 @@ class FinancialTap:
                 n += 1
                 if n < num_tries:
                     logging.warning(
-                        f"try-catch failed {n} times for method {method} for ticker {ticker}. Failed with error {e}. Trying again..."
+                        f"try-catch failed {n} times for method {method} for ticker {ticker}."
+                        f"Failed with error {e}. Trying again..."
                     )
                 else:
                     logging.error(
-                        f"try-catch failed {n} times for method {method} for ticker {ticker}. Failed with error {e}. Skipping..."
+                        f"try-catch failed {n} times for method {method} for ticker {ticker}."
+                        f"Failed with error {e}. Skipping..."
                     )
                     return pd.DataFrame(
                         columns=["timestamp_extracted", "ticker", "expiration_date"]
@@ -1683,7 +1696,10 @@ class FinancialTap:
                 df = fix_empty_values(df)
                 df = df.rename(
                     columns={
-                        "financial_assets_designatedas_fair_value_through_profitor_loss_total": "financial_assets_designated_as_fv_thru_profitor_loss_total"
+                        # fmt: off
+                        "financial_assets_designatedas_fair_value_through_profitor_loss_total":
+                            "financial_assets_designated_as_fv_thru_profitor_loss_total"
+                        # fmt: on
                     }
                 )
                 column_order = BALANCE_SHEET_COLUMNS

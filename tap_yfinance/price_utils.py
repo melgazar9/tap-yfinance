@@ -1,16 +1,16 @@
-from datetime import datetime, timedelta
-import time
-import logging
-import pandas as pd
-import numpy as np
-import yfinance as yf
-from pytickersymbols import PyTickerSymbols
-from pandas_datareader import data as pdr
-import re
-from requests.exceptions import ChunkedEncodingError
-import requests
 import inspect
+import logging
+import re
+import threading
+import time
+from datetime import datetime, timedelta
 
+import numpy as np
+import pandas as pd
+import yfinance as yf
+from pandas_datareader import data as pdr
+from pytickersymbols import PyTickerSymbols
+from requests_html import HTMLSession
 
 pd.set_option("future.no_silent_downcasting", True)
 
@@ -53,10 +53,10 @@ class PriceTap:
                 .get("rate_seconds_limit")
             )
 
+            from pyrate_limiter import Duration, Limiter, RequestRate
             from requests import Session
             from requests_cache import CacheMixin, SQLiteCache
             from requests_ratelimiter import LimiterMixin, MemoryQueueBucket
-            from pyrate_limiter import Duration, RequestRate, Limiter
 
             class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
                 pass
@@ -128,8 +128,10 @@ class PriceTap:
             - Set tz_aware timestamp column to be a string
         """
         method = get_method_name()
-        logging.info(f"*** Running {method} for ticker {ticker}")
         yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
+        logging.info(
+            f"*** Running {method} for ticker {ticker} and stream {self.name} ***"
+        )
         assert (
             "interval" in yf_params.keys()
         ), "must pass interval parameter to yf_params"
@@ -182,8 +184,11 @@ class PriceTap:
             if cols_to_drop:
                 df = df.drop(columns=cols_to_drop, axis=1, errors="ignore")
 
-            check_missing_columns(df, self.column_order, method)
-            df = df[self.column_order]
+            df.columns = clean_strings(df.columns)
+            check_missing_columns(
+                df, self.column_order, method, ignore_cols={"capital_gains"}
+            )
+            df = df[[i for i in self.column_order if i in df.columns]]
             return df
 
         except Exception as e:
@@ -193,7 +198,7 @@ class PriceTap:
 
     def download_price_history_wide(self, tickers, yf_params):
         method = get_method_name()
-        logging.info(f"Running {method} for ticker {ticker}")
+        logging.info(f"Running {method} for ticker {tickers}")
         yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
 
         assert (
@@ -206,7 +211,7 @@ class PriceTap:
         if "start" not in yf_params.keys():
             yf_params["start"] = "1950-01-01 00:00:00"
             logging.info(
-                f"\n*** YF params start set to 1950-01-01 for ticker {ticker}! ***\n"
+                f"\n*** YF params start set to 1950-01-01 for tickers {tickers}! ***\n"
             )
 
         yf_params["start"] = get_valid_yfinance_start_timestamp(
@@ -232,7 +237,7 @@ class PriceTap:
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 
         if df is not None and not df.shape[0]:
-            self.failed_ticker_downloads[yf_params["interval"]].append(ticker)
+            self.failed_ticker_downloads[yf_params["interval"]].append(tickers)
             return pd.DataFrame(columns=self.column_order)
         df = fix_empty_values(df)
         return df
@@ -240,14 +245,123 @@ class PriceTap:
 
 class TickerDownloader:
     """
-    Description
-    -----------
-    Class to download PyTickerSymbols attempting to link Yahoo tickers to SEC ticker symbols into a single dataframe.
-    A mapping between all symbols is returned when calling the method generate_yahoo_sec_tickermap().
+    Downloads and caches Yahoo tickers in memory for the duration of a Meltano tap run.
+    ENSURES no duplicates and stops pagination when tickers repeat.
     """
 
-    def __init__(self):
-        super().__init__()
+    _memory_cache = {}
+    _cache_lock = threading.Lock()
+
+    @classmethod
+    def download_yahoo_tickers(cls, segment, paginate_records=200, max_pages=50000):
+        url_map = {
+            "world_indices_tickers": "https://finance.yahoo.com/markets/world-indices/",
+            "futures_tickers": "https://finance.yahoo.com/markets/commodities/",
+            "bonds_tickers": "https://finance.yahoo.com/markets/bonds/",
+            "forex_tickers": "https://finance.yahoo.com/markets/currencies/",
+            "options_tickers": "https://finance.yahoo.com/markets/options/most-active/?start={start}&count={count}",
+            "stock_tickers": "https://finance.yahoo.com/markets/stocks/most-active/?start={start}&count={count}",
+            "crypto_tickers": "https://finance.yahoo.com/markets/crypto/all/?start={start}&count={count}",
+            "private_companies_tickers": "https://finance.yahoo.com/markets/private-companies/highest-valuation/",
+            "etf_tickers": "https://finance.yahoo.com/markets/etfs/most-active/",
+            "mutual_fund_tickers": "https://finance.yahoo.com/markets/mutualfunds/gainers/?start={start}&count={count}",
+        }
+        default_url_map = {
+            "world_indices_tickers": "https://finance.yahoo.com/markets/world-indices/",
+            "futures_tickers": "https://finance.yahoo.com/markets/commodities/",
+            "bonds_tickers": "https://finance.yahoo.com/markets/bonds/",
+            "forex_tickers": "https://finance.yahoo.com/markets/currencies/",
+            "options_tickers": "https://finance.yahoo.com/markets/options/most-active/",
+            "stock_tickers": "https://finance.yahoo.com/markets/stocks/most-active/",
+            "crypto_tickers": "https://finance.yahoo.com/markets/crypto/all/",
+            "private_companies_tickers": "https://finance.yahoo.com/markets/private-companies/highest-valuation/",
+            "etf_tickers": "https://finance.yahoo.com/markets/etfs/most-active/?start={start}&count={count}",
+            "mutual_fund_tickers": "https://finance.yahoo.com/markets/mutualfunds/",
+        }
+
+        if segment not in url_map or segment not in default_url_map:
+            raise Exception(f"Unknown segment: {segment}")
+
+        with cls._cache_lock:
+            if segment in cls._memory_cache:
+                return cls._memory_cache[segment]
+
+        base_url = url_map[segment]
+        first_url = default_url_map[segment]
+        paginate = "{start}" in base_url
+        key_columns = ["symbol", "name"]
+
+        session = HTMLSession()
+
+        if not paginate:
+            resp = session.get(first_url)
+            tables = pd.read_html(resp.html.raw_html)
+            if not tables:
+                session.close()
+                raise Exception(f"No tables found for {segment}")
+            df = tables[0]
+            df.columns = [str(x).strip().lower() for x in df.columns]
+            if segment == "private_companies_tickers":
+                df = df.rename(columns={"company": "name"})
+            if not all(col in df.columns for col in key_columns):
+                session.close()
+                raise Exception(
+                    f"Expected columns {key_columns} not found for tickers {segment}"
+                )
+            df = df[key_columns].rename(columns={"symbol": "ticker"})
+            df = df.drop_duplicates(subset=["ticker"])
+            df = df.reset_index(drop=True)
+            df = fix_empty_values(df)
+            df = df.dropna(how="all", axis=1)
+            df = df.dropna(how="all", axis=0)
+            session.close()
+
+            with cls._cache_lock:
+                cls._memory_cache[segment] = df
+            return df
+
+        # --- PAGINATION ---
+        all_dfs = []
+        seen_tickers = set()
+        start = 0
+        page = 0
+        while page < max_pages:
+            url = base_url.format(start=start, count=paginate_records)
+            resp = session.get(url)
+            tables = pd.read_html(resp.html.raw_html)
+            if not tables:
+                break
+            df = tables[0]
+            df.columns = [str(x).strip().lower() for x in df.columns]
+            if not all(col in df.columns for col in key_columns):
+                break
+            df = df[key_columns]
+            # Filter out tickers already seen
+            df = df[~df["symbol"].astype(str).isin(seen_tickers)]
+            if df.empty:
+                break
+            all_dfs.append(df)
+            # Add the tickers from this page to seen_tickers
+            seen_tickers.update(df["symbol"].astype(str))
+            # If the number of unique tickers on this page is less than paginate_records, stop (last page)
+            if len(df) < paginate_records:
+                break
+            start += paginate_records
+            page += 1
+        session.close()
+        if not all_dfs:
+            raise Exception(f"No data found for segment: {segment}")
+
+        df_final = pd.concat(all_dfs, ignore_index=True)
+        df_final = df_final.drop_duplicates(subset=["symbol"])
+        df_final = df_final.rename(columns={"symbol": "ticker"})
+        df_final = df_final.reset_index(drop=True)
+        df_final = fix_empty_values(df_final)
+        df_final = df_final.dropna(how="all", axis=1)
+        df_final = df_final.dropna(how="all", axis=0)
+        with cls._cache_lock:
+            cls._memory_cache[segment] = df_final
+        return df_final
 
     @staticmethod
     def download_pts_stock_tickers():
@@ -298,515 +412,22 @@ class TickerDownloader:
         all_tickers.columns = ["yahoo_ticker_pts", "google_ticker_pts"]
         return all_tickers
 
-    @staticmethod
-    def download_crypto_tickers(num_currencies_per_loop=250):
-        """
-        Description
-        -----------
-        Download cryptocurrency pairs
-        """
-        method = get_method_name()
-        logging.info(f"Running method {method}")
-        from requests_html import HTMLSession
-
-        session = HTMLSession()
-
-        df = pd.DataFrame()
-
-        seen_symbols = set()
-
-        start = 0
-        while True:
-            try:
-                resp = session.get(
-                    f"https://finance.yahoo.com/markets/crypto/all/?start={start}&count={num_currencies_per_loop}"
-                )
-
-                df_i = pd.read_html(resp.html.raw_html)[0]
-                df = pd.concat([df, df_i], axis=0)
-
-                if start > 0 and (
-                    df_i.iloc[0]["Symbol"] == "BTC-USD Bitcoin USD"
-                    or df_i.empty
-                    or all(df_i["Symbol"].isin(list(seen_symbols)))
-                ):
-                    break
-
-                seen_symbols.update(set(df_i["Symbol"]))
-                start += num_currencies_per_loop
-            except ChunkedEncodingError as e:
-                logging.warning(
-                    f"ChunkedEncodingError encountered: {e} for ticker {ticker} and method {method}. Retrying..."
-                )
-                time.sleep(5)
-                continue
-
-        session.close()
-
-        df = df.drop_duplicates().reset_index(drop=True)
-
-        df = df.rename(
-            columns={
-                "Symbol": "ticker",
-                "% Change": "pct_change",
-                "Change %": "pct_change",
-                "Volume in Currency (Since 0:00 UTC)": "volume_in_currency_since_0_00_utc",
-                "Total Volume All Currencies (24hr)": "total_volume_all_currencies_24h",
-                "52 Wk Change %": "change_pct_52wk",
-                "52 Wk Range": "range_52wk",
-            }
-        )
-
-        df.columns = clean_strings(df.columns)
-        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
-        df = df.dropna(how="all", axis=1)
-        df = df.dropna(how="all", axis=0)
-
-        # df.loc[:, "bloomberg_ticker"] = df["name"].apply(lambda x: f"{x[4:]}-{x[0:3]}")
-        if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
-            df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
-
-        if len(df["price"].iloc[0].split(" ")) == 3:
-            if df["change"].isnull().any():
-                df["change"] = df["change"].fillna(
-                    df["price"].apply(lambda x: x.split(" ")[1])
-                )
-            if df["pct_change"].isnull().any():
-                df["pct_change"] = df["pct_change"].fillna(
-                    df["price"]
-                    .apply(lambda x: x.split(" ")[2])
-                    .str.replace("(", "")
-                    .str.replace(")", "")
-                )
-            # df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).str.replace(",", "").astype(float)
-            df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).astype(str)
-
-        # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
-
-        df = fix_empty_values(df)
-
-        str_cols = [
-            "ticker",
-            "price",
-            "change",
-            "pct_change",
-            "market_cap",
-            "volume",
-            "volume_in_currency_24hr",
-            "total_volume_all_currencies_24h",
-            "circulating_supply",
-            "change_pct_52wk",
-            "name",
-        ]
-
-        df[str_cols] = df[str_cols].astype(str)
-
-        column_order = [
-            "ticker",
-            "name",
-            "price",
-            "change",
-            "pct_change",
-            "market_cap",
-            "volume",
-            "volume_in_currency_24hr",
-            "total_volume_all_currencies_24h",
-            "circulating_supply",
-            "change_pct_52wk",
-        ]
-        check_missing_columns(df, column_order, method)
-        return df[column_order]
-
-    @staticmethod
-    def download_top_250_crypto_tickers(num_currencies=250):
-        """
-        Description
-        -----------
-        Download the top 250 cryptocurrencies
-        Note: At the time of coding, setting num_currencies higher than 250 results in only 25 crypto tickers returned.
-        """
-
-        method = get_method_name()
-        logging.info(f"Running method {method}")
-        from requests_html import HTMLSession
-
-        session = HTMLSession()
-
-        resp = session.get(
-            f"https://finance.yahoo.com/markets/crypto/all/?start=0&count={num_currencies}"
-        )
-        tables = pd.read_html(resp.html.raw_html)
-        session.close()
-
-        df = tables[0].copy()
-        df = df.rename(
-            columns={
-                "Symbol": "ticker",
-                "% Change": "pct_change",
-                "Change %": "pct_change",
-                "Volume in Currency (Since 0:00 UTC)": "volume_in_currency_since_0_00_utc",
-                "Total Volume All Currencies (24hr)": "total_volume_all_currencies_24h",
-                "52 Wk Change %": "change_pct_52wk",
-                "52 Wk Range": "range_52wk",
-            }
-        )
-
-        # df["name"] = df["ticker"].str.split(" ").apply(lambda x: x[1])
-        # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
-
-        df.columns = clean_strings(df.columns)
-        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
-        df = df.dropna(how="all", axis=1)
-        df = df.dropna(how="all", axis=0)
-
-        if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
-            df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
-
-        if len(df["price"].iloc[0].split(" ")) == 3:
-            if df["change"].isnull().any():
-                df["change"] = df["change"].fillna(
-                    df["price"].apply(lambda x: x.split(" ")[1])
-                )
-            if df["pct_change"].isnull().any():
-                df["pct_change"] = df["pct_change"].fillna(
-                    df["price"]
-                    .apply(lambda x: x.split(" ")[2])
-                    .str.replace("(", "")
-                    .str.replace(")", "")
-                )
-            # df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).str.replace(",", "").astype(float)
-            df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).astype(str)
-
-        df = fix_empty_values(df)
-
-        str_cols = [
-            "ticker",
-            "price",
-            "pct_change",
-            "change",
-            "market_cap",
-            "volume",
-            "volume_in_currency_24hr",
-            "total_volume_all_currencies_24h",
-            "circulating_supply",
-            "change_pct_52wk",
-            "name",
-        ]
-
-        df[str_cols] = df[str_cols].astype(str)
-
-        column_order = [
-            "ticker",
-            "name",
-            "price",
-            "change",
-            "pct_change",
-            "market_cap",
-            "volume",
-            "volume_in_currency_24hr",
-            "total_volume_all_currencies_24h",
-            "circulating_supply",
-            "change_pct_52wk",
-        ]
-
-        check_missing_columns(df, column_order, method)
-        return df[column_order]
-
-    @staticmethod
-    def download_forex_pairs():
-        """
-        Description
-        -----------
-        Download the yfinance forex pair ticker names
-        Note: At the time of coding, setting num_currencies higher than 250 results in only 25 crypto tickers returned.
-        """
-
-        method = get_method_name()
-        logging.info(f"Running method {method}")
-
-        from requests_html import HTMLSession
-
-        session = HTMLSession()
-        resp = session.get(f"https://finance.yahoo.com/currencies/")
-        tables = pd.read_html(resp.html.raw_html)
-        session.close()
-
-        df = tables[0].copy()
-
-        df = df.rename(
-            columns={
-                "Symbol": "ticker",
-                "% Change": "pct_change",
-                "Change %": "pct_change",
-                "52 Wk Range": "range_52wk",
-            }
-        )
-
-        df.columns = clean_strings(df.columns)
-        df = df.dropna(how="all", axis=0)
-        df = df.dropna(how="all", axis=1)
-
-        if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
-            df["name"] = df["ticker"].str.split(" ").apply(lambda x: x[1])
-        elif df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
-            df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
-
-        if len(df["price"].iloc[0].split(" ")) == 3:
-            if df["change"].isnull().any():
-                df["change"] = df["change"].fillna(
-                    df["price"].apply(lambda x: x.split(" ")[1])
-                )
-            if df["pct_change"].isnull().any():
-                df["pct_change"] = df["pct_change"].fillna(
-                    df["price"]
-                    .apply(lambda x: x.split(" ")[2])
-                    .str.replace("(", "")
-                    .str.replace(")", "")
-                )
-            # df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).str.replace(",", "").astype(float)
-            df["price"] = df["price"].apply(lambda x: x.split(" ")[0]).astype(str)
-
-        # df.loc[:, "bloomberg_ticker"] = df["name"].apply(lambda x: f"{x[4:]}-{x[0:3]}")
-        if df["ticker"].iloc[-1][-2] == "=" and "name" not in df.columns:
-            df["name"] = df["ticker"].str.split("=").apply(lambda x: x[0])
-
-        # df["ticker"] = df["ticker"].str.split(" ").apply(lambda x: x[0])
-        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
-        df = fix_empty_values(df)
-        df[df.columns] = df[df.columns].astype(str)
-
-        first_cols = ["ticker", "name"]
-        df = df[first_cols + [i for i in df.columns if i not in first_cols]].dropna(
-            how="all", axis=1
-        )
-
-        return df
-
-    @staticmethod
-    def download_futures_tickers():
-        """
-        Description
-        -----------
-        Download the yfinance future contract ticker names
-        Note: At the time of coding, setting num_currencies higher than 250 results in only 25 crypto tickers returned.
-        """
-
-        method = get_method_name()
-        logging.info(f"Running method {method}")
-
-        from requests_html import HTMLSession
-
-        session = HTMLSession()
-        resp = session.get(f"https://finance.yahoo.com/commodities/")
-        tables = pd.read_html(resp.html.raw_html)
-        session.close()
-
-        df = tables[0].copy()
-        df = df.rename(
-            columns={
-                "Symbol": "ticker",
-                "% Change": "pct_change",
-                "Change %": "pct_change",
-                "Unnamed: 7": "open_interest",
-            }
-        )
-        df.columns = clean_strings(df.columns)
-        str_cols = ["volume", "open_interest", "change"]
-        df[str_cols] = df[str_cols].astype(str)
-        df = replace_all_specified_missing(df, exclude_columns=["ticker"])
-        df = df.dropna(how="all", axis=1)
-        df = df.dropna(how="all", axis=0)
-        df = fix_empty_values(df)
-
-        return df
-
-    @staticmethod
-    def pull_sec_tickers():
-        method = get_method_name()
-        logging.info(f"Running method {method}")
-
-        url = "https://www.sec.gov/files/company_tickers.json"
-        headers = {
-            "User-Agent": "MyScraper/1.1.0 (myemail2@example3.com)",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://www.sec.gov",
-            "Connection": "keep-alive",
-        }
-
-        session = requests.Session()
-        session.headers.update(headers)
-        response = session.get(url)
-
-        if response.status_code == 200:
-            df_sec_tickers = pd.DataFrame.from_dict(response.json()).T
-            df_sec_tickers.columns = ["sec_cik_str", "sec_ticker", "sec_title"]
-        else:
-            raise f"Error fetching data from SEC: {response.status_code}"
-
-        return df_sec_tickers
-
-    def generate_yahoo_sec_tickermap(self):
-        method = get_method_name()
-        logging.info(f"Running method {method}")
-        df_sec_tickers = self.pull_sec_tickers()
-        df_pts_tickers = self.download_pts_stock_tickers()
-        df_mapped = pd.merge(
-            df_sec_tickers,
-            df_pts_tickers,
-            left_on="sec_ticker",
-            right_on="yahoo_ticker_pts",
-            how="outer",
-        )
-        df_mapped["ticker"] = df_mapped["sec_ticker"].fillna(
-            df_mapped["yahoo_ticker_pts"]
-        )  # likely yahoo ticker
-        df_mapped = df_mapped.replace([np.inf, -np.inf, np.nan], None)
-        return df_mapped
-
-    ###### numerai deprecated their yahoo-bloomberg ticker mapping ######
-
-    # def download_numerai_signals_ticker_map(
-    #     self,
-    #     numerai_ticker_link="https://numerai-signals-public-data.s3-us-west-2.amazonaws.com/signals_ticker_map_w_bbg.csv",
-    #     yahoo_ticker_colname="yahoo",
-    # ):
-    #     """Download numerai to yahoo ticker mapping"""
-    #
-    #     ticker_map = pd.read_csv(numerai_ticker_link)
-    #
-    #     logging.info("Number of eligible tickers in map: %s", str(ticker_map.shape[0]))
-    #
-    #     ticker_map = ticker_map.replace([np.inf, -np.inf, np.nan], None)
-    #     valid_tickers = [
-    #         i for i in ticker_map[yahoo_ticker_colname] if i is not None and len(i) > 0
-    #     ]
-    #     logging.info(f"tickers before cleaning: %s", ticker_map.shape)
-    #     ticker_map = ticker_map[ticker_map[yahoo_ticker_colname].isin(valid_tickers)]
-    #     logging.info(f"tickers after cleaning: %s", ticker_map.shape)
-    #     return ticker_map
-
-    # @classmethod
-    # def download_valid_stock_tickers(cls):
-    #     """Download the valid tickers from py-ticker-symbols"""
-    #
-    #     def handle_duplicate_columns(columns):
-    #         seen_columns = {}
-    #         new_columns = []
-    #
-    #         for column in columns:
-    #             if column not in seen_columns:
-    #                 new_columns.append(column)
-    #                 seen_columns[column] = 1
-    #             else:
-    #                 seen_columns[column] += 1
-    #                 new_columns.append(f"{column}_{seen_columns[column]}")
-    #         return new_columns
-    #
-    #     df_pts_tickers = cls.download_pts_stock_tickers()
-    #
-    #     numerai_yahoo_tickers = (
-    #         cls()
-    #         .download_numerai_signals_ticker_map()
-    #         .rename(columns={"yahoo": "yahoo_ticker", "ticker": "numerai_ticker"})
+    # def generate_yahoo_sec_tickermap(self):
+    #     method = get_method_name()
+    #     logging.info(f"Running method {method}")
+    #     df_pts_tickers = self.download_pts_stock_tickers()
+    #     df_mapped = pd.merge(
+    #         df_sec_tickers,
+    #         df_pts_tickers,
+    #         left_on="sec_ticker",
+    #         right_on="yahoo_ticker_pts",
+    #         how="outer",
     #     )
-    #
-    #     df1 = pd.merge(
-    #         df_pts_tickers, df_sec_tickers, on="yahoo_ticker", how="left"
-    #     ).set_index("yahoo_ticker")
-    #
-    #     df2 = pd.merge(
-    #         numerai_yahoo_tickers, df_pts_tickers, on="yahoo_ticker", how="left"
-    #     ).set_index("yahoo_ticker")
-    #
-    #     df3 = (
-    #         pd.merge(
-    #             df_pts_tickers,
-    #             numerai_yahoo_tickers,
-    #             left_on="yahoo_ticker",
-    #             right_on="numerai_ticker",
-    #             how="left",
-    #         )
-    #         .rename(
-    #             columns={
-    #                 "yahoo_ticker_x": "yahoo_ticker",
-    #                 "yahoo_ticker_y": "yahoo_ticker_old",
-    #             }
-    #         )
-    #         .set_index("yahoo_ticker")
-    #     )
-    #
-    #     df4 = (
-    #         pd.merge(
-    #             df_pts_tickers,
-    #             numerai_yahoo_tickers,
-    #             left_on="yahoo_ticker",
-    #             right_on="bloomberg_ticker",
-    #             how="left",
-    #         )
-    #         .rename(
-    #             columns={
-    #                 "yahoo_ticker_x": "yahoo_ticker",
-    #                 "yahoo_ticker_y": "yahoo_ticker_old",
-    #             }
-    #         )
-    #         .set_index("yahoo_ticker")
-    #     )
-    #
-    #     df_tickers_wide = pd.concat([df1, df2, df3, df4], axis=1)
-    #     df_tickers_wide.columns = handle_duplicate_columns(df_tickers_wide.columns)
-    #     df_tickers_wide.columns = clean_strings(df_tickers_wide.columns)
-    #
-    #     for col in df_tickers_wide.columns:
-    #         suffix = col[-1]
-    #         if suffix.isdigit():
-    #             root_col = col.strip("_" + suffix)
-    #             df_tickers_wide.loc[:, root_col] = df_tickers_wide[root_col].fillna(
-    #                 df_tickers_wide[col]
-    #             )
-    #
-    #     df_tickers = (
-    #         df_tickers_wide.reset_index()[
-    #             [
-    #                 "yahoo_ticker",
-    #                 "google_ticker",
-    #                 "bloomberg_ticker",
-    #                 "numerai_ticker",
-    #                 "yahoo_ticker_old",
-    #             ]
-    #         ]
-    #         .sort_values(
-    #             by=[
-    #                 "yahoo_ticker",
-    #                 "google_ticker",
-    #                 "bloomberg_ticker",
-    #                 "numerai_ticker",
-    #                 "yahoo_ticker_old",
-    #             ]
-    #         )
-    #         .drop_duplicates()
-    #     )
-    #
-    #     df_tickers.loc[:, "yahoo_valid_pts"] = False
-    #     df_tickers.loc[:, "yahoo_valid_numerai"] = False
-    #
-    #     df_tickers.loc[
-    #         df_tickers["yahoo_ticker"].isin(df_pts_tickers["yahoo_ticker"].tolist()),
-    #         "yahoo_valid_pts",
-    #     ] = True
-    #
-    #     df_tickers.loc[
-    #         df_tickers["yahoo_ticker"].isin(
-    #             numerai_yahoo_tickers["numerai_ticker"].tolist()
-    #         ),
-    #         "yahoo_valid_numerai",
-    #     ] = True
-    #
-    #     df_tickers = df_tickers.replace([np.inf, -np.inf, np.nan], None)
-    #     df_tickers = df_tickers.rename(
-    #         columns={"yahoo_ticker": "ticker"}
-    #     )  # necessary to allow schema partitioning
-    #     return df_tickers
+    #     df_mapped["ticker"] = df_mapped["sec_ticker"].fillna(
+    #         df_mapped["yahoo_ticker_pts"]
+    #     )  # likely yahoo ticker
+    #     df_mapped = df_mapped.replace([np.inf, -np.inf, np.nan], None)
+    #     return df_mapped
 
 
 def get_valid_yfinance_start_timestamp(interval, start="1950-01-01 00:00:00"):
@@ -937,11 +558,11 @@ def replace_all_specified_missing(df, exclude_columns=None):
     return df.apply(replace_in_series)
 
 
-def check_missing_columns(df, column_order, method_name):
+def check_missing_columns(df, column_order, stream_name, ignore_cols=set()):
     df_columns = set(df.columns)
     expected_columns = set(column_order)
-    missing_in_df = expected_columns - df_columns
-    missing_in_schema = df_columns - expected_columns
+    missing_in_df = expected_columns - df_columns - ignore_cols
+    missing_in_schema = df_columns - expected_columns - ignore_cols
 
     if missing_in_df or missing_in_schema:
         missing_in_df_msg = (
@@ -955,7 +576,7 @@ def check_missing_columns(df, column_order, method_name):
             else ""
         )
         warning_message = (
-            f"*** For method {method_name} and ticker {df['ticker'].iloc[0]} *** "
+            f"*** For stream_name {stream_name} and ticker {df['ticker'].iloc[0]} *** "
             + " ".join(filter(None, [missing_in_df_msg, missing_in_schema_msg]))
         )
         logging.warning(warning_message)
