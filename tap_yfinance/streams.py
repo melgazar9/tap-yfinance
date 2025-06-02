@@ -1,66 +1,149 @@
 from __future__ import annotations
+
+import requests
+
 from tap_yfinance.client import *
 from tap_yfinance.schema import *
 
 ###### ticker streams ######
 
 
-class StockTickersStream(TickerStream):
-    name = "stock_tickers"
-    schema = th.PropertiesList(
-        th.Property("ticker", th.StringType, required=True),
-        th.Property("sec_ticker", th.StringType),
-        th.Property("yahoo_ticker_pts", th.StringType),
-        th.Property("google_ticker_pts", th.StringType),
-        th.Property("sec_cik_str", th.NumberType),
-        th.Property("sec_title", th.StringType),
-    ).to_dict()
+class PriceStream1m(PriceStream):
+    name = "prices_1m"
+
+
+class PriceStream2m(PriceStream):
+    name = "prices_2m"
+
+
+class PriceStream5m(PriceStream):
+    name = "prices_5m"
+
+
+class PriceStream1h(PriceStream):
+    name = "prices_1h"
+
+
+class PriceStream1d(PriceStream):
+    name = "prices_1d"
+
+
+class WorldIndicesTickersStream(TickerStream):
+    name = "world_indices_tickers"
 
 
 class FuturesTickersStream(TickerStream):
     name = "futures_tickers"
-    schema = th.PropertiesList(
-        th.Property("ticker", th.StringType, required=True),
-        th.Property("name", th.StringType),
-        th.Property("last_price", th.NumberType),
-        th.Property("price", th.StringType),
-        th.Property("market_time", th.StringType),
-        th.Property("change", th.StringType),
-        th.Property("pct_change", th.StringType),
-        th.Property("volume", th.StringType),
-        th.Property("open_interest", th.StringType),
-    ).to_dict()
+
+
+class BondsTickersStream(TickerStream):
+    name = "bonds_tickers"
 
 
 class ForexTickersStream(TickerStream):
     name = "forex_tickers"
+
+
+class OptionsTickersStream(TickerStream):
+    name = "options_tickers"
+
+
+class SectorTickersStream(Stream):
+    name = "sectors"
+
     schema = th.PropertiesList(
-        th.Property("ticker", th.StringType, required=True),
-        th.Property("name", th.StringType),
-        th.Property("bloomberg_ticker", th.StringType),
-        th.Property("last_price", th.NumberType),
-        th.Property("price", th.StringType),
-        th.Property("change", th.StringType),
-        th.Property("pct_change", th.StringType),
+        th.Property("sector", th.StringType, required=True),
+        th.Property("market_weight", th.StringType, required=True),
+        th.Property("ytd_return", th.StringType, required=True),
     ).to_dict()
+
+    def get_records(self, context: dict | None) -> Iterable[dict]:
+        url = "https://finance.yahoo.com/sectors/"
+        session = HTMLSession()
+        resp = session.get(url)
+        tables = pd.read_html(resp.html.raw_html)
+        session.close()
+        if len(tables) == 1:
+            df = tables[0]
+            df = df.rename(columns={"YTD Return": "ytd_return"})
+            df.columns = clean_strings(df.columns)
+            df = fix_empty_values(df)
+            for col in df.columns:
+                if col.lower().startswith("unnamed"):
+                    df["ytd_return"] = df[col]
+                    df = df.drop(col, axis=1)
+        else:
+            raise Exception(f"Uncertain table parsing for tickers {segment}")
+        for record in df.to_dict("records"):
+            yield record
+
+
+class StockTickersStream(TickerStream):
+    name = "stock_tickers"
+
+
+class StockTickersPTSStream(TickerStream):
+    name = "stock_tickers_pts"
+
+
+class IndicesTickersStream(TickerStream):
+    name = "world_indices_tickers"
 
 
 class CryptoTickersStream(TickerStream):
     name = "crypto_tickers"
+
+
+class PrivateCompaniesStream(TickerStream):
+    name = "private_companies_tickers"
+
+
+class ETFTickersStream(TickerStream):
+    name = "etf_tickers"
+
+
+class MutualFundTickersStream(TickerStream):
+    name = "mutual_fund_tickers"
+
+
+class SECTickersStream(Stream):
+    name = "sec_tickers"
+    primary_keys = ["cik", "ticker", "title"]
+
     schema = th.PropertiesList(
-        th.Property("ticker", th.StringType, required=True),
-        th.Property("name", th.StringType),
-        th.Property("price", th.StringType),
-        th.Property("change", th.StringType),
-        th.Property("pct_change", th.StringType),
-        th.Property("market_cap", th.StringType),
-        th.Property("volume", th.StringType),
-        th.Property("volume_in_currency_24hr", th.StringType),
-        th.Property("total_volume_all_currencies_24h", th.StringType),
-        th.Property("circulating_supply", th.StringType),
-        th.Property("change_pct_52wk", th.StringType),
-        th.Property("open_interest", th.StringType),
+        th.Property("sec_cik_str", th.StringType),
+        th.Property("sec_ticker", th.StringType),
+        th.Property("sec_title", th.StringType),
     ).to_dict()
+
+    def get_url(self):
+        return "https://www.sec.gov/files/company_tickers.json"
+
+    def get_records(self, context: dict | None):
+        logging.info("Extracting sec_tickers.")
+
+        url = self.get_url()
+
+        headers = {
+            "User-Agent": "MyScraper/1.1.0 (myemail199@example3.com)",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://www.sec.gov",
+            "Connection": "keep-alive",
+        }
+
+        session = requests.Session()
+        session.headers.update(headers)
+        response = session.get(url)
+        session.close()
+        if response.status_code == 200:
+            df_sec_tickers = pd.DataFrame.from_dict(response.json()).T
+            df_sec_tickers.columns = ["cik", "ticker", "title"]
+        else:
+            raise f"Error fetching data from SEC: {response.status_code}"
+
+        for record in df_sec_tickers.to_dict("records"):
+            yield record
 
 
 ###### price streams ######
@@ -148,6 +231,26 @@ class CryptoPrices1hStream(DerivativePricesStream):
 
 class CryptoPrices1dStream(DerivativePricesStream):
     name = "crypto_prices_1d"
+
+
+class IndicesPrices1mStream(DerivativePricesStream):
+    name = "indices_prices_1m"
+
+
+class IndicesPrices2mStream(DerivativePricesStream):
+    name = "Indices_prices_2m"
+
+
+class IndicesPrices5mStream(DerivativePricesStream):
+    name = "indices_prices_5m"
+
+
+class IndicesPrices1hStream(DerivativePricesStream):
+    name = "indices_prices_1h"
+
+
+class IndicesPrices1dStream(DerivativePricesStream):
+    name = "indices_prices_1d"
 
 
 ###### prices wide streams ######

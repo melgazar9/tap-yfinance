@@ -20,35 +20,12 @@ plugins:
         - stream-maps
 
       select:
-        - stock_tickers.*
-        - futures_tickers.*
-        - forex_tickers.*
-        - crypto_tickers.*
-        - crypto_tickers_top_250.*
-        - stock_prices_1m.*
-        - stock_prices_2m.*
-        - stock_prices_5m.*
-        - stock_prices_1h.*
-        - stock_prices_1d.*
-        - futures_prices_1m.*
-        - futures_prices_2m.*
-        - futures_prices_5m.*
-        - futures_prices_1h.*
-        - futures_prices_1d.*
-        - forex_prices_1m.*
-        - forex_prices_2m.*
-        - forex_prices_5m.*
-        - forex_prices_1h.*
-        - forex_prices_1d.*
-        - crypto_prices_1m.*
-        - crypto_prices_2m.*
-        - crypto_prices_5m.*
-        - crypto_prices_1h.*
-        - crypto_prices_1d.*
-#        - stock_prices_wide_1m.*
-#        - futures_prices_wide_1m.*
-#        - forex_prices_wide_1m.*
-#        - crypto_prices_wide_1m.*
+        - all_tickers.*
+        - prices_1m.*
+        - prices_2m.*
+        - prices_5m.*
+        - prices_1h.*
+        - prices_1d.*
         - actions.*
         - analyst_price_targets.*
         - balance_sheet.*
@@ -78,6 +55,7 @@ plugins:
         - recommendations_summary.*
         - revenue_estimate.*
         - sec_filings.*
+        - sec_tickers.*
         - shares_full.*
         - splits.*
         - sustainability.*
@@ -91,6 +69,42 @@ plugins:
         - quarterly_financials.*
         - quarterly_income_stmt.*
         - upgrades_downgrades.*
+        - private_companies_tickers.*
+        - etf_tickers.*
+        - bonds_tickers.*
+        - mutual_fund_tickers.*
+        - world_indices_tickers.*
+        - sectors.*
+        - stock_tickers_pts.*
+#        - stock_tickers.*
+#        - futures_tickers.*
+#        - forex_tickers.*
+#        - crypto_tickers.*
+#        - crypto_tickers_top_250.*
+#        - stock_prices_1m.*
+#        - stock_prices_2m.*
+#        - stock_prices_5m.*
+#        - stock_prices_1h.*
+#        - stock_prices_1d.*
+#        - futures_prices_1m.*
+#        - futures_prices_2m.*
+#        - futures_prices_5m.*
+#        - futures_prices_1h.*
+#        - futures_prices_1d.*
+#        - forex_prices_1m.*
+#        - forex_prices_2m.*
+#        - forex_prices_5m.*
+#        - forex_prices_1h.*
+#        - forex_prices_1d.*
+#        - crypto_prices_1m.*
+#        - crypto_prices_2m.*
+#        - crypto_prices_5m.*
+#        - crypto_prices_1h.*
+#        - crypto_prices_1d.*
+#        - stock_prices_wide_1m.*
+#        - futures_prices_wide_1m.*
+#        - forex_prices_wide_1m.*
+#        - crypto_prices_wide_1m.*
 
       config:
         default_start_date: "1950-01-01"
@@ -98,18 +112,44 @@ plugins:
 
         ### tickers ###
 
+        all_tickers:
+          tickers: "*"
         stock_tickers:
           tickers: '*'
         futures_tickers:
           tickers: '*'
         forex_tickers:
           tickers: '*'
+        indices_tickers:
+          tickers: "*"
         crypto_tickers:
           tickers: '*'
         crypto_tickers_top_250:
           tickers: '*'
 
-        ### prices (long) ###
+        ### all prices (long) ###
+
+        prices_1m:
+          tickers: [ "AAPL", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+
+        prices_2m:
+          tickers: [ "AAPL", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
+          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+
+        prices_5m:
+          tickers: [ "AAPL", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
+          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+
+        prices_1h:
+          tickers: [ "AAPL", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
+          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+
+        prices_1d:
+          tickers: [ "AAPL", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
+          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+
+        ### stock prices (long) ###
 
         stock_prices_1m:
           tickers: [ "AAPL", "META", "AGD" ]
@@ -340,23 +380,6 @@ plugins:
 
 
       metadata:
-        ### tickers ###
-
-        stock_tickers:
-          replication-method: INCREMENTAL
-          replication-key: ticker
-        futures_tickers:
-          replication-method: INCREMENTAL
-          replication-key: ticker
-        forex_tickers:
-          replication-method: INCREMENTAL
-          replication-key: ticker
-        crypto_tickers_top_250:
-          replication-method: INCREMENTAL
-          replication-key: ticker
-        crypto_tickers:
-          replication-method: INCREMENTAL
-          replication-key: ticker
 
         ### prices ###
 
