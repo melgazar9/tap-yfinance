@@ -2,16 +2,16 @@ import inspect
 import logging
 import re
 import threading
-import time
 from datetime import datetime, timedelta
+
 import backoff
-from yfinance.exceptions import YFRateLimitError
 import numpy as np
 import pandas as pd
 import yfinance as yf
 from pandas_datareader import data as pdr
 from pytickersymbols import PyTickerSymbols
 from requests_html import HTMLSession
+from yfinance.exceptions import YFRateLimitError
 
 pd.set_option("future.no_silent_downcasting", True)
 
@@ -174,9 +174,7 @@ class PriceTap:
             df = df[[i for i in self.column_order if i in df.columns]]
             return df
         except YFRateLimitError as e:
-            logging.warning(
-                f"Rate limit hit for {ticker}, will retry: {e}"
-            )
+            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
             raise
         except Exception as e:
             logging.error(f"Error for ticker {ticker} failed with error: {e}")
@@ -234,12 +232,10 @@ class PriceTap:
             if df is not None and not df.shape[0]:
                 self.failed_ticker_downloads[yf_params["interval"]].append(tickers)
                 return pd.DataFrame(columns=self.column_order)
-            df = fix_empty_values(df)
+            df = fix_empty_values(df, exclude_columns=["ticker"])
             return df
         except YFRateLimitError as e:
-            logging.warning(
-                f"Rate limit hit for {ticker}, will retry: {e}"
-            )
+            logging.warning(f"Rate limit hit for {tickers}, will retry: {e}")
             raise
 
 
@@ -361,7 +357,9 @@ class TickerDownloader:
         df_final = df_final.reset_index(drop=True)
         mask_nan_both = df_final["ticker"].isna() & df_final["name"].isna()
         if mask_nan_both:
-            df_final.loc[mask_nan_both, :] = fix_empty_values(df_final.loc[mask_nan_both, :])
+            df_final.loc[mask_nan_both, :] = fix_empty_values(
+                df_final.loc[mask_nan_both, :]
+            )
         df_final = df_final.dropna(how="all", axis=1)
         df_final = df_final.dropna(how="all", axis=0)
         df_final[["ticker", "name"]] = df_final[["ticker", "name"]].astype(str)
@@ -592,11 +590,7 @@ def flatten_multindex_columns(df):
     return new_cols
 
 
-def fix_empty_values(
-    df,
-    exclude_columns=None,
-    to_value=None  # Use None or np.nan
-):
+def fix_empty_values(df, exclude_columns=None, to_value=None):  # Use None or np.nan
     """
     Replaces np.nan, inf, -inf, None, and string versions of 'nan', 'none', 'infinity'
     with a specified value (default None), except for columns listed in exclude_columns.
@@ -626,10 +620,10 @@ def fix_empty_values(
         if pd.api.types.is_numeric_dtype(col):
             return col.replace([np.nan, np.inf, -np.inf, None], to_value)
         # Object/string: handle string missing values as well
-        return (
-            col.replace([np.nan, np.inf, -np.inf, None], to_value)
-               .replace(regex_pattern, to_value, regex=True)
+        return col.replace([np.nan, np.inf, -np.inf, None], to_value).replace(
+            regex_pattern, to_value, regex=True
         )
+
     return df.apply(replace_col)
 
 
