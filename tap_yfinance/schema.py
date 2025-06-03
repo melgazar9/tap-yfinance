@@ -7,7 +7,7 @@ CUSTOM_JSON_SCHEMA = {
 }
 
 INCOME_STMT_SCHEMA = th.PropertiesList(
-    th.Property("date", th.DateTimeType, required=True),
+    th.Property("date", th.DateType, required=True),
     th.Property("ticker", th.StringType),
     th.Property("basic_average_shares", th.NumberType),
     th.Property("basic_eps", th.NumberType),
@@ -100,7 +100,7 @@ INCOME_STMT_SCHEMA = th.PropertiesList(
 
 
 BALANCE_SHEET_SCHEMA = th.PropertiesList(
-    th.Property("date", th.DateTimeType, required=True),
+    th.Property("date", th.DateType, required=True),
     th.Property("ticker", th.StringType),
     th.Property("capital_stock", th.NumberType),
     th.Property("current_capital_lease_obligation", th.NumberType),
@@ -258,7 +258,7 @@ BALANCE_SHEET_SCHEMA = th.PropertiesList(
 
 
 CASH_FLOW_SCHEMA = th.PropertiesList(
-    th.Property("date", th.DateTimeType, required=True),
+    th.Property("date", th.DateType, required=True),
     th.Property("ticker", th.StringType),
     th.Property("beginning_cash_position", th.NumberType),
     th.Property("capital_expenditure", th.NumberType),
@@ -384,7 +384,7 @@ CASH_FLOW_SCHEMA = th.PropertiesList(
 
 
 FINANCIALS_SCHEMA = th.PropertiesList(
-    th.Property("date", th.DateTimeType, required=True),
+    th.Property("date", th.DateType, required=True),
     th.Property("ticker", th.StringType),
     th.Property("basic_average_shares", th.NumberType),
     th.Property("basic_eps", th.NumberType),

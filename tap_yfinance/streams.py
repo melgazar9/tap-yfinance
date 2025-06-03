@@ -50,6 +50,7 @@ class OptionsTickersStream(TickerStream):
 
 class SectorTickersStream(Stream):
     name = "sectors"
+    primary_keys = ["sector"]
 
     schema = th.PropertiesList(
         th.Property("sector", th.StringType, required=True),
@@ -84,6 +85,34 @@ class StockTickersStream(TickerStream):
 
 class StockTickersPTSStream(TickerStream):
     name = "stock_tickers_pts"
+    primary_keys = [
+        "ticker",
+        "name",
+        "currency",
+        "country",
+        "indices",
+        "industries",
+        "isins",
+        "akas",
+        "founded",
+        "segment",
+    ]
+    schema = th.PropertiesList(
+        th.Property("yahoo_ticker", th.StringType),
+        th.Property("google_ticker", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("currency", th.StringType),
+        th.Property("symbol", th.StringType),
+        th.Property("country", th.StringType),
+        th.Property("indices", th.ArrayType(th.StringType)),
+        th.Property("industries", th.ArrayType(th.StringType)),
+        th.Property("isins", th.ArrayType(th.StringType)),
+        th.Property("akas", th.ArrayType(th.StringType)),
+        th.Property("founded", th.IntegerType),
+        th.Property("employees", th.StringType),
+        th.Property("segment", th.StringType),
+        th.Property("ticker", th.StringType),
+    ).to_dict()
 
 
 class IndicesTickersStream(TickerStream):
@@ -111,9 +140,9 @@ class SECTickersStream(Stream):
     primary_keys = ["cik", "ticker", "title"]
 
     schema = th.PropertiesList(
-        th.Property("sec_cik_str", th.StringType),
-        th.Property("sec_ticker", th.StringType),
-        th.Property("sec_title", th.StringType),
+        th.Property("cik", th.StringType),
+        th.Property("ticker", th.StringType),
+        th.Property("title", th.StringType),
     ).to_dict()
 
     def get_url(self):
@@ -138,7 +167,8 @@ class SECTickersStream(Stream):
         session.close()
         if response.status_code == 200:
             df_sec_tickers = pd.DataFrame.from_dict(response.json()).T
-            df_sec_tickers.columns = ["cik", "ticker", "title"]
+            df_sec_tickers = df_sec_tickers.rename(columns={"cik_str": "cik"})
+            df_sec_tickers["cik"] = df_sec_tickers["cik"].astype(str)
         else:
             raise f"Error fetching data from SEC: {response.status_code}"
 
@@ -342,6 +372,7 @@ class CryptoPricesWide1dStream(PricesStreamWide):
 class ActionsStream(FinancialStream):
     name = "actions"
     method_name = "get_actions"
+    primary_keys = ["ticker", "timestamp"]
 
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
@@ -356,6 +387,7 @@ class ActionsStream(FinancialStream):
 class AnalystPriceTargetsStream(FinancialStream):
     name = "analyst_price_targets"
     method_name = "get_analyst_price_targets"
+    primary_keys = ["ticker", "current", "high", "low", "mean", "median"]
 
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
@@ -371,16 +403,19 @@ class AnalystPriceTargetsStream(FinancialStream):
 class BalanceSheetStream(FinancialStream):
     name = "balance_sheet"
     method_name = "get_balance_sheet"
+    primary_keys = ["ticker", "date"]
     schema = BALANCE_SHEET_SCHEMA
 
 
 class CalendarStream(FinancialStream):
     name = "calendar"
     method_name = "get_calendar"
+    primary_keys = ["ticker", "dividend_date", "ex_dividend_date", "earnings_date"]
+
     schema = th.PropertiesList(
-        th.Property("dividend_date", th.DateTimeType),
-        th.Property("ex_dividend_date", th.DateTimeType),
-        th.Property("earnings_date", th.DateTimeType),
+        th.Property("dividend_date", th.DateType),
+        th.Property("ex_dividend_date", th.DateType),
+        th.Property("earnings_date", th.DateType),
         th.Property("ticker", th.StringType),
         th.Property("earnings_high", th.NumberType),
         th.Property("earnings_low", th.NumberType),
@@ -394,12 +429,18 @@ class CalendarStream(FinancialStream):
 class CashFlowStream(FinancialStream):
     name = "cash_flow"
     method_name = "get_cash_flow"
+    primary_keys = ["ticker", "date"]
+    replication_key = "date"
+    replication_method = "INCREMENTAL"
     schema = CASH_FLOW_SCHEMA
 
 
 class DividendsStream(FinancialStream):
     name = "dividends"
     method_name = "get_dividends"
+    primary_keys = ["ticker", "timestamp"]
+    replication_key = "timestamp"
+    replication_method = "INCREMENTAL"
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
         th.Property("timestamp_tz_aware", th.StringType),
@@ -412,6 +453,7 @@ class DividendsStream(FinancialStream):
 class EarningsDatesStream(FinancialStream):
     name = "earnings_dates"
     method_name = "get_earnings_dates"
+    primary_keys = ["ticker", "timestamp", "timestamp_tz_aware"]
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
         th.Property("timestamp_tz_aware", th.StringType),
@@ -426,6 +468,7 @@ class EarningsDatesStream(FinancialStream):
 class EarningsEstimateStream(FinancialStream):
     name = "earnings_estimate"
     method_name = "get_earnings_estimate"
+    primary_keys = ["ticker", "period"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -442,6 +485,9 @@ class EarningsEstimateStream(FinancialStream):
 class EarningsHistoryStream(FinancialStream):
     name = "earnings_history"
     method_name = "get_earnings_history"
+    primary_keys = ["ticker", "quarter"]
+    replication_key = "quarter"
+    replication_method = "INCREMENTAL"
     schema = th.PropertiesList(
         th.Property("quarter", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -456,6 +502,7 @@ class EarningsHistoryStream(FinancialStream):
 class EarningsEpsRevisionsStream(FinancialStream):
     name = "eps_revisions"
     method_name = "get_eps_revisions"
+    primary_keys = ["ticker", "period"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType, required=True),
@@ -470,6 +517,7 @@ class EarningsEpsRevisionsStream(FinancialStream):
 class EpsTrendStream(FinancialStream):
     name = "eps_trend"
     method_name = "get_eps_trend"
+    primary_keys = ["ticker", "period"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType, required=True),
@@ -485,6 +533,7 @@ class EpsTrendStream(FinancialStream):
 class GrowthEstimatesStream(FinancialStream):
     name = "growth_estimates"
     method_name = "get_growth_estimates"
+    primary_keys = ["ticker", "period"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType, required=True),
@@ -497,6 +546,7 @@ class GrowthEstimatesStream(FinancialStream):
 class FastInfoStream(FinancialStream):
     name = "fast_info"
     method_name = "get_fast_info"
+    primary_keys = ["ticker"]
     schema = th.PropertiesList(
         th.Property("currency", th.StringType),
         th.Property("day_high", th.NumberType),
@@ -527,12 +577,16 @@ class FastInfoStream(FinancialStream):
 class FinancialsStream(FinancialStream):
     name = "financials"
     method_name = "get_financials"
+    primary_keys = ["ticker", "date"]
+    replication_key = "date"
+    replication_method = "INCREMENTAL"
     schema = FINANCIALS_SCHEMA
 
 
 class HistoryMetadataStream(FinancialStream):
     name = "history_metadata"
     method_name = "get_history_metadata"
+    primary_keys = ["ticker"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -588,6 +642,7 @@ class HistoryMetadataStream(FinancialStream):
 class InfoStream(FinancialStream):
     name = "info"
     method_name = "get_info"
+    primary_keys = ["ticker"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType),
         th.Property("ticker", th.StringType),
@@ -784,12 +839,22 @@ class InfoStream(FinancialStream):
 class IncomeStmtStream(FinancialStream):
     name = "income_stmt"
     method_name = "get_income_stmt"
+    primary_keys = ["ticker", "date"]
+    replication_key = "date"
+    replication_method = "INCREMENTAL"
     schema = INCOME_STMT_SCHEMA
 
 
 class InsiderPurchasesStream(FinancialStream):
     name = "insider_purchases"
     method_name = "get_insider_purchases"
+    primary_keys = [
+        "ticker",
+        "insider_purchases_last_6m",
+        "shares",
+        "trans",
+        "insider_purchases_last",
+    ]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -803,6 +868,7 @@ class InsiderPurchasesStream(FinancialStream):
 class InsiderRosterHoldersStream(FinancialStream):
     name = "insider_roster_holders"
     method_name = "get_insider_roster_holders"
+    primary_keys = ["ticker", "name", "latest_transaction_date"]
     schema = th.PropertiesList(
         th.Property("latest_transaction_date", th.DateTimeType),
         th.Property("ticker", th.StringType),
@@ -822,6 +888,7 @@ class InsiderRosterHoldersStream(FinancialStream):
 class InsiderTransactionsStream(FinancialStream):
     name = "insider_transactions"
     method_name = "get_insider_transactions"
+    primary_keys = ["ticker", "date_reported", "holder"]
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType),
         th.Property("start_date", th.DateTimeType),
@@ -839,6 +906,7 @@ class InsiderTransactionsStream(FinancialStream):
 class InstitutionalHoldersStream(FinancialStream):
     name = "institutional_holders"
     method_name = "get_institutional_holders"
+    primary_keys = ["ticker", "date_reported", "holder"]
     schema = th.PropertiesList(
         th.Property("date_reported", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -853,6 +921,7 @@ class InstitutionalHoldersStream(FinancialStream):
 class IsInStream(FinancialStream):
     name = "isin"
     method_name = "get_isin"
+    primary_keys = ["ticker"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType, required=True),
@@ -863,6 +932,7 @@ class IsInStream(FinancialStream):
 class MajorHoldersStream(FinancialStream):
     name = "major_holders"
     method_name = "get_major_holders"
+    primary_keys = ["ticker", "breakdown", "value"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -874,6 +944,7 @@ class MajorHoldersStream(FinancialStream):
 class MutualFundHoldersStream(FinancialStream):
     name = "mutualfund_holders"
     method_name = "get_mutualfund_holders"
+    primary_keys = ["date_reported", "ticker", "holder"]
     schema = th.PropertiesList(
         th.Property("date_reported", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -888,6 +959,7 @@ class MutualFundHoldersStream(FinancialStream):
 class NewsStream(FinancialStream):
     name = "news"
     method_name = "get_news"
+    primary_keys = ["ticker", "id"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -899,6 +971,7 @@ class NewsStream(FinancialStream):
 class RecommendationsStream(FinancialStream):
     name = "recommendations"
     method_name = "get_recommendations"
+    primary_keys = ["ticker", "period", "timestamp_extracted"]
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType),
         th.Property("timestamp_extracted", th.DateTimeType),
@@ -914,6 +987,7 @@ class RecommendationsStream(FinancialStream):
 class RecommendationsSummaryStream(FinancialStream):
     name = "recommendations_summary"
     method_name = "get_recommendations_summary"
+    primary_keys = ["ticker", "period", "timestamp_extracted"]
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType),
         th.Property("timestamp_extracted", th.DateTimeType),
@@ -929,6 +1003,7 @@ class RecommendationsSummaryStream(FinancialStream):
 class RevenueEstimateStream(FinancialStream):
     name = "revenue_estimate"
     method_name = "get_revenue_estimate"
+    primary_keys = ["ticker", "period"]
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType, required=True),
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
@@ -945,6 +1020,7 @@ class RevenueEstimateStream(FinancialStream):
 class SecFilingsStream(FinancialStream):
     name = "sec_filings"
     method_name = "get_sec_filings"
+    primary_keys = ["ticker", "date", "type", "title"]
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType, required=True),
         th.Property("date", th.DateTimeType, required=True),
@@ -961,6 +1037,7 @@ class SecFilingsStream(FinancialStream):
 class SharesFullStream(FinancialStream):
     name = "shares_full"
     method_name = "get_shares_full"
+    primary_keys = ["ticker", "timestamp"]
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
         th.Property("timestamp_tz_aware", th.StringType),
@@ -973,6 +1050,7 @@ class SharesFullStream(FinancialStream):
 class SplitsStream(FinancialStream):
     name = "splits"
     method_name = "get_splits"
+    primary_keys = ["ticker", "timestamp"]
     schema = th.PropertiesList(
         th.Property("timestamp", th.DateTimeType, required=True),
         th.Property("timestamp_tz_aware", th.StringType),
@@ -985,6 +1063,7 @@ class SplitsStream(FinancialStream):
 class SustainabilityStream(FinancialStream):
     name = "sustainability"
     method_name = "get_sustainability"
+    primary_keys = ["ticker"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -1030,6 +1109,10 @@ class SustainabilityStream(FinancialStream):
 class OptionChainStream(FinancialStream):
     name = "option_chain"
     method_name = "option_chain"
+    primary_keys = ["ticker", "last_trade_date", "contract_symbol", "option_type"]
+    is_timestamp_replication_key = True
+    replication_key = "last_trade_date"
+    replication_method = "INCREMENTAL"
     schema = th.PropertiesList(
         th.Property("last_trade_date", th.DateTimeType, required=True),
         th.Property("last_trade_date_tz_aware", th.StringType),
@@ -1057,6 +1140,7 @@ class OptionChainStream(FinancialStream):
 class OptionsStream(FinancialStream):
     name = "options"
     method_name = "options"
+    primary_keys = ["ticker", "expiration_date"]
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
@@ -1067,48 +1151,68 @@ class OptionsStream(FinancialStream):
 class QuarterlyBalanceSheetStream(FinancialStream):
     name = "quarterly_balance_sheet"
     method_name = "quarterly_balance_sheet"
+    primary_keys = ["ticker", "date"]
     schema = BALANCE_SHEET_SCHEMA
 
 
 class QuarterlyCashFlowStream(FinancialStream):
     name = "quarterly_cash_flow"
     method_name = "quarterly_cash_flow"
+    primary_keys = ["ticker", "date"]
+    replication_key = "date"
+    replication_method = "INCREMENTAL"
     schema = CASH_FLOW_SCHEMA
 
 
 class QuarterlyFinancialsStream(FinancialStream):
     name = "quarterly_financials"
     method_name = "quarterly_financials"
+    primary_keys = ["ticker", "date"]
+    replication_key = "date"
+    replication_method = "INCREMENTAL"
     schema = FINANCIALS_SCHEMA
 
 
 class QuarterlyIncomeStmtStream(FinancialStream):
     name = "quarterly_income_stmt"
     method_name = "quarterly_income_stmt"
+    primary_keys = ["ticker", "date"]
+    replication_key = "date"
+    replication_method = "INCREMENTAL"
     schema = INCOME_STMT_SCHEMA
 
 
 class TtmCashFlowStream(FinancialStream):
     name = "ttm_cash_flow"
     method_name = "ttm_cash_flow"
+    primary_keys = ["ticker", "date"]
+    replication_key = "date"
+    replication_method = "INCREMENTAL"
     schema = CASH_FLOW_SCHEMA
 
 
 class TtmFinancialsStream(FinancialStream):
     name = "ttm_financials"
     method_name = "ttm_financials"
+    primary_keys = ["ticker", "date"]
+    replication_key = "date"
+    replication_method = "INCREMENTAL"
     schema = FINANCIALS_SCHEMA
 
 
 class TtmIncomeStmtStream(FinancialStream):
     name = "ttm_income_stmt"
     method_name = "ttm_income_stmt"
+    primary_keys = ["ticker", "date"]
+    replication_key = "date"
+    replication_method = "INCREMENTAL"
     schema = INCOME_STMT_SCHEMA
 
 
 class UpgradesDowngradesStream(FinancialStream):
     name = "upgrades_downgrades"
     method_name = "get_upgrades_downgrades"
+    primary_keys = ["ticker", "grade_date", "firm"]
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType),
         th.Property("grade_date", th.DateTimeType),
