@@ -169,7 +169,7 @@ class BaseStream(Stream, ABC):
                                 if "segment" not in df.columns:
                                     df["segment"] = segment
                                 df = df[["ticker", "name", "segment"]].drop_duplicates()
-                            df = fix_empty_values(df)
+                            df = fix_empty_values(df, exclude_columns=["ticker"])
                             all_dfs.append(df)
                         except Exception as e:
                             self._tap.logger.warning(
@@ -218,7 +218,7 @@ class BaseStream(Stream, ABC):
                             if "segment" not in df.columns:
                                 df["segment"] = segment
                             df = df[["ticker", "name", "segment"]].drop_duplicates()
-                        df = fix_empty_values(df)
+                        df = fix_empty_values(df, exclude_columns=["ticker"])
                         self._tap.ticker_cache[segment] = df
                     except Exception as e:
                         self._tap.logger.warning(f"Could not download {segment}: {e}")
@@ -290,7 +290,7 @@ class BasePriceStream(BaseStream):
         )
 
         df = price_tap.download_price_history(ticker=ticker, yf_params=yf_params)
-        for record in fix_empty_values(df).to_dict(orient="records"):
+        for record in df.to_dict(orient="records"):
             increment_state(
                 state,
                 replication_key=self.replication_key,
@@ -455,7 +455,7 @@ class AllTickersStream(TickerStream):
                         if "segment" not in df.columns:
                             df["segment"] = segment
                         df = df[["ticker", "name", "segment"]].drop_duplicates()
-                    df = fix_empty_values(df)
+                    df = fix_empty_values(df, exclude_columns=["ticker"])
                     all_dfs.append(df)
                 except Exception as e:
                     self._tap.logger.warning(f"Could not download {segment}: {e}")
