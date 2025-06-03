@@ -4,7 +4,8 @@ import re
 import threading
 import time
 from datetime import datetime, timedelta
-
+import backoff
+from yfinance.exceptions import YFRateLimitError
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -92,30 +93,13 @@ class PriceTap:
         self.n_requests = 0
         self.failed_ticker_downloads = {}
 
-    def _request_limit_check(self):
-        """
-        Description
-        -----------
-        Check if too many requests were made to yfinance within their allowed number of requests.
-        """
-
-        self.request_start_timestamp = datetime.now()
-        self.current_runtime_seconds = (
-            datetime.now() - self.request_start_timestamp
-        ).seconds
-
-        if self.n_requests > 1900 and self.current_runtime_seconds > 3500:
-            logging.info(
-                f"\nToo many requests per hour. Pausing requests for {self.current_runtime_seconds} seconds.\n"
-            )
-            time.sleep(np.abs(3600 - self.current_runtime_seconds))
-        if self.n_requests > 45000 and self.current_runtime_seconds > 85000:
-            logging.info(
-                f"\nToo many requests per day. Pausing requests for {self.current_runtime_seconds} seconds.\n"
-            )
-            time.sleep(np.abs(86400 - self.current_runtime_seconds))
-        return self
-
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def download_price_history(self, ticker, yf_params=None) -> pd.DataFrame():
         """
         Description
@@ -190,57 +174,74 @@ class PriceTap:
             )
             df = df[[i for i in self.column_order if i in df.columns]]
             return df
-
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(f"Error for ticker {ticker} failed with error: {e}")
             self.failed_ticker_downloads[yf_params["interval"]].append(ticker)
             return pd.DataFrame(columns=self.column_order)
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def download_price_history_wide(self, tickers, yf_params):
-        method = get_method_name()
-        logging.info(f"Running {method} for ticker {tickers}")
-        yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
+        try:
+            method = get_method_name()
+            logging.info(f"Running {method} for ticker {tickers}")
+            yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
 
-        assert (
-            "interval" in yf_params.keys()
-        ), "must pass interval parameter to yf_params"
+            assert (
+                "interval" in yf_params.keys()
+            ), "must pass interval parameter to yf_params"
 
-        if yf_params["interval"] not in self.failed_ticker_downloads.keys():
-            self.failed_ticker_downloads[yf_params["interval"]] = []
+            if yf_params["interval"] not in self.failed_ticker_downloads.keys():
+                self.failed_ticker_downloads[yf_params["interval"]] = []
 
-        if "start" not in yf_params.keys():
-            yf_params["start"] = "1950-01-01 00:00:00"
-            logging.info(
-                f"\n*** YF params start set to 1950-01-01 for tickers {tickers}! ***\n"
+            if "start" not in yf_params.keys():
+                yf_params["start"] = "1950-01-01 00:00:00"
+                logging.info(
+                    f"\n*** YF params start set to 1950-01-01 for tickers {tickers}! ***\n"
+                )
+
+            yf_params["start"] = get_valid_yfinance_start_timestamp(
+                interval=yf_params["interval"], start=yf_params["start"]
             )
 
-        yf_params["start"] = get_valid_yfinance_start_timestamp(
-            interval=yf_params["interval"], start=yf_params["start"]
-        )
+            yf.pdr_override()
 
-        yf.pdr_override()
+            df = (
+                pdr.get_data_yahoo(tickers, progress=False, **yf_params)
+                .rename_axis(index="timestamp")
+                .reset_index()
+            )
+            self.n_requests += 1
 
-        df = (
-            pdr.get_data_yahoo(tickers, progress=False, **yf_params)
-            .rename_axis(index="timestamp")
-            .reset_index()
-        )
-        self.n_requests += 1
+            df.columns = flatten_multindex_columns(df)
+            df.loc[:, "timestamp_tz_aware"] = df["timestamp"].copy()
+            df.loc[:, "timezone"] = str(df["timestamp_tz_aware"].dt.tz)
+            df["timestamp_tz_aware"] = df["timestamp_tz_aware"].dt.strftime(
+                "%Y-%m-%d %H:%M:%S%z"
+            )
 
-        df.columns = flatten_multindex_columns(df)
-        df.loc[:, "timestamp_tz_aware"] = df["timestamp"].copy()
-        df.loc[:, "timezone"] = str(df["timestamp_tz_aware"].dt.tz)
-        df["timestamp_tz_aware"] = df["timestamp_tz_aware"].dt.strftime(
-            "%Y-%m-%d %H:%M:%S%z"
-        )
+            df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 
-        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-
-        if df is not None and not df.shape[0]:
-            self.failed_ticker_downloads[yf_params["interval"]].append(tickers)
-            return pd.DataFrame(columns=self.column_order)
-        df = fix_empty_values(df)
-        return df
+            if df is not None and not df.shape[0]:
+                self.failed_ticker_downloads[yf_params["interval"]].append(tickers)
+                return pd.DataFrame(columns=self.column_order)
+            df = fix_empty_values(df)
+            return df
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
 
 
 class TickerDownloader:
