@@ -151,8 +151,7 @@ class PriceTap:
                 self.failed_ticker_downloads[yf_params["interval"]].append(ticker)
                 return pd.DataFrame(columns=self.column_order)
 
-            df = replace_all_specified_missing(df, exclude_columns=["ticker"])
-            df = fix_empty_values(df)
+            df = fix_empty_values(df, exclude_columns=["ticker"])
             df["replication_key"] = (
                 df["ticker"] + "|" + df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S.%f")
             )
@@ -312,11 +311,14 @@ class TickerDownloader:
             df = df[key_columns].rename(columns={"symbol": "ticker"})
             df = df.drop_duplicates(subset=["ticker"])
             df = df.reset_index(drop=True)
-            df = fix_empty_values(df)
+
+            mask_nan_both = df["ticker"].isna() & df["name"].isna()
+            if mask_nan_both:
+                df.loc[mask_nan_both, :] = fix_empty_values(df.loc[mask_nan_both, :])
             df = df.dropna(how="all", axis=1)
             df = df.dropna(how="all", axis=0)
             session.close()
-
+            df[["ticker", "name"]] = df[["ticker", "name"]].astype(str)
             with cls._cache_lock:
                 cls._memory_cache[segment] = df
             return df
@@ -357,9 +359,12 @@ class TickerDownloader:
         df_final = df_final.drop_duplicates(subset=["symbol"])
         df_final = df_final.rename(columns={"symbol": "ticker"})
         df_final = df_final.reset_index(drop=True)
-        df_final = fix_empty_values(df_final)
+        mask_nan_both = df_final["ticker"].isna() & df_final["name"].isna()
+        if mask_nan_both:
+            df_final.loc[mask_nan_both, :] = fix_empty_values(df_final.loc[mask_nan_both, :])
         df_final = df_final.dropna(how="all", axis=1)
         df_final = df_final.dropna(how="all", axis=0)
+        df_final[["ticker", "name"]] = df_final[["ticker", "name"]].astype(str)
         with cls._cache_lock:
             cls._memory_cache[segment] = df_final
         return df_final
@@ -408,7 +413,7 @@ class TickerDownloader:
             .sort_values(by=["yahoo_ticker", "google_ticker"])
             .drop_duplicates()
         )
-        all_tickers = replace_all_specified_missing(all_tickers)
+        all_tickers = fix_empty_values(all_tickers)
         all_tickers = all_tickers.replace([-np.inf, np.inf, np.nan], None)
         all_tickers.columns = ["yahoo_ticker", "google_ticker"]
 
@@ -587,36 +592,45 @@ def flatten_multindex_columns(df):
     return new_cols
 
 
-def replace_all_specified_missing(df, exclude_columns=None):
+def fix_empty_values(
+    df,
+    exclude_columns=None,
+    to_value=None  # Use None or np.nan
+):
     """
-    Replaces entire string values equal to 'nan' (case-insensitive),
-    'none' (case-insensitive), and the Python None object with np.nan
-    in a Pandas DataFrame.
+    Replaces np.nan, inf, -inf, None, and string versions of 'nan', 'none', 'infinity'
+    with a specified value (default None), except for columns listed in exclude_columns.
 
     Args:
-        df (pd.DataFrame): The input Pandas DataFrame.
-        exclude_columns (list, optional): List of columns to exclude. Defaults to None.
+        df (pd.DataFrame): The input DataFrame.
+        exclude_columns (list, optional): Columns to skip. Defaults to None.
+        to_value: What to replace missing values with (None or np.nan). Defaults to None.
 
     Returns:
-        pd.DataFrame: The DataFrame with specified missing values replaced by np.nan.
+        pd.DataFrame: Cleaned DataFrame.
     """
-
     if exclude_columns is None:
         exclude_columns = []
+    if to_value is None:
+        to_value = None  # Default: Python None
 
-    def replace_in_series(series):
-        if series.name in exclude_columns:
-            return series
-        if series.dtype == "object":
-            coerced = series.astype(str).str.lower()
-            return series.where(
-                (coerced != "nan") & (coerced != "none") & (series.notna()),
-                np.nan,
-            )
-        else:
-            return series.where(series.notna(), np.nan)
+    regex_pattern = r"(?i)^(nan|none|infinity)$"
 
-    return df.apply(replace_in_series)
+    def replace_col(col):
+        if col.name in exclude_columns:
+            return col
+        # Skip datetime columns
+        if pd.api.types.is_datetime64_any_dtype(col):
+            return col
+        # Numeric: handle np.nan, np.inf, -np.inf, None
+        if pd.api.types.is_numeric_dtype(col):
+            return col.replace([np.nan, np.inf, -np.inf, None], to_value)
+        # Object/string: handle string missing values as well
+        return (
+            col.replace([np.nan, np.inf, -np.inf, None], to_value)
+               .replace(regex_pattern, to_value, regex=True)
+        )
+    return df.apply(replace_col)
 
 
 def check_missing_columns(df, column_order, stream_name, ignore_cols=set()):
@@ -647,17 +661,3 @@ def check_missing_columns(df, column_order, stream_name, ignore_cols=set()):
 
 def get_method_name():
     return inspect.currentframe().f_back.f_code.co_name
-
-
-def fix_empty_values(df):
-    df = df.replace([np.inf, -np.inf, np.nan], None)
-
-    # need to replace string versions of nan and inf/-inf safely without changing values from the previous step
-    regex_pattern = r"(?i)^(nan|none|infinity)$"
-    mask_to_replace = df.map(
-        lambda x: isinstance(x, str) and re.fullmatch(regex_pattern, x) is not None
-    )
-    df = df.mask(mask_to_replace, None)
-
-    df.replace(r"(?i)^(nan|none|infinity)$", None, regex=True)
-    return df
