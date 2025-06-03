@@ -5,6 +5,8 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import yfinance as yf
+import backoff
+from yfinance.exceptions import YFRateLimitError
 
 from tap_yfinance.expected_schema import *
 from tap_yfinance.price_utils import (
@@ -85,6 +87,13 @@ class FinancialTap:
         df[timestamp_column] = pd.to_datetime(df[timestamp_column], utc=True)
         return df
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_analyst_price_targets(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -117,6 +126,13 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_actions(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -140,18 +156,37 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_analyst_price_target(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_balance_sheet(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -179,24 +214,50 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_balancesheet(self, ticker):
         """Same output as the method get_balance_sheet"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def basic_info(self, ticker):
         """Useless information"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_calendar(self, ticker):
         """Returns calendar df"""
 
@@ -229,6 +290,11 @@ class FinancialTap:
                 return pd.DataFrame(
                     columns=["dividend_date", "ex_dividend_date", "earnings_date"]
                 )
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
@@ -237,12 +303,26 @@ class FinancialTap:
                 columns=["dividend_date", "ex_dividend_date", "earnings_date"]
             )
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_capital_gains(self, ticker):
         """Returns empty series"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_cash_flow(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -268,18 +348,37 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_cashflow(self, ticker):
         """Same output as the method get_cash_flow"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_dividends(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -304,18 +403,37 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_earnings(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_earnings_estimate(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -344,12 +462,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_earnings_history(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -408,12 +538,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_earnings_dates(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -443,24 +585,50 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_earnings_forecast(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_earnings_trend(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_eps_revisions(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -499,12 +667,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_eps_trend(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -533,17 +713,36 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_funds_data(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         pass
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_growth_estimates(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -568,12 +767,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_fast_info(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -629,12 +840,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_financials(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -662,12 +885,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_history_metadata(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -715,12 +950,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_info(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -808,12 +1055,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_income_stmt(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -841,18 +1100,37 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_incomestmt(self, ticker):
         """Same output as the method get_income_stmt"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_insider_purchases(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -879,12 +1157,24 @@ class FinancialTap:
                 logging.warning(
                     f"No data found for method {method} and ticker {ticker}."
                 )
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=column_order)
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_insider_roster_holders(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -923,13 +1213,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame()
-
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame()
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_insider_transactions(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -960,12 +1261,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame()
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame()
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_institutional_holders(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -992,12 +1305,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date_reported"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date_reported"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_isin(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1014,12 +1339,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date_reported"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_revenue_estimate(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1048,12 +1385,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_sec_filings(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1088,12 +1437,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_major_holders(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1127,12 +1488,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_mutualfund_holders(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -1159,12 +1532,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date_reported"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date_reported"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_news(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1186,12 +1571,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date_reported"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date_reported"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_recommendations(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1219,12 +1616,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=column_order)
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=column_order)
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_recommendations_summary(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -1252,24 +1661,50 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=column_order)
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=column_order)
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_rev_forecast(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_shares(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_shares_full(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1296,12 +1731,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_splits(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1328,12 +1775,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_sustainability(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1405,18 +1864,37 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["timestamp_extracted"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_trend_details(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def ttm_cash_flow(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1438,18 +1916,37 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def ttm_cashflow(self, ticker):
         """duplicate of ttm_cash_flow"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         pass
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def ttm_financials(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1477,12 +1974,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def ttm_income_stmt(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1511,18 +2020,37 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def ttm_incomestmt(self, ticker):
         """duplicate of ttm_income_stmt"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         pass
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def get_upgrades_downgrades(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -1549,139 +2077,136 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=column_order)
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=column_order)
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def option_chain(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
-        num_tries = 3
-        n = 0
-        while n < num_tries:
-            try:
-                option_expiration_dates = self.yf_ticker_obj.options
-                if len(option_expiration_dates):
-                    for exp_date in option_expiration_dates:
-                        option_chain_data = self.yf_ticker_obj.option_chain(
-                            date=exp_date
+
+        option_expiration_dates = self.yf_ticker_obj.options
+        if len(option_expiration_dates):
+            for exp_date in option_expiration_dates:
+                option_chain_data = self.yf_ticker_obj.option_chain(date=exp_date)
+
+                if len(option_chain_data) == 3:
+                    calls = option_chain_data.calls
+                    puts = option_chain_data.puts
+                    underlying = option_chain_data.underlying
+
+                    assert isinstance(calls, pd.DataFrame) and isinstance(
+                        puts, pd.DataFrame
+                    ), "calls or puts are not a dataframe!"
+
+                    calls["option_type"] = "call"
+                    puts["option_type"] = "put"
+
+                    if all(calls.columns == puts.columns):
+                        df_options = pd.concat([calls, puts]).reset_index(drop=True)
+                        df_options["metadata"] = str(underlying)
+                        df_options["timestamp_extracted"] = datetime.utcnow()
+                        self.extract_ticker_tz_aware_timestamp(
+                            df_options, "last_trade_date", ticker
                         )
-
-                        if len(option_chain_data) == 3:
-                            calls = option_chain_data.calls
-                            puts = option_chain_data.puts
-                            underlying = option_chain_data.underlying
-
-                            assert isinstance(calls, pd.DataFrame) and isinstance(
-                                puts, pd.DataFrame
-                            ), "calls or puts are not a dataframe!"
-
-                            calls["option_type"] = "call"
-                            puts["option_type"] = "put"
-
-                            if all(calls.columns == puts.columns):
-                                df_options = pd.concat([calls, puts]).reset_index(
-                                    drop=True
-                                )
-                                df_options["metadata"] = str(underlying)
-                                df_options["timestamp_extracted"] = datetime.utcnow()
-                                self.extract_ticker_tz_aware_timestamp(
-                                    df_options, "last_trade_date", ticker
-                                )
-                                df_options = df_options.replace(
-                                    [np.inf, -np.inf, np.nan], None
-                                )
-                                df_options.columns = clean_strings(df_options.columns)
-                                column_order = [
-                                    "last_trade_date",
-                                    "last_trade_date_tz_aware",
-                                    "timezone",
-                                    "ticker",
-                                    "option_type",
-                                    "contract_symbol",
-                                    "strike",
-                                    "last_price",
-                                    "bid",
-                                    "ask",
-                                    "change",
-                                    "percent_change",
-                                    "volume",
-                                    "open_interest",
-                                    "implied_volatility",
-                                    "in_the_money",
-                                    "contract_size",
-                                    "currency",
-                                    "metadata",
-                                    "timestamp_extracted",
-                                ]
-                                check_missing_columns(df_options, column_order, method)
-                                return df_options[column_order]
-                            else:
-                                raise ValueError(
-                                    "Error parsing option_chain. Column order of calls and puts do not match."
-                                )
-                        else:
-                            raise ValueError(
-                                "Error parsing option_chain. Check if data passed changed"
-                            )
+                        df_options = df_options.replace(
+                            [np.inf, -np.inf, np.nan], None
+                        )
+                        df_options.columns = clean_strings(df_options.columns)
+                        column_order = [
+                            "last_trade_date",
+                            "last_trade_date_tz_aware",
+                            "timezone",
+                            "ticker",
+                            "option_type",
+                            "contract_symbol",
+                            "strike",
+                            "last_price",
+                            "bid",
+                            "ask",
+                            "change",
+                            "percent_change",
+                            "volume",
+                            "open_interest",
+                            "implied_volatility",
+                            "in_the_money",
+                            "contract_size",
+                            "currency",
+                            "metadata",
+                            "timestamp_extracted",
+                        ]
+                        check_missing_columns(df_options, column_order, method)
+                        return df_options[column_order]
+                    else:
+                        raise ValueError(
+                            "Error parsing option_chain. Column order of calls and puts do not match."
+                        )
                 else:
-                    return pd.DataFrame(columns=["last_trade_date"])
-
-            except Exception as e:
-                n += 1
-                if n < num_tries:
-                    logging.error(
-                        f"try-catch failed {n} times for method {method} for ticker {ticker}."
-                        f"Failed with error: {e}. Trying again..."
+                    raise ValueError(
+                        "Error parsing option_chain. Check if data passed changed"
                     )
-                else:
-                    logging.error(
-                        f"try-catch failed {n} times for method {method} for ticker {ticker}."
-                        f"Failed with error: {e}. Skipping..."
-                    )
-                    return pd.DataFrame(columns=["last_trade_date"])
+        else:
+            return pd.DataFrame(columns=["last_trade_date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def options(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
-        num_tries = 3
-        n = 0
-        while n < num_tries:
-            try:
-                option_expiration_dates = self.yf_ticker_obj.options
-                if option_expiration_dates:
-                    df = pd.DataFrame(
-                        option_expiration_dates, columns=["expiration_date"]
-                    )
-                    df["ticker"] = ticker
-                    df["timestamp_extracted"] = datetime.utcnow()
-                    df["expiration_date"] = pd.to_datetime(df["expiration_date"])
-                    df = fix_empty_values(df)
-                    column_order = ["timestamp_extracted", "ticker", "expiration_date"]
-                    check_missing_columns(df, column_order, method)
-                    return df[[i for i in column_order if i in df.columns]]
-                else:
-                    return pd.DataFrame(
-                        columns=["timestamp_extracted", "ticker", "expiration_date"]
-                    )
-            except Exception as e:
-                n += 1
-                if n < num_tries:
-                    logging.warning(
-                        f"try-catch failed {n} times for method {method} for ticker {ticker}."
-                        f"Failed with error {e}. Trying again..."
-                    )
-                else:
-                    logging.error(
-                        f"try-catch failed {n} times for method {method} for ticker {ticker}."
-                        f"Failed with error {e}. Skipping..."
-                    )
-                    return pd.DataFrame(
-                        columns=["timestamp_extracted", "ticker", "expiration_date"]
-                    )
+        try:
+            option_expiration_dates = self.yf_ticker_obj.options
+            if option_expiration_dates:
+                df = pd.DataFrame(option_expiration_dates, columns=["expiration_date"])
+                df["ticker"] = ticker
+                df["timestamp_extracted"] = datetime.utcnow()
+                df["expiration_date"] = pd.to_datetime(df["expiration_date"])
+                df = fix_empty_values(df)
+                column_order = ["timestamp_extracted", "ticker", "expiration_date"]
+                check_missing_columns(df, column_order, method)
+                return df[[i for i in column_order if i in df.columns]]
+            else:
+                return pd.DataFrame(
+                    columns=["timestamp_extracted", "ticker", "expiration_date"]
+                )
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
+        except Exception as e:
+            logging.error(
+                f"Error extracting option expiration dates for {ticker} in method {method}. Error: {e}. Skipping..."
+            )
+            return pd.DataFrame(
+                columns=["timestamp_extracted", "ticker", "expiration_date"]
+            )
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def quarterly_balance_sheet(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -1710,17 +2235,36 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def quarterly_balancesheet(self, ticker):
         """Same output as the method quarterly_balance_sheet"""
         logging.info(f"*** Running method {method} for ticker {ticker})")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def quarterly_cash_flow(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1741,18 +2285,37 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def quarterly_cashflow(self, ticker):
         """Same output as the method quarterly_cash_flow"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def quarterly_financials(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1780,12 +2343,24 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def quarterly_income_stmt(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1814,18 +2389,37 @@ class FinancialTap:
                     f"No data found for method {method} and ticker {ticker}."
                 )
                 return pd.DataFrame(columns=["date"])
+        except YFRateLimitError as e:
+            logging.warning(
+                f"Rate limit hit for {ticker}, will retry: {e}"
+            )
+            raise
         except Exception as e:
             logging.error(
                 f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["date"])
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def quarterly_incomestmt(self, ticker):
         """Same output as the method quarterly_income_stmt"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
+    @backoff.on_exception(
+        backoff.expo,
+        YFRateLimitError,
+        max_tries=5,
+        max_time=5000,
+        jitter=backoff.full_jitter,
+    )
     def session(self, ticker):
         """Returns NoneType."""
         method = get_method_name()
