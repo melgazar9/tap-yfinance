@@ -590,10 +590,10 @@ def flatten_multindex_columns(df):
     return new_cols
 
 
-def fix_empty_values(df, exclude_columns=None, to_value=None):  # Use None or np.nan
+def fix_empty_values(df, exclude_columns=None, to_value=None):
     """
     Replaces np.nan, inf, -inf, None, and string versions of 'nan', 'none', 'infinity'
-    with a specified value (default None), except for columns listed in exclude_columns.
+    recursively with a specified value (default None), except for columns listed in exclude_columns.
 
     Args:
         df (pd.DataFrame): The input DataFrame.
@@ -606,23 +606,31 @@ def fix_empty_values(df, exclude_columns=None, to_value=None):  # Use None or np
     if exclude_columns is None:
         exclude_columns = []
     if to_value is None:
-        to_value = None  # Default: Python None
+        to_value = None
 
     regex_pattern = r"(?i)^(nan|none|infinity)$"
+
+    def clean_obj(val):
+        if isinstance(val, dict):
+            return {k: clean_obj(v) for k, v in val.items()}
+        if isinstance(val, list):
+            return [clean_obj(x) for x in val]
+        if isinstance(val, str) and re.match(regex_pattern, val):
+            return to_value
+        if val in [None, np.nan] or (isinstance(val, float) and not np.isfinite(val)):
+            return to_value
+        return val
 
     def replace_col(col):
         if col.name in exclude_columns:
             return col
-        # Skip datetime columns
         if pd.api.types.is_datetime64_any_dtype(col):
             return col
-        # Numeric: handle np.nan, np.inf, -np.inf, None
         if pd.api.types.is_numeric_dtype(col):
             return col.replace([np.nan, np.inf, -np.inf, None], to_value)
-        # Object/string: handle string missing values as well
         return col.replace([np.nan, np.inf, -np.inf, None], to_value).replace(
             regex_pattern, to_value, regex=True
-        )
+        ).apply(clean_obj)
 
     return df.apply(replace_col)
 
