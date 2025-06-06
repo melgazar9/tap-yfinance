@@ -309,7 +309,7 @@ class TickerDownloader:
             df = df.reset_index(drop=True)
 
             mask_nan_both = df["ticker"].isna() & df["name"].isna()
-            if mask_nan_both:
+            if mask_nan_both.any():
                 df.loc[mask_nan_both, :] = fix_empty_values(df.loc[mask_nan_both, :])
             df = df.dropna(how="all", axis=1)
             df = df.dropna(how="all", axis=0)
@@ -356,7 +356,7 @@ class TickerDownloader:
         df_final = df_final.rename(columns={"symbol": "ticker"})
         df_final = df_final.reset_index(drop=True)
         mask_nan_both = df_final["ticker"].isna() & df_final["name"].isna()
-        if mask_nan_both:
+        if mask_nan_both.any():
             df_final.loc[mask_nan_both, :] = fix_empty_values(
                 df_final.loc[mask_nan_both, :]
             )
