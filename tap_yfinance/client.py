@@ -21,7 +21,7 @@ CUSTOM_JSON_SCHEMA = {
 
 ALL_SEGMENTS = [
     "stock_tickers",
-    "stock_tickers_pts",
+    "pts_tickers",
     "bonds_tickers",
     "forex_tickers",
     "futures_tickers",
@@ -153,9 +153,12 @@ class BaseStream(Stream, ABC):
                 if self.name not in self._tap.ticker_cache:
                     all_dfs = []
                     for segment in ALL_SEGMENTS:
+                        logging.info(
+                            f"Pulling {segment} tickers for {self.name} stream..."
+                        )
                         try:
-                            if segment == "stock_tickers_pts":
-                                df = TickerDownloader.download_pts_stock_tickers()
+                            if segment == "pts_tickers":
+                                df = TickerDownloader.download_pts_tickers()
                                 if (
                                     "ticker" not in df.columns
                                     and "yahoo_ticker" in df.columns
@@ -187,7 +190,6 @@ class BaseStream(Stream, ABC):
                 self.df_tickers = self._tap.ticker_cache[self.name]
             self.cached_tickers = self.df_tickers["ticker"].drop_duplicates().tolist()
         else:
-            # legacy behavior: one segment per stream
             segment = self.get_ticker_segment()
             if not hasattr(self._tap, "ticker_cache"):
                 self._tap.ticker_cache = {}
@@ -210,7 +212,7 @@ class BaseStream(Stream, ABC):
                     try:
                         logging.info(f"Pulling all tickers for segment {segment}...")
                         if segment == "stock_tickers":
-                            df = TickerDownloader.download_pts_stock_tickers()
+                            df = TickerDownloader.download_pts_tickers()
                             df = df[["ticker", "name", "segment"]].drop_duplicates(
                                 subset=["ticker", "segment"]
                             )
@@ -444,9 +446,10 @@ class AllTickersStream(TickerStream):
         if "all_tickers" not in self._tap.ticker_cache:
             all_dfs = []
             for segment in ALL_SEGMENTS:
+                logging.info(f"Pulling {segment} tickers for {self.name} stream.")
                 try:
-                    if segment == "stock_tickers_pts":
-                        df = TickerDownloader.download_pts_stock_tickers()
+                    if segment == "pts_tickers":
+                        df = TickerDownloader.download_pts_tickers()
                         if "ticker" not in df.columns and "yahoo_ticker" in df.columns:
                             df = df.rename(columns={"yahoo_ticker": "ticker"})
                         df = df[["ticker", "name", "segment"]].drop_duplicates(
@@ -489,6 +492,7 @@ class PriceStream(BasePriceStream):
         th.Property("high", th.NumberType),
         th.Property("low", th.NumberType),
         th.Property("close", th.NumberType),
+        th.Property("adj_close", th.NumberType),
         th.Property("volume", th.NumberType),
         th.Property("dividends", th.NumberType),
         th.Property("stock_splits", th.NumberType),

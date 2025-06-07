@@ -75,7 +75,7 @@ plugins:
         - mutual_fund_tickers.*
         - world_indices_tickers.*
         - sectors.*
-        - stock_tickers_pts.*
+        - pts_tickers.*
 #        - stock_tickers.*
 #        - futures_tickers.*
 #        - forex_tickers.*
@@ -116,7 +116,7 @@ plugins:
           tickers: "*"
         stock_tickers:
           tickers: '*'
-        stock_tickers_pts:
+        pts_tickers:
           tickers: '*'
         futures_tickers:
           tickers: '*'
@@ -133,123 +133,123 @@ plugins:
 
         prices_1m:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
-          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         prices_2m:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
-          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         prices_5m:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
-          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         prices_1h:
           tickers: ["NAN"]
-          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         prices_1d:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
-          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         ### stock prices (long) ###
 
         stock_prices_1m:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
-          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         stock_prices_2m:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
-          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         stock_prices_5m:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
-          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         stock_prices_1h:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
-          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         stock_prices_1d:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
-          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         futures_prices_1m:
           tickers: [ "ES=F", "CL=F" ]
-          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         futures_prices_2m:
           tickers: [ "ES=F", "CL=F" ]
-          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         futures_prices_5m:
           tickers: [ "ES=F", "CL=F" ]
-          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         futures_prices_1h:
           tickers: [ "ES=F", "CL=F" ]
-          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         futures_prices_1d:
           tickers: [ "ES=F", "CL=F" ]
-          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         forex_prices_1m:
           tickers: [ "EURUSD=X", "RUB=X" ]
-          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         forex_prices_2m:
           tickers: [ "EURUSD=X", "RUB=X" ]
-          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         forex_prices_5m:
           tickers: [ "EURUSD=X", "RUB=X" ]
-          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         forex_prices_1h:
           tickers: [ "EURUSD=X", "RUB=X" ]
-          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         forex_prices_1d:
           tickers: [ "EURUSD=X", "RUB=X" ]
-          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         crypto_prices_1m:
           tickers: [ "BTC-USD", "ETH-USD" ]
-          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         crypto_prices_2m:
           tickers: [ "BTC-USD", "ETH-USD" ]
-          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         crypto_prices_5m:
           tickers: [ "BTC-USD", "ETH-USD" ]
-          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         crypto_prices_1h:
           tickers: [ "BTC-USD", "ETH-USD" ]
-          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         crypto_prices_1d:
           tickers: [ "BTC-USD", "ETH-USD" ]
-          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         ### wide ###
 
         stock_prices_wide_1m:
           tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
-          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         futures_prices_wide_1m:
           tickers: [ "ES=F", "CL=F" ]
-          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         forex_prices_wide_1m:
           tickers: [ "EURUSD=X", "RUB=X" ]
-          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         crypto_prices_wide_1m:
           tickers: [ "BTC-USD", "ETH-USD" ]
-          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": true, "back_adjust": false }
+          yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
 
         ### financials ###

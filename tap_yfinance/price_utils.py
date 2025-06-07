@@ -1,3 +1,4 @@
+import hashlib
 import inspect
 import logging
 import re
@@ -368,7 +369,7 @@ class TickerDownloader:
         return df_final
 
     @staticmethod
-    def download_pts_stock_tickers():
+    def download_pts_tickers():
         """
         Description
         -----------
@@ -474,24 +475,18 @@ class TickerDownloader:
                 df_final[col] = df_final[col].apply(
                     lambda x: tuple(x) if isinstance(x, list) else x
                 )
-        return df_final
 
-    # def generate_yahoo_sec_tickermap(self):
-    #     method = get_method_name()
-    #     logging.info(f"Running method {method}")
-    #     df_pts_tickers = self.download_pts_stock_tickers()
-    #     df_mapped = pd.merge(
-    #         df_sec_tickers,
-    #         df_pts_tickers,
-    #         left_on="sec_ticker",
-    #         right_on="yahoo_ticker_pts",
-    #         how="outer",
-    #     )
-    #     df_mapped["ticker"] = df_mapped["sec_ticker"].fillna(
-    #         df_mapped["yahoo_ticker_pts"]
-    #     )  # likely yahoo ticker
-    #     df_mapped = df_mapped.replace([np.inf, -np.inf, np.nan], None)
-    #     return df_mapped
+        df_final["surrogate_key"] = df_final.apply(
+            lambda x: hashlib.sha256(
+                "".join(str(x) for x in x.values).encode("utf-8")
+            ).hexdigest(),
+            axis=1,
+        )
+
+        df_final[["employees", "founded"]] = df_final[["employees", "founded"]].astype(
+            str
+        )  # ensure no issues with singer schema
+        return df_final
 
 
 def get_valid_yfinance_start_timestamp(interval, start="1950-01-01 00:00:00"):
@@ -630,9 +625,13 @@ def fix_empty_values(df, exclude_columns=None, to_value=None):
             return col.replace([np.nan, np.inf, -np.inf, None], to_value)
 
         placeholder = "*** PLACEHOLDER---X909920349238909983290129 ***"
-        return col.replace([np.nan, np.inf, -np.inf, None], to_value).replace(
-                regex_pattern, to_value, regex=True
-        ).apply(clean_obj).fillna(placeholder).replace(placeholder, to_value)
+        return (
+            col.replace([np.nan, np.inf, -np.inf, None], to_value)
+            .replace(regex_pattern, to_value, regex=True)
+            .apply(clean_obj)
+            .fillna(placeholder)
+            .replace(placeholder, to_value)
+        )
 
     return df.apply(replace_col)
 
