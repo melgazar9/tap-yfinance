@@ -170,6 +170,7 @@ class BaseStream(Stream, ABC):
                                     df["segment"] = segment
                                 df = df[["ticker", "name", "segment"]].drop_duplicates()
                             df = fix_empty_values(df, exclude_columns=["ticker"])
+                            df["ticker"] = df["ticker"].astype(str)
                             all_dfs.append(df)
                         except Exception as e:
                             self._tap.logger.warning(
@@ -219,6 +220,7 @@ class BaseStream(Stream, ABC):
                                 df["segment"] = segment
                             df = df[["ticker", "name", "segment"]].drop_duplicates()
                         df = fix_empty_values(df, exclude_columns=["ticker"])
+                        df["ticker"] = df["ticker"].astype(str)
                         self._tap.ticker_cache[segment] = df
                     except Exception as e:
                         self._tap.logger.warning(f"Could not download {segment}: {e}")
@@ -456,6 +458,7 @@ class AllTickersStream(TickerStream):
                             df["segment"] = segment
                         df = df[["ticker", "name", "segment"]].drop_duplicates()
                     df = fix_empty_values(df, exclude_columns=["ticker"])
+                    df["ticker"] = df["ticker"].astype(str)
                     all_dfs.append(df)
                 except Exception as e:
                     self._tap.logger.warning(f"Could not download {segment}: {e}")
