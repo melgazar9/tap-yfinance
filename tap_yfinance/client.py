@@ -21,7 +21,7 @@ CUSTOM_JSON_SCHEMA = {
 
 ALL_SEGMENTS = [
     "stock_tickers",
-    "stock_tickers_pts",
+    "pts_tickers",
     "bonds_tickers",
     "forex_tickers",
     "futures_tickers",
@@ -154,8 +154,8 @@ class BaseStream(Stream, ABC):
                     all_dfs = []
                     for segment in ALL_SEGMENTS:
                         try:
-                            if segment == "stock_tickers_pts":
-                                df = TickerDownloader.download_pts_stock_tickers()
+                            if segment == "pts_tickers":
+                                df = TickerDownloader.download_pts_tickers()
                                 if (
                                     "ticker" not in df.columns
                                     and "yahoo_ticker" in df.columns
@@ -210,7 +210,7 @@ class BaseStream(Stream, ABC):
                     try:
                         logging.info(f"Pulling all tickers for segment {segment}...")
                         if segment == "stock_tickers":
-                            df = TickerDownloader.download_pts_stock_tickers()
+                            df = TickerDownloader.download_pts_tickers()
                             df = df[["ticker", "name", "segment"]].drop_duplicates(
                                 subset=["ticker", "segment"]
                             )
@@ -445,8 +445,8 @@ class AllTickersStream(TickerStream):
             all_dfs = []
             for segment in ALL_SEGMENTS:
                 try:
-                    if segment == "stock_tickers_pts":
-                        df = TickerDownloader.download_pts_stock_tickers()
+                    if segment == "pts_tickers":
+                        df = TickerDownloader.download_pts_tickers()
                         if "ticker" not in df.columns and "yahoo_ticker" in df.columns:
                             df = df.rename(columns={"yahoo_ticker": "ticker"})
                         df = df[["ticker", "name", "segment"]].drop_duplicates(

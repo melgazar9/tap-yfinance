@@ -83,20 +83,9 @@ class StockTickersStream(TickerStream):
     name = "stock_tickers"
 
 
-class StockTickersPTSStream(TickerStream):
-    name = "stock_tickers_pts"
-    primary_keys = [
-        "ticker",
-        "name",
-        "currency",
-        "country",
-        "indices",
-        "industries",
-        "isins",
-        "akas",
-        "founded",
-        "segment",
-    ]
+class PTSTickersStream(TickerStream):
+    name = "pts_tickers"
+    primary_keys = ["surrogate_key"]
     schema = th.PropertiesList(
         th.Property("yahoo_ticker", th.StringType),
         th.Property("google_ticker", th.StringType),
@@ -108,11 +97,18 @@ class StockTickersPTSStream(TickerStream):
         th.Property("industries", th.ArrayType(th.StringType)),
         th.Property("isins", th.ArrayType(th.StringType)),
         th.Property("akas", th.ArrayType(th.StringType)),
-        th.Property("founded", th.IntegerType),
+        th.Property("founded", th.StringType),
         th.Property("employees", th.StringType),
         th.Property("segment", th.StringType),
         th.Property("ticker", th.StringType),
+        th.Property("surrogate_key", th.StringType),
     ).to_dict()
+
+    def get_records(self, context: dict | None) -> list[dict]:
+        ticker_downloader = TickerDownloader()
+        df_pts = ticker_downloader.download_pts_tickers()
+        for record in df_pts.to_dict(orient="records"):
+            yield record
 
 
 class IndicesTickersStream(TickerStream):

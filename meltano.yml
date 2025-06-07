@@ -75,7 +75,7 @@ plugins:
         - mutual_fund_tickers.*
         - world_indices_tickers.*
         - sectors.*
-        - stock_tickers_pts.*
+        - pts_tickers.*
 #        - stock_tickers.*
 #        - futures_tickers.*
 #        - forex_tickers.*
@@ -116,7 +116,7 @@ plugins:
           tickers: "*"
         stock_tickers:
           tickers: '*'
-        stock_tickers_pts:
+        pts_tickers:
           tickers: '*'
         futures_tickers:
           tickers: '*'
