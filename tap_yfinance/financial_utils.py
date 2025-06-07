@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import re
 from datetime import datetime
@@ -112,8 +113,14 @@ class FinancialTap:
                     "low",
                     "mean",
                     "median",
+                    "surrogate_key"
                 ]
-
+                df["surrogate_key"] = df.apply(
+                    lambda x: hashlib.sha256(
+                        "".join(str(x) for x in x.values).encode("utf-8")
+                    ).hexdigest(),
+                    axis=1,
+                )
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -172,19 +179,6 @@ class FinancialTap:
         max_time=5000,
         jitter=backoff.full_jitter,
     )
-    def get_analyst_price_target(self, ticker):
-        """yfinance.exceptions.YFNotImplementedError"""
-        method = get_method_name()
-        logging.info(f"*** Running {method} for ticker {ticker}")
-        return
-
-    @backoff.on_exception(
-        backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
-        jitter=backoff.full_jitter,
-    )
     def get_balance_sheet(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -205,7 +199,7 @@ class FinancialTap:
                 )
                 df.columns = [i.replace("p_p_e", "ppe") for i in df.columns]
                 column_order = BALANCE_SHEET_COLUMNS
-
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -260,8 +254,8 @@ class FinancialTap:
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         try:
-            df = pd.DataFrame(self.yf_ticker_obj.get_calendar())
-            if isinstance(df, pd.DataFrame) and df.shape[0]:
+            data = self.yf_ticker_obj.get_calendar()
+            if isinstance(data, pd.DataFrame) and datashape[0]:
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 df.columns = clean_strings(df.columns)
                 df["ticker"] = ticker
@@ -276,16 +270,41 @@ class FinancialTap:
                     "revenue_high",
                     "revenue_low",
                     "revenue_average",
+                    "surrogate_key",
                 ]
                 check_missing_columns(df, column_order, method)
+                df[["dividend_date", "ex_dividend_date", "earnings_date"]] = df[
+                    ["dividend_date", "ex_dividend_date", "earnings_date"]
+                ].dt.strftime("%Y-%m-%d")
+                df["surrogate_key"] = df.apply(
+                    lambda x: hashlib.sha256(
+                        "".join(str(x) for x in x.values).encode("utf-8")
+                    ).hexdigest(),
+                    axis=1,
+                )
                 return df[[i for i in column_order if i in df.columns]]
+            elif isinstance(data, dict):
+                try:
+                    df = pd.DataFrame.from_dict(data)
+                except ValueError:
+                    df = pd.DataFrame.from_dict(data, orient="index")
+                except Exception as e:
+                    raise e
+                for col in ["dividend_date", "ex_dividend_date", "earnings_date"]:
+                    if col in df.columns:
+                        df[col] = df[col].dt.strftime("%Y-%m-%d")
+                df["surrogate_key"] = df.apply(
+                    lambda x: hashlib.sha256(
+                        "".join(str(x) for x in x.values).encode("utf-8")
+                    ).hexdigest(),
+                    axis=1,
+                )
+                return df
             else:
                 logging.warning(
                     f"No data found for method {method} and ticker {ticker}."
                 )
-                return pd.DataFrame(
-                    columns=["dividend_date", "ex_dividend_date", "earnings_date"]
-                )
+                return pd.DataFrame(columns=["surrogate_key"])
         except YFRateLimitError as e:
             logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
             raise
@@ -336,6 +355,7 @@ class FinancialTap:
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 column_order = CASH_FLOW_COLUMNS
                 check_missing_columns(df, column_order, method)
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -519,7 +539,7 @@ class FinancialTap:
                     raise ValueError(
                         f"Error validating returned columns for earnings_history with ticker {ticker}."
                     )
-
+                df["quarter"] = df["quarter"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -855,6 +875,7 @@ class FinancialTap:
                     for i in clean_strings(df.columns)
                 ]
                 column_order = FINANCIAL_COLUMNS
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -1064,6 +1085,7 @@ class FinancialTap:
                     for i in clean_strings(df.columns)
                 ]
                 column_order = INCOME_STMT_COLUMNS
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -1217,8 +1239,16 @@ class FinancialTap:
                     "transaction",
                     "ownership",
                     "value",
+                    "surrogate_key",
                 ]
                 check_missing_columns(df, column_order, method)
+                df["start_date"] = df["start_date"].dt.strftime("%Y-%m-%d")
+                df["surrogate_key"] = df.apply(
+                    lambda x: hashlib.sha256(
+                        "".join(str(x) for x in x.values).encode("utf-8")
+                    ).hexdigest(),
+                    axis=1,
+                )
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -1847,7 +1877,7 @@ class FinancialTap:
                 ]
                 column_order = CASH_FLOW_COLUMNS
                 check_missing_columns(df, column_order, method)
-
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -1904,6 +1934,7 @@ class FinancialTap:
                     )
                     for i in clean_strings(df.columns)
                 ]
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -1947,7 +1978,7 @@ class FinancialTap:
                 ]
                 column_order = INCOME_STMT_COLUMNS
                 check_missing_columns(df, column_order, method)
-
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -2155,6 +2186,7 @@ class FinancialTap:
                 )
                 column_order = BALANCE_SHEET_COLUMNS
                 check_missing_columns(df, column_order, method)
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -2203,6 +2235,7 @@ class FinancialTap:
                 ]
                 column_order = CASH_FLOW_COLUMNS
                 check_missing_columns(df, column_order, method)
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -2259,6 +2292,7 @@ class FinancialTap:
                 ]
                 column_order = FINANCIAL_COLUMNS
                 check_missing_columns(df, column_order, method)
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -2302,7 +2336,7 @@ class FinancialTap:
                 ]
                 column_order = INCOME_STMT_COLUMNS
                 check_missing_columns(df, column_order, method)
-
+                df["date"] = df["date"].dt.strftime("%Y-%m-%d")
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(

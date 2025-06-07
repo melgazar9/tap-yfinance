@@ -153,7 +153,9 @@ class BaseStream(Stream, ABC):
                 if self.name not in self._tap.ticker_cache:
                     all_dfs = []
                     for segment in ALL_SEGMENTS:
-                        logging.info(f"Pulling {segment} tickers for {self.name} stream...")
+                        logging.info(
+                            f"Pulling {segment} tickers for {self.name} stream..."
+                        )
                         try:
                             if segment == "pts_tickers":
                                 df = TickerDownloader.download_pts_tickers()
