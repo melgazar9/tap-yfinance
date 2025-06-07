@@ -628,9 +628,11 @@ def fix_empty_values(df, exclude_columns=None, to_value=None):
             return col
         if pd.api.types.is_numeric_dtype(col):
             return col.replace([np.nan, np.inf, -np.inf, None], to_value)
+
+        placeholder = "*** PLACEHOLDER---X909920349238909983290129 ***"
         return col.replace([np.nan, np.inf, -np.inf, None], to_value).replace(
-            regex_pattern, to_value, regex=True
-        ).apply(clean_obj)
+                regex_pattern, to_value, regex=True
+        ).apply(clean_obj).fillna(placeholder).replace(placeholder, to_value)
 
     return df.apply(replace_col)
 
