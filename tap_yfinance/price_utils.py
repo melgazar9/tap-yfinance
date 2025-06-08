@@ -11,7 +11,9 @@ import pandas as pd
 import yfinance as yf
 from pandas_datareader import data as pdr
 from pytickersymbols import PyTickerSymbols
+from requests.exceptions import RequestException
 from requests_html import HTMLSession
+from urllib3.exceptions import MaxRetryError, NewConnectionError
 from yfinance.exceptions import YFRateLimitError
 
 pd.set_option("future.no_silent_downcasting", True)
@@ -96,9 +98,9 @@ class PriceTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def download_price_history(self, ticker, yf_params=None) -> pd.DataFrame():
@@ -184,9 +186,9 @@ class PriceTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def download_price_history_wide(self, tickers, yf_params):
