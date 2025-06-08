@@ -109,6 +109,16 @@ class BaseStream(Stream, ABC):
         else:
             raise ValueError(f"Could not determine ticker segment for stream: {n}")
 
+    def validate_ticker(self, ticker, df):
+        """Validates the tickers and updates the cached ticker list."""
+        if df.empty:
+            logging.warning(
+                f"Ticker {ticker} has no history. Removing from cached tickers."
+            )
+            self.cached_tickers = [t for t in self.cached_tickers if t != ticker]
+        else:
+            logging.info(f"Ticker {ticker} is valid.")
+
     def fetch_and_cache_tickers(self):
         """
         For non-prices streams, behaves as before.
@@ -294,6 +304,10 @@ class BasePriceStream(BaseStream):
         )
 
         df = price_tap.download_price_history(ticker=ticker, yf_params=yf_params)
+
+        if not self._tap._first_stream_processed:
+            self.validate_ticker(ticker, df)
+
         for record in df.to_dict(orient="records"):
             increment_state(
                 state,
@@ -303,6 +317,12 @@ class BasePriceStream(BaseStream):
                 check_sorted=self.check_sorted,
             )
             yield record
+        if ticker == self.cached_tickers[-1] and not self._tap._first_stream_processed:
+            self._tap._first_stream_processed = True
+            logging.info(
+                f"****** Finished processing all records for {self.name} stream. "
+                "Setting _first_stream_processed to True. ******"
+            )
 
 
 class StockPricesStream(BasePriceStream):
@@ -422,6 +442,9 @@ class FinancialStream(BaseStream):
         )
         df = getattr(financial_tap, self.method_name)(ticker=ticker)
 
+        if not self._tap._first_stream_processed:
+            self.validate_ticker(ticker, df)
+
         for record in df.to_dict(orient="records"):
             if self.replication_method == "INCREMENTAL":
                 increment_state(
@@ -432,6 +455,12 @@ class FinancialStream(BaseStream):
                     check_sorted=self.check_sorted,
                 )
             yield record
+        if ticker == self.cached_tickers[-1] and not self._tap._first_stream_processed:
+            self._tap._first_stream_processed = True
+            logging.info(
+                f"****** Finished processing all records for {self.name} stream. "
+                "Setting _first_stream_processed to True. ******"
+            )
 
 
 class AllTickersStream(TickerStream):

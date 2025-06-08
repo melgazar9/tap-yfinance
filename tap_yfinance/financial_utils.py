@@ -7,6 +7,8 @@ import backoff
 import numpy as np
 import pandas as pd
 import yfinance as yf
+from requests.exceptions import RequestException
+from urllib3.exceptions import MaxRetryError, NewConnectionError
 from yfinance.exceptions import YFRateLimitError
 
 from tap_yfinance.expected_schema import *
@@ -90,9 +92,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_analyst_price_targets(self, ticker):
@@ -113,7 +115,7 @@ class FinancialTap:
                     "low",
                     "mean",
                     "median",
-                    "surrogate_key"
+                    "surrogate_key",
                 ]
                 df["surrogate_key"] = df.apply(
                     lambda x: hashlib.sha256(
@@ -135,9 +137,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_actions(self, ticker):
@@ -174,9 +176,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_balance_sheet(self, ticker):
@@ -217,9 +219,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_balancesheet(self, ticker):
@@ -230,9 +232,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def basic_info(self, ticker):
@@ -243,9 +245,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_calendar(self, ticker):
@@ -318,9 +320,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_capital_gains(self, ticker):
@@ -331,9 +333,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_cash_flow(self, ticker):
@@ -373,9 +375,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_cashflow(self, ticker):
@@ -386,9 +388,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_dividends(self, ticker):
@@ -439,9 +441,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_earnings_estimate(self, ticker):
@@ -483,9 +485,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_earnings_history(self, ticker):
@@ -557,9 +559,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_earnings_dates(self, ticker):
@@ -602,9 +604,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_earnings_forecast(self, ticker):
@@ -615,9 +617,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_earnings_trend(self, ticker):
@@ -628,9 +630,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_eps_revisions(self, ticker):
@@ -682,9 +684,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_eps_trend(self, ticker):
@@ -726,9 +728,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_funds_data(self, ticker):
@@ -738,9 +740,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_growth_estimates(self, ticker):
@@ -778,9 +780,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_fast_info(self, ticker):
@@ -849,9 +851,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_financials(self, ticker):
@@ -893,9 +895,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_history_metadata(self, ticker):
@@ -956,9 +958,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_info(self, ticker):
@@ -1059,9 +1061,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_income_stmt(self, ticker):
@@ -1103,9 +1105,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_incomestmt(self, ticker):
@@ -1116,9 +1118,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_insider_purchases(self, ticker):
@@ -1158,9 +1160,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_insider_roster_holders(self, ticker):
@@ -1212,9 +1214,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_insider_transactions(self, ticker):
@@ -1266,9 +1268,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_institutional_holders(self, ticker):
@@ -1308,9 +1310,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_isin(self, ticker):
@@ -1340,9 +1342,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_revenue_estimate(self, ticker):
@@ -1384,9 +1386,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_sec_filings(self, ticker):
@@ -1434,9 +1436,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_major_holders(self, ticker):
@@ -1483,9 +1485,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_mutualfund_holders(self, ticker):
@@ -1525,9 +1527,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_news(self, ticker):
@@ -1562,9 +1564,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_recommendations(self, ticker):
@@ -1605,9 +1607,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_recommendations_summary(self, ticker):
@@ -1648,9 +1650,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_rev_forecast(self, ticker):
@@ -1661,9 +1663,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_shares(self, ticker):
@@ -1674,9 +1676,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_shares_full(self, ticker):
@@ -1716,9 +1718,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_splits(self, ticker):
@@ -1758,9 +1760,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_sustainability(self, ticker):
@@ -1845,9 +1847,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_trend_details(self, ticker):
@@ -1858,9 +1860,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def ttm_cash_flow(self, ticker):
@@ -1895,9 +1897,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def ttm_cashflow(self, ticker):
@@ -1908,9 +1910,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def ttm_financials(self, ticker):
@@ -1952,9 +1954,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def ttm_income_stmt(self, ticker):
@@ -1996,9 +1998,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def ttm_incomestmt(self, ticker):
@@ -2009,9 +2011,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def get_upgrades_downgrades(self, ticker):
@@ -2051,9 +2053,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def option_chain(self, ticker):
@@ -2123,9 +2125,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def options(self, ticker):
@@ -2159,9 +2161,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def quarterly_balance_sheet(self, ticker):
@@ -2204,9 +2206,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def quarterly_balancesheet(self, ticker):
@@ -2216,9 +2218,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def quarterly_cash_flow(self, ticker):
@@ -2253,9 +2255,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def quarterly_cashflow(self, ticker):
@@ -2266,9 +2268,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def quarterly_financials(self, ticker):
@@ -2310,9 +2312,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def quarterly_income_stmt(self, ticker):
@@ -2354,9 +2356,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def quarterly_incomestmt(self, ticker):
@@ -2367,9 +2369,9 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        max_tries=10,
+        max_time=10000,
         jitter=backoff.full_jitter,
     )
     def session(self, ticker):

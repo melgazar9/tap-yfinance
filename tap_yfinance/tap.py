@@ -196,6 +196,7 @@ class TapYFinance(Tap):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ticker_cache = {}
+        self._first_stream_processed = False
 
     def discover_streams(self):
         return [stream(tap=self) for stream in STREAMS]
