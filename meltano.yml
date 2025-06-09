@@ -154,23 +154,23 @@ plugins:
         ### stock prices (long) ###
 
         stock_prices_1m:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
           yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         stock_prices_2m:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
           yf_params: { "interval": 2m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         stock_prices_5m:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
           yf_params: { "interval": 5m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         stock_prices_1h:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
           yf_params: { "interval": 1h, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         stock_prices_1d:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
           yf_params: { "interval": 1d, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         futures_prices_1m:
@@ -236,7 +236,7 @@ plugins:
         ### wide ###
 
         stock_prices_wide_1m:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
           yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
 
         futures_prices_wide_1m:
@@ -255,130 +255,130 @@ plugins:
         ### financials ###
 
         actions:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         analyst_price_targets:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         balance_sheet:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         cash_flow:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         calendar:
           tickers: [ "AAPL", "META", "AGD", "013A.F" ]
 
         dividends:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         earnings_dates:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         earnings_estimate:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         earnings_history:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         eps_revisions:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         eps_trend:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         fast_info:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         financials:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         growth_estimates:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         history_metadata:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         info:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         income_stmt:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         insider_purchases:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         insider_roster_holders:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         insider_transactions:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         institutional_holders:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         isin:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         major_holders:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         mutualfund_holders:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         news:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         recommendations:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         recommendations_summary:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         revenue_estimate:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         sec_filings:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         shares_full:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         splits:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         sustainability:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         ttm_cash_flow:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         ttm_financials:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         ttm_income_stmt:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         option_chain:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         options:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         quarterly_balance_sheet:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         quarterly_cash_flow:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         quarterly_financials:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         quarterly_income_stmt:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         upgrades_downgrades:
-          tickers: [ "NAN", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
   loaders:
     - name: target-jsonl
