@@ -4,6 +4,7 @@ import logging
 import re
 import threading
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 import backoff
 import numpy as np
@@ -621,18 +622,18 @@ def fix_empty_values(df, exclude_columns=None, to_value=None):
     def replace_col(col):
         if col.name in exclude_columns:
             return col
-        if pd.api.types.is_datetime64_any_dtype(col):
-            return col
-        if pd.api.types.is_numeric_dtype(col):
+        if pd.api.types.is_numeric_dtype(col) or pd.api.types.is_datetime64_any_dtype(
+            col
+        ):
             return col.replace([np.nan, np.inf, -np.inf, None], to_value)
 
-        placeholder = "*** PLACEHOLDER---X909920349238909983290129 ***"
+        uuid = str(uuid4())
         return (
             col.replace([np.nan, np.inf, -np.inf, None], to_value)
             .replace(regex_pattern, to_value, regex=True)
             .apply(clean_obj)
-            .fillna(placeholder)
-            .replace(placeholder, to_value)
+            .fillna(uuid)
+            .replace(uuid, to_value)
         )
 
     return df.apply(replace_col)
