@@ -11,7 +11,7 @@ keywords = [
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = ">=3.9,<4.0"
 singer-sdk = { version="~=0.32.0" }
 requests = "~=2.31.0"
 pandas = "^2.1.5"

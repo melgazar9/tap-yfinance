@@ -278,6 +278,7 @@ class BasePriceStream(BaseStream):
             context is not None and "ticker" in context
         ), f"Missing ticker in context for BasePriceStream {self.name}!"
         yf_params = self.config.get(self.name).get("yf_params")
+        logging.info(f"*** YF_PARAMS: {yf_params} ***")
         assert isinstance(
             yf_params, dict
         ), f"could not parse yf_params for stream {self.name}"
