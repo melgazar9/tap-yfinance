@@ -862,7 +862,7 @@ class InsiderRosterHoldersStream(FinancialStream):
     method_name = "get_insider_roster_holders"
     primary_keys = ["ticker", "name", "latest_transaction_date"]
     schema = th.PropertiesList(
-        th.Property("latest_transaction_date", th.DateTimeType),
+        th.Property("latest_transaction_date", th.DateType),
         th.Property("ticker", th.StringType),
         th.Property("name", th.StringType),
         th.Property("position", th.StringType),
@@ -871,7 +871,7 @@ class InsiderRosterHoldersStream(FinancialStream):
         th.Property("shares_owned_indirectly", th.NumberType),
         th.Property("position_indirect_date", th.NumberType),
         th.Property("shares_owned_directly", th.NumberType),
-        th.Property("position_direct_date", th.DateTimeType),
+        th.Property("position_direct_date", th.DateType),
         th.Property("position_summary", th.NumberType),
         th.Property("position_summary_date", th.NumberType),
     ).to_dict()
@@ -901,7 +901,7 @@ class InstitutionalHoldersStream(FinancialStream):
     method_name = "get_institutional_holders"
     primary_keys = ["ticker", "date_reported", "holder"]
     schema = th.PropertiesList(
-        th.Property("date_reported", th.DateTimeType, required=True),
+        th.Property("date_reported", th.DateType, required=True),
         th.Property("ticker", th.StringType),
         th.Property("holder", th.StringType),
         th.Property("pct_held", th.NumberType),
@@ -939,7 +939,7 @@ class MutualFundHoldersStream(FinancialStream):
     method_name = "get_mutualfund_holders"
     primary_keys = ["date_reported", "ticker", "holder"]
     schema = th.PropertiesList(
-        th.Property("date_reported", th.DateTimeType, required=True),
+        th.Property("date_reported", th.DateType, required=True),
         th.Property("ticker", th.StringType),
         th.Property("holder", th.StringType),
         th.Property("pct_held", th.NumberType),
@@ -1016,7 +1016,7 @@ class SecFilingsStream(FinancialStream):
     primary_keys = ["ticker", "date", "type", "title"]
     schema = th.PropertiesList(
         th.Property("ticker", th.StringType, required=True),
-        th.Property("date", th.DateTimeType, required=True),
+        th.Property("date", th.DateType, required=True),
         th.Property("epoch_date", th.NumberType, required=True),
         th.Property("type", th.StringType),
         th.Property("title", th.StringType),
@@ -1137,7 +1137,7 @@ class OptionsStream(FinancialStream):
     schema = th.PropertiesList(
         th.Property("timestamp_extracted", th.DateTimeType, required=True),
         th.Property("ticker", th.StringType),
-        th.Property("expiration_date", th.DateTimeType),
+        th.Property("expiration_date", th.DateType),
     ).to_dict()
 
 
