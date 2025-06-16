@@ -7,7 +7,7 @@ import backoff
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from requests.exceptions import RequestException
+from requests.exceptions import HTTPError, RequestException
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 from yfinance.exceptions import YFRateLimitError
 
@@ -92,7 +92,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -137,7 +143,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -176,7 +188,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -219,7 +237,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -232,7 +256,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -245,7 +275,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -320,7 +356,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -333,7 +375,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -375,7 +423,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -388,7 +442,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -441,7 +501,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -485,7 +551,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -559,7 +631,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -604,7 +682,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -617,7 +701,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -630,7 +720,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -684,7 +780,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -728,7 +830,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -740,7 +848,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -780,7 +894,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -851,7 +971,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -895,7 +1021,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -958,7 +1090,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1061,7 +1199,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1105,7 +1249,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1118,7 +1268,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1160,7 +1316,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1214,7 +1376,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1268,7 +1436,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1310,7 +1484,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1342,7 +1522,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1386,7 +1572,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1436,7 +1628,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1485,7 +1683,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1527,7 +1731,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1564,7 +1774,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1607,7 +1823,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1650,7 +1872,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1663,7 +1891,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1676,7 +1910,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1718,7 +1958,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1760,7 +2006,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1847,7 +2099,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1860,7 +2118,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1897,7 +2161,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1910,7 +2180,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1954,7 +2230,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -1998,7 +2280,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2011,7 +2299,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2053,7 +2347,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2125,7 +2425,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2161,7 +2467,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2206,7 +2518,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2218,7 +2536,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2255,7 +2579,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2268,7 +2598,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2312,7 +2648,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2356,7 +2698,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -2369,7 +2717,13 @@ class FinancialTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (
+            YFRateLimitError,
+            RequestException,
+            MaxRetryError,
+            NewConnectionError,
+            HTTPError,
+        ),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
