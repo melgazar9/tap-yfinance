@@ -15,7 +15,7 @@ python = ">=3.9,<4.0"
 singer-sdk = { version="~=0.32.0" }
 requests = "~=2.31.0"
 pandas = "^2.1.5"
-yfinance = {extras = ["nospam", "repair"], version = "0.2.62"}
+yfinance = {extras = ["nospam", "repair"], version = "0.2.63"}
 pytickersymbols = "^1.13.0"
 requests-html = "^0.10.0"
 scipy = "^1.11.3"

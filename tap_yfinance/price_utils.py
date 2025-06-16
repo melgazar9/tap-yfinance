@@ -99,7 +99,7 @@ class PriceTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError, HTTPError),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
@@ -187,7 +187,7 @@ class PriceTap:
 
     @backoff.on_exception(
         backoff.expo,
-        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError),
+        (YFRateLimitError, RequestException, MaxRetryError, NewConnectionError, HTTPError),
         max_tries=10,
         max_time=10000,
         jitter=backoff.full_jitter,
