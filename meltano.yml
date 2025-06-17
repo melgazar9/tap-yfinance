@@ -134,6 +134,7 @@ plugins:
         prices_1m:
           tickers: [ "APLD", "NAN", "AAPL", "NONE", "INF", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
           yf_params: { "interval": 1m, "prepost": true, "repair": true, "auto_adjust": false, "back_adjust": false }
+          use_reduced_cached_tickers: true
 
         prices_2m:
           tickers: [ "APLD", "NAN", "AAPL", "NONE", "INF", "META", "AGD", "BTC-USD", "EURUSD=X", "ES=F", "CL=F", "ZN=F", "^VIX", "^TYX", "STRI.PVT", "TQQQ" ]
@@ -340,6 +341,7 @@ plugins:
 
         sec_filings:
           tickers: [ "TWTR", "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
+          use_reduced_cached_tickers: false
 
         shares_full:
           tickers: [ "TWTR", "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]

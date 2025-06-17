@@ -1305,6 +1305,7 @@ class FinancialTap:
                 logging.warning(
                     f"No data found for method {method} and ticker {ticker}."
                 )
+                return pd.DataFrame()
         except YFRateLimitError as e:
             logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
             raise
@@ -1359,6 +1360,12 @@ class FinancialTap:
                     df.columns.intersection(abnormal_cols)
                 ].apply(pd.to_numeric, errors="coerce")
                 df = fix_empty_values(df, exclude_columns=["ticker"])
+                df["latest_transaction_date"] = df[
+                    "latest_transaction_date"
+                ].dt.strftime("%Y-%m-%d")
+                df["position_direct_date"] = df["position_direct_date"].dt.strftime(
+                    "%Y-%m-%d"
+                )
                 return df[[i for i in column_order if i in df.columns]]
             else:
                 logging.warning(
@@ -1457,6 +1464,7 @@ class FinancialTap:
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 df = df.rename(columns={"% Out": "pct_out"})
                 df.columns = clean_strings(df.columns)
+                df["date_reported"] = df["date_reported"].dt.strftime("%Y-%m-%d")
                 column_order = [
                     "date_reported",
                     "ticker",
@@ -1599,6 +1607,7 @@ class FinancialTap:
                 df["ticker"] = ticker
                 df["timestamp_extracted"] = datetime.utcnow()
                 df["exhibits"] = df["exhibits"].astype(str)
+                df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 column_order = [
                     "ticker",
@@ -1703,6 +1712,7 @@ class FinancialTap:
                 df.columns = clean_strings(df.columns)
                 df["ticker"] = ticker
                 df = fix_empty_values(df, exclude_columns=["ticker"])
+                df["date_reported"] = df["date_reported"].dt.strftime("%Y-%m-%d")
                 column_order = [
                     "date_reported",
                     "ticker",
@@ -2445,7 +2455,7 @@ class FinancialTap:
                 df = pd.DataFrame(option_expiration_dates, columns=["expiration_date"])
                 df["ticker"] = ticker
                 df["timestamp_extracted"] = datetime.utcnow()
-                df["expiration_date"] = pd.to_datetime(df["expiration_date"])
+                df["expiration_date"] = df["expiration_date"].dt.strftime("%Y-%m-%d")
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 column_order = ["timestamp_extracted", "ticker", "expiration_date"]
                 check_missing_columns(df, column_order, method)
