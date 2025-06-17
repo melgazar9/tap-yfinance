@@ -37,6 +37,7 @@ ALL_SEGMENTS = [
 class BaseStream(Stream, ABC):
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
+        self.reduced_cached_tickers = False
 
     def get_ticker_segment(self):
         n = self.name.lower()
@@ -109,13 +110,41 @@ class BaseStream(Stream, ABC):
         else:
             raise ValueError(f"Could not determine ticker segment for stream: {n}")
 
+    def get_active_tickers(self):
+        """Returns the appropriate ticker list based on configuration."""
+        if (
+            self.config.get(self.name).get("use_reduced_cached_tickers")
+            and self.reduced_cached_tickers
+        ):
+            logging.info(
+                f"Using reduced ticker list: {len(self.reduced_cached_tickers)} tickers"
+            )
+            return self.reduced_cached_tickers
+        else:
+            logging.info(f"Using full ticker list: {len(self.cached_tickers)} tickers")
+            return self.cached_tickers
+
     def validate_ticker(self, ticker, df):
         """Validates the tickers and updates the cached ticker list."""
         if df.empty:
-            logging.warning(
-                f"Ticker {ticker} has no history. Removing from cached tickers."
-            )
-            self.cached_tickers = [t for t in self.cached_tickers if t != ticker]
+            logging.warning(f"Ticker {ticker} has no data for stream {self.name}.")
+
+            if self.config.get(self.name).get("use_reduced_cached_tickers"):
+                if self.reduced_cached_tickers:
+                    # First failed ticker - create the reduced list
+                    self.reduced_cached_tickers = [
+                        t for t in self.cached_tickers if t != ticker
+                    ]
+                else:
+                    # Subsequent failed tickers - remove from existing reduced list
+                    if ticker in self.reduced_cached_tickers:
+                        self.reduced_cached_tickers.remove(ticker)
+
+                logging.info(
+                    f"Reduced ticker list now has {len(self.reduced_cached_tickers)} tickers "
+                    f"out of {len(self.cached_tickers)} "
+                    f"({(len(self.reduced_cached_tickers) / len(self.cached_tickers)) * 100:.2f}%)"
+                )
         else:
             logging.info(f"Ticker {ticker} is valid.")
 
@@ -271,7 +300,8 @@ class BasePriceStream(BaseStream):
     def partitions(self):
         if getattr(self, "cached_tickers", None) is None:
             self.fetch_and_cache_tickers()
-        return [{"ticker": t} for t in self.cached_tickers]
+        active_tickers = self.get_active_tickers()
+        return [{"ticker": t} for t in active_tickers]
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         assert (
@@ -318,7 +348,9 @@ class BasePriceStream(BaseStream):
                 check_sorted=self.check_sorted,
             )
             yield record
-        if ticker == self.cached_tickers[-1] and not self._tap._first_stream_processed:
+
+        active_tickers = self.get_active_tickers()
+        if ticker == active_tickers[-1] and not self._tap._first_stream_processed:
             self._tap._first_stream_processed = True
             logging.info(
                 f"****** Finished processing all records for {self.name} stream. "
@@ -389,8 +421,9 @@ class PricesStreamWide(BaseStream):
 
         price_tap = PriceTap(schema=self.schema, config=self.config, name=self.name)
 
+        active_tickers = self.get_active_tickers()
         df = price_tap.download_price_history_wide(
-            tickers=self.cached_tickers, yf_params=yf_params
+            tickers=active_tickers, yf_params=yf_params
         )
         df.sort_values(by="timestamp", inplace=True)
 
@@ -422,7 +455,8 @@ class FinancialStream(BaseStream):
     def partitions(self):
         if getattr(self, "cached_tickers", None) is None:
             self.fetch_and_cache_tickers()
-        return [{"ticker": t} for t in self.cached_tickers]
+        active_tickers = self.get_active_tickers()
+        return [{"ticker": t} for t in active_tickers]
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         assert (
@@ -456,7 +490,9 @@ class FinancialStream(BaseStream):
                     check_sorted=self.check_sorted,
                 )
             yield record
-        if ticker == self.cached_tickers[-1] and not self._tap._first_stream_processed:
+
+        active_tickers = self.get_active_tickers()
+        if ticker == active_tickers[-1] and not self._tap._first_stream_processed:
             self._tap._first_stream_processed = True
             logging.info(
                 f"****** Finished processing all records for {self.name} stream. "
