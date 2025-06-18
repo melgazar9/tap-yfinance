@@ -75,7 +75,7 @@ class PriceTap:
                 backend=SQLiteCache("~/yfinance.cache"),
             )
 
-            self.yf_ticker_obj = yf.Ticker(str(self.ticker), session=self.session)
+            self.yf_ticker_obj = yf.Ticker(self.ticker, session=self.session)
 
         elif self.ticker is not None:
             self.yf_ticker_obj = yf.Ticker(self.ticker)

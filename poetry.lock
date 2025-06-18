@@ -2677,4 +2677,4 @@ s3 = []
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "5556de08ac1042f6cfcf8f21d7dd48798005ba840a6cc69eb74acaef5046f69f"
+content-hash = "c0f9eaf69a30d60812411cfaa091fb8703249a05e77575063f057a85cb7be1b8"
