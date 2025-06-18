@@ -155,18 +155,24 @@ class BaseStream(Stream, ABC):
         if getattr(self, "cached_tickers", None) is None:
             self.fetch_and_cache_tickers()
 
-        logging.info(f"{self.name}: _valid_segments = {getattr(self, '_valid_segments', 'NOT_SET')}")
+        logging.info(
+            f"{self.name}: _valid_segments = {getattr(self, '_valid_segments', 'NOT_SET')}"
+        )
         logging.info(f"{self.name}: Total cached_tickers = {len(self.cached_tickers)}")
 
-        if hasattr(self, '_valid_segments') and self._valid_segments is not None:
+        if hasattr(self, "_valid_segments") and self._valid_segments is not None:
             logging.info(f"{self.name}: Applying segment filtering...")
-            logging.info(f"{self.name}: df_tickers columns = {list(self.df_tickers.columns)}")
-            logging.info(f"{self.name}: df_tickers segments = {self.df_tickers['segment'].unique()}")
+            logging.info(
+                f"{self.name}: df_tickers columns = {list(self.df_tickers.columns)}"
+            )
+            logging.info(
+                f"{self.name}: df_tickers segments = {self.df_tickers['segment'].unique()}"
+            )
 
             filtered_df = self.df_tickers[
-                self.df_tickers['segment'].isin(self._valid_segments)
+                self.df_tickers["segment"].isin(self._valid_segments)
             ]
-            filtered_tickers = filtered_df['ticker'].tolist()
+            filtered_tickers = filtered_df["ticker"].tolist()
 
             excluded_count = len(self.cached_tickers) - len(filtered_tickers)
             if excluded_count > 0:

@@ -335,12 +335,14 @@ class TickerFetcher:
                 return "futures_tickers"
             elif "-" in ticker and ticker.endswith("USD"):
                 return "crypto_tickers"
-            elif ticker.isupper() and len(ticker) <= 5:
-                return "stock_tickers"
-            elif ".PVT" in ticker:
-                return "private_companies_tickers"
             elif ticker.startswith("^"):
                 return "world_indices_tickers"
+            elif ".PVT" in ticker:
+                return "private_companies_tickers"
+            elif '.' in ticker and not ticker.startswith('^'):
+                return "foreign_stock_tickers"
+            elif ticker.isupper() and len(ticker) <= 5:
+                return "stock_tickers"
         return "unknown"
 
     @classmethod
