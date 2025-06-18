@@ -290,7 +290,7 @@ class TickerFetcher:
         logging.info("Pulling pts_tickers for tickers stream.")
         try:
             df = self.fetch_pts_tickers()
-            df["segment"] = "pts_tickers"
+            df["segment"] = df["ticker"].apply(TickerFetcher._guess_segment)
 
             if "ticker" not in df.columns and "yahoo_ticker" in df.columns:
                 df = df.rename(columns={"yahoo_ticker": "ticker"})
