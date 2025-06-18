@@ -1,14 +1,11 @@
 import hashlib
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, UTC
 
-import backoff
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from requests.exceptions import HTTPError, RequestException
-from urllib3.exceptions import MaxRetryError, NewConnectionError
 from yfinance.exceptions import YFRateLimitError
 
 from tap_yfinance.expected_schema import *
@@ -17,6 +14,12 @@ from tap_yfinance.price_utils import (
     clean_strings,
     fix_empty_values,
     get_method_name,
+)
+from tap_yfinance.rate_limiter import (
+    EmptyDataException,
+    rate_limiter,
+    yfinance_backoff,
+    yfinance_light_backoff,
 )
 
 pd.set_option("future.no_silent_downcasting", True)
@@ -68,10 +71,12 @@ class FinancialTap:
                 backend=SQLiteCache("yfinance.cache"),
             )
 
-            self.yf_ticker_obj = yf.Ticker(self.ticker, session=self.session)
+            self.yf_ticker_obj = yf.Ticker(str(self.ticker), session=self.session)
 
         else:
-            self.yf_ticker_obj = yf.Ticker(self.ticker)
+            self.yf_ticker_obj = yf.Ticker(
+                str(self.ticker)
+            )  # need to force double quotes for edge case tickers
 
     @staticmethod
     def extract_ticker_tz_aware_timestamp(df, timestamp_column, ticker):
@@ -90,19 +95,7 @@ class FinancialTap:
         df[timestamp_column] = pd.to_datetime(df[timestamp_column], utc=True)
         return df
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_analyst_price_targets(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -110,7 +103,7 @@ class FinancialTap:
             data = self.yf_ticker_obj.get_analyst_price_targets()
             if isinstance(data, dict) and len(data):
                 df = pd.DataFrame.from_dict(data, orient="index").T
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df["ticker"] = ticker
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 column_order = [
@@ -141,19 +134,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_actions(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -186,19 +167,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_balance_sheet(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -235,57 +204,21 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_balancesheet(self, ticker):
         """Same output as the method get_balance_sheet"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def basic_info(self, ticker):
         """Useless information"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_calendar(self, ticker):
         """Returns calendar df"""
 
@@ -293,8 +226,8 @@ class FinancialTap:
         logging.info(f"*** Running {method} for ticker {ticker}")
         try:
             data = self.yf_ticker_obj.get_calendar()
-            if isinstance(data, pd.DataFrame) and datashape[0]:
-                df = fix_empty_values(df, exclude_columns=["ticker"])
+            if isinstance(data, pd.DataFrame) and data.shape[0]:
+                df = fix_empty_values(data, exclude_columns=["ticker"])
                 df.columns = clean_strings(df.columns)
                 df["ticker"] = ticker
                 column_order = [
@@ -354,38 +287,14 @@ class FinancialTap:
                 columns=["dividend_date", "ex_dividend_date", "earnings_date"]
             )
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_capital_gains(self, ticker):
         """Returns empty series"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_cash_flow(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -421,38 +330,14 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_cashflow(self, ticker):
         """Same output as the method get_cash_flow"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_dividends(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -486,32 +371,14 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        YFRateLimitError,
-        max_tries=5,
-        max_time=5000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_light_backoff
     def get_earnings(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_earnings_estimate(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -520,7 +387,7 @@ class FinancialTap:
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df = df.reset_index()
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 df.columns = clean_strings(df.columns)
                 column_order = [
@@ -549,19 +416,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_earnings_history(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -587,9 +442,9 @@ class FinancialTap:
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 df.columns = clean_strings(df.columns)
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 if len(df.columns) == len(possible_columns1) and all(
-                    df.columns == possible_columns1
+                    possible_columns1 == df.columns
                 ):
                     column_order = [
                         "quarter",
@@ -598,7 +453,7 @@ class FinancialTap:
                         "timestamp_extracted",
                     ]
                 elif len(df.columns) == len(possible_columns2) and all(
-                    df.columns == possible_columns2
+                    possible_columns2 == df.columns
                 ):
                     column_order = [
                         "quarter",
@@ -629,19 +484,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted", "quarter"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_earnings_dates(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -680,57 +523,21 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_earnings_forecast(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_earnings_trend(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_eps_revisions(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -739,7 +546,7 @@ class FinancialTap:
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df = df.reset_index()
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 df.columns = [
                     i.replace("last7", "last_7")
@@ -778,19 +585,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_eps_trend(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -799,7 +594,7 @@ class FinancialTap:
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df = df.reset_index()
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 df.columns = clean_strings([rename_days_ago(col) for col in df.columns])
                 column_order = [
@@ -828,37 +623,13 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_funds_data(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         pass
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_growth_estimates(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -867,7 +638,7 @@ class FinancialTap:
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df = df.reset_index()
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 df.columns = clean_strings([rename_days_ago(col) for col in df.columns])
                 column_order = [
@@ -892,19 +663,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_fast_info(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -914,7 +673,7 @@ class FinancialTap:
             ).T
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df.rename(columns={"timezone": "extracted_timezone"}, inplace=True)
 
                 df["timestamp_tz_aware"] = df.apply(
@@ -969,19 +728,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_financials(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1019,19 +766,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_history_metadata(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1062,7 +797,7 @@ class FinancialTap:
                         df = pd.concat([df, df_tp], axis=1).ffill()
                         df = df.drop("trading_periods", axis=1)
 
-                    df["timestamp_extracted"] = datetime.utcnow()
+                    df["timestamp_extracted"] = datetime.now(UTC)
 
                     column_order = HISTORY_METADATA_COLUMNS
                     check_missing_columns(df, column_order, method)
@@ -1088,19 +823,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_info(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1110,7 +833,7 @@ class FinancialTap:
                 try:
                     df = pd.DataFrame.from_dict(data, orient="index").T
                     df.columns = clean_strings(df.columns)
-                    df["timestamp_extracted"] = datetime.utcnow()
+                    df["timestamp_extracted"] = datetime.now(UTC)
                     df["ticker"] = ticker
                     df = df.rename(
                         columns={
@@ -1197,19 +920,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_income_stmt(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1247,38 +958,14 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_incomestmt(self, ticker):
         """Same output as the method get_income_stmt"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_insider_purchases(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1315,19 +1002,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=column_order)
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_insider_roster_holders(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -1381,19 +1056,7 @@ class FinancialTap:
             )
             return pd.DataFrame()
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_insider_transactions(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -1441,19 +1104,7 @@ class FinancialTap:
             )
             return pd.DataFrame()
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_institutional_holders(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -1490,19 +1141,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date_reported"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_isin(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1510,7 +1149,7 @@ class FinancialTap:
             data = self.yf_ticker_obj.get_isin()
             if len(data):
                 df = pd.DataFrame.from_dict({"value": data}, orient="index").T
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df["ticker"] = ticker
                 column_order = ["ticker", "timestamp_extracted", "value"]
                 return df[[i for i in column_order if i in df.columns]]
@@ -1528,19 +1167,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_revenue_estimate(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1550,7 +1177,7 @@ class FinancialTap:
                 df = df.reset_index()
                 df.columns = clean_strings(df.columns)
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 column_order = [
                     "ticker",
@@ -1578,76 +1205,45 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_sec_filings(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
+
+        rate_limiter.wait_if_needed(method)
+
         try:
             data = self.yf_ticker_obj.get_sec_filings()
-            if len(data):
-                try:
-                    df = pd.DataFrame(data)
-                except Exception:
-                    raise ValueError(
-                        "Error in get_sec_filings! Could not convert raw data to pandas df."
-                    )
-                df.columns = clean_strings(df.columns)
-                df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
-                df["exhibits"] = df["exhibits"].astype(str)
-                df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
-                df = fix_empty_values(df, exclude_columns=["ticker"])
-                column_order = [
-                    "ticker",
-                    "date",
-                    "epoch_date",
-                    "type",
-                    "title",
-                    "edgar_url",
-                    "exhibits",
-                    "max_age",
-                    "timestamp_extracted",
-                ]
-                return df[[i for i in column_order if i in df.columns]]
-            else:
-                logging.warning(
-                    f"No data found for method {method} and ticker {ticker}."
-                )
-                return pd.DataFrame(columns=["timestamp_extracted"])
-        except YFRateLimitError as e:
-            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
-            raise
+            if not data:
+                logging.warning(f"Empty SEC filings data for {ticker}")
+                raise EmptyDataException
+            df = pd.DataFrame(data)
+            df.columns = clean_strings(df.columns)
+            df["ticker"] = ticker
+            df["timestamp_extracted"] = datetime.now(UTC)
+            df["exhibits"] = df["exhibits"].astype(str)
+            df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
+            df = fix_empty_values(df, exclude_columns=["ticker"])
+
+            column_order = [
+                "ticker",
+                "date",
+                "epoch_date",
+                "type",
+                "title",
+                "edgar_url",
+                "exhibits",
+                "max_age",
+                "timestamp_extracted",
+            ]
+            return df[[i for i in column_order if i in df.columns]]
         except Exception as e:
             logging.error(
-                f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping..."
+                f"Error extracting SEC filings for {ticker}: {e}. Skipping..."
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_major_holders(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1656,7 +1252,7 @@ class FinancialTap:
             if isinstance(df, pd.DataFrame) and df.shape[0] and df.shape[1] == 2:
                 df.columns = ["value", "breakdown"]
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 column_order = ["timestamp_extracted", "ticker", "breakdown", "value"]
                 return df[[i for i in column_order if i in df.columns]]
@@ -1671,7 +1267,7 @@ class FinancialTap:
                     .rename(columns={"Value": "value"})
                 )
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 column_order = ["timestamp_extracted", "ticker", "breakdown", "value"]
                 check_missing_columns(df, column_order, method)
@@ -1690,19 +1286,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_mutualfund_holders(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -1739,19 +1323,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date_reported"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_news(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1759,7 +1331,7 @@ class FinancialTap:
             df = pd.DataFrame(self.yf_ticker_obj.get_news())
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df[["id", "content"]] = df[["id", "content"]].astype(str)
                 df.columns = clean_strings(df.columns)
                 df = fix_empty_values(df, exclude_columns=["ticker"])
@@ -1782,19 +1354,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date_reported"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_recommendations(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1814,7 +1374,7 @@ class FinancialTap:
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 df.columns = clean_strings(df.columns)
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
@@ -1831,19 +1391,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=column_order)
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_recommendations_summary(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -1863,7 +1411,7 @@ class FinancialTap:
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 df.columns = clean_strings(df.columns)
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 check_missing_columns(df, column_order, method)
                 return df[[i for i in column_order if i in df.columns]]
             else:
@@ -1880,57 +1428,21 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=column_order)
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_rev_forecast(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_shares(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_shares_full(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -1966,19 +1478,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_splits(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2014,19 +1514,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_sustainability(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2035,7 +1523,7 @@ class FinancialTap:
             if isinstance(df, pd.DataFrame) and df.shape[0]:
                 df = df.T
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df.columns = clean_strings(df.columns)
                 column_order = [
                     "timestamp_extracted",
@@ -2107,38 +1595,14 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["timestamp_extracted"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_trend_details(self, ticker):
         """yfinance.exceptions.YFNotImplementedError"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def ttm_cash_flow(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2169,38 +1633,14 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def ttm_cashflow(self, ticker):
         """duplicate of ttm_cash_flow"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         pass
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def ttm_financials(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2238,19 +1678,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def ttm_income_stmt(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2288,38 +1716,14 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def ttm_incomestmt(self, ticker):
         """duplicate of ttm_income_stmt"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         pass
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def get_upgrades_downgrades(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -2355,19 +1759,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=column_order)
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def option_chain(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2392,7 +1784,7 @@ class FinancialTap:
                     if all(calls.columns == puts.columns):
                         df_options = pd.concat([calls, puts]).reset_index(drop=True)
                         df_options["metadata"] = str(underlying)
-                        df_options["timestamp_extracted"] = datetime.utcnow()
+                        df_options["timestamp_extracted"] = datetime.now(UTC)
                         self.extract_ticker_tz_aware_timestamp(
                             df_options, "last_trade_date", ticker
                         )
@@ -2433,19 +1825,7 @@ class FinancialTap:
         else:
             return pd.DataFrame(columns=["last_trade_date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def options(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2454,7 +1834,7 @@ class FinancialTap:
             if option_expiration_dates:
                 df = pd.DataFrame(option_expiration_dates, columns=["expiration_date"])
                 df["ticker"] = ticker
-                df["timestamp_extracted"] = datetime.utcnow()
+                df["timestamp_extracted"] = datetime.now(UTC)
                 df["expiration_date"] = df["expiration_date"].dt.strftime("%Y-%m-%d")
                 df = fix_empty_values(df, exclude_columns=["ticker"])
                 column_order = ["timestamp_extracted", "ticker", "expiration_date"]
@@ -2475,19 +1855,7 @@ class FinancialTap:
                 columns=["timestamp_extracted", "ticker", "expiration_date"]
             )
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def quarterly_balance_sheet(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running method {method} for ticker {ticker})")
@@ -2526,37 +1894,13 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def quarterly_balancesheet(self, ticker):
         """Same output as the method quarterly_balance_sheet"""
-        logging.info(f"*** Running method {method} for ticker {ticker})")
+        logging.info(f"*** Running method {'quarterly_balancesheet'} for ticker {ticker})")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def quarterly_cash_flow(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2587,38 +1931,14 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def quarterly_cashflow(self, ticker):
         """Same output as the method quarterly_cash_flow"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def quarterly_financials(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2656,19 +1976,7 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def quarterly_income_stmt(self, ticker):
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
@@ -2706,38 +2014,14 @@ class FinancialTap:
             )
             return pd.DataFrame(columns=["date"])
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def quarterly_incomestmt(self, ticker):
         """Same output as the method quarterly_income_stmt"""
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def session(self, ticker):
         """Returns NoneType."""
         method = get_method_name()
