@@ -105,8 +105,8 @@ class PTSTickersStream(TickerStream):
     ).to_dict()
 
     def get_records(self, context: dict | None) -> list[dict]:
-        ticker_downloader = TickerDownloader()
-        df_pts = ticker_downloader.download_pts_tickers()
+        ticker_fetcher = TickerFetcher()
+        df_pts = ticker_fetcher.fetch_pts_tickers()
         for record in df_pts.to_dict(orient="records"):
             yield record
 
