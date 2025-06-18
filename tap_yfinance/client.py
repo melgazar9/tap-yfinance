@@ -37,7 +37,7 @@ ALL_SEGMENTS = [
 class BaseStream(Stream, ABC):
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-        self.reduced_cached_tickers = False
+        self.reduced_cached_tickers = []
 
     def get_ticker_segment(self):
         n = self.name.lower()

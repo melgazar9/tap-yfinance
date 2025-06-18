@@ -6,16 +6,15 @@ import threading
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-import backoff
 import numpy as np
 import pandas as pd
 import yfinance as yf
 from pandas_datareader import data as pdr
 from pytickersymbols import PyTickerSymbols
-from requests.exceptions import HTTPError, RequestException
 from requests_html import HTMLSession
-from urllib3.exceptions import MaxRetryError, NewConnectionError
 from yfinance.exceptions import YFRateLimitError
+
+from tap_yfinance.rate_limiter import rate_limiter, yfinance_backoff
 
 pd.set_option("future.no_silent_downcasting", True)
 
@@ -76,7 +75,7 @@ class PriceTap:
                 backend=SQLiteCache("~/yfinance.cache"),
             )
 
-            self.yf_ticker_obj = yf.Ticker(self.ticker, session=self.session)
+            self.yf_ticker_obj = yf.Ticker(str(self.ticker), session=self.session)
 
         elif self.ticker is not None:
             self.yf_ticker_obj = yf.Ticker(self.ticker)
@@ -97,19 +96,7 @@ class PriceTap:
         self.n_requests = 0
         self.failed_ticker_downloads = {}
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def download_price_history(self, ticker, yf_params=None) -> pd.DataFrame():
         """
         Description
@@ -123,6 +110,9 @@ class PriceTap:
         """
         method = get_method_name()
         yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
+
+        rate_limiter.wait_if_needed(method)
+
         logging.info(
             f"*** Running {method} for ticker {ticker} and stream {self.name} ***"
         )
@@ -191,23 +181,14 @@ class PriceTap:
             self.failed_ticker_downloads[yf_params["interval"]].append(ticker)
             return pd.DataFrame(columns=self.column_order)
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            YFRateLimitError,
-            RequestException,
-            MaxRetryError,
-            NewConnectionError,
-            HTTPError,
-        ),
-        max_tries=10,
-        max_time=10000,
-        jitter=backoff.full_jitter,
-    )
+    @yfinance_backoff
     def download_price_history_wide(self, tickers, yf_params):
         try:
             method = get_method_name()
             logging.info(f"Running {method} for ticker {tickers}")
+
+            rate_limiter.wait_if_needed(method)
+
             yf_params = self.yf_params.copy() if yf_params is None else yf_params.copy()
 
             assert (
@@ -341,6 +322,7 @@ class TickerDownloader:
         start = 0
         page = 0
         while page < max_pages:
+            rate_limiter.wait_if_needed("download_yahoo_tickers")
             url = base_url.format(start=start, count=paginate_records)
             resp = session.get(url)
             tables = pd.read_html(resp.html.raw_html)
@@ -351,14 +333,14 @@ class TickerDownloader:
             if not all(col in df.columns for col in key_columns):
                 break
             df = df[key_columns]
-            # Filter out tickers already seen
+
             df = df[~df["symbol"].astype(str).isin(seen_tickers)]
             if df.empty:
                 break
             all_dfs.append(df)
-            # Add the tickers from this page to seen_tickers
+
             seen_tickers.update(df["symbol"].astype(str))
-            # If the number of unique tickers on this page is less than paginate_records, stop (last page)
+
             if len(df) < paginate_records:
                 break
             start += paginate_records
@@ -651,7 +633,8 @@ def fix_empty_values(df, exclude_columns=None, to_value=None):
     return df.apply(replace_col)
 
 
-def check_missing_columns(df, column_order, stream_name, ignore_cols=set()):
+def check_missing_columns(df, column_order, stream_name, ignore_cols=None):
+    ignore_cols = set() if ignore_cols is None else ignore_cols
     df_columns = set(df.columns)
     expected_columns = set(column_order)
     missing_in_df = expected_columns - df_columns - ignore_cols
