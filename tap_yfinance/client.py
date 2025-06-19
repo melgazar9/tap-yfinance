@@ -35,6 +35,8 @@ ALL_SEGMENTS = [
 
 
 class BaseStream(Stream, ABC):
+    _valid_segments = None
+
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
         self.reduced_cached_tickers = []
@@ -148,6 +150,43 @@ class BaseStream(Stream, ABC):
         else:
             logging.info(f"Ticker {ticker} is valid.")
 
+    @property
+    def partitions(self):
+        if getattr(self, "cached_tickers", None) is None:
+            self.fetch_and_cache_tickers()
+
+        logging.info(
+            f"{self.name}: _valid_segments = {getattr(self, '_valid_segments', 'NOT_SET')}"
+        )
+        logging.info(f"{self.name}: Total cached_tickers = {len(self.cached_tickers)}")
+
+        if hasattr(self, "_valid_segments") and self._valid_segments is not None:
+            logging.info(f"{self.name}: Applying segment filtering...")
+            logging.info(
+                f"{self.name}: df_tickers columns = {list(self.df_tickers.columns)}"
+            )
+            logging.info(
+                f"{self.name}: df_tickers segments = {self.df_tickers['segment'].unique()}"
+            )
+
+            filtered_df = self.df_tickers[
+                self.df_tickers["segment"].isin(self._valid_segments)
+            ]
+            filtered_tickers = filtered_df["ticker"].tolist()
+
+            excluded_count = len(self.cached_tickers) - len(filtered_tickers)
+            if excluded_count > 0:
+                logging.info(
+                    f"{self.name}: Filtered out {excluded_count} tickers "
+                    f"(allowed segments: {self._valid_segments})"
+                )
+            logging.info(f"{self.name}: Final filtered_tickers = {filtered_tickers}")
+            return [{"ticker": t} for t in filtered_tickers]
+        else:
+            logging.info(f"{self.name}: No segment filtering - using all tickers")
+            active_tickers = self.get_active_tickers()
+            return [{"ticker": t} for t in active_tickers]
+
     def fetch_and_cache_tickers(self):
         """
         For non-prices streams, behaves as before.
@@ -162,23 +201,7 @@ class BaseStream(Stream, ABC):
             tickers_cfg = self.config.get(self.name, {}).get("tickers")
             if tickers_cfg and tickers_cfg != "*":
                 tickers = tickers_cfg
-
-                # Guess segment for each ticker (for info only)
-                def guess_segment(t):
-                    if isinstance(t, str) and t.endswith("=X"):
-                        return "forex_tickers"
-                    if isinstance(t, str) and ("-" in t and t.endswith("USD")):
-                        return "crypto_tickers"
-                    if isinstance(t, str) and t.isupper() and len(t) <= 5:
-                        return "stock_tickers"
-                    if isinstance(t, str) and ".PVT" in t:
-                        return "private_companies_tickers"
-                    if isinstance(t, str) and t.startswith("^"):
-                        return "world_indices_tickers"
-                    # fallback
-                    return "unknown"
-
-                segment_list = [guess_segment(t) for t in tickers]
+                segment_list = [TickerFetcher._guess_segment(t) for t in tickers]
                 self.df_tickers = pd.DataFrame(
                     {
                         "ticker": tickers,
@@ -197,7 +220,7 @@ class BaseStream(Stream, ABC):
                         )
                         try:
                             if segment == "pts_tickers":
-                                df = TickerDownloader.download_pts_tickers()
+                                df = TickerFetcher.fetch_pts_tickers()
                                 if (
                                     "ticker" not in df.columns
                                     and "yahoo_ticker" in df.columns
@@ -207,7 +230,7 @@ class BaseStream(Stream, ABC):
                                     subset=["ticker", "segment"]
                                 )
                             else:
-                                df = TickerDownloader.download_yahoo_tickers(segment)
+                                df = TickerFetcher.fetch_yahoo_tickers(segment)
                                 if "segment" not in df.columns:
                                     df["segment"] = segment
                                 df = df[["ticker", "name", "segment"]].drop_duplicates()
@@ -215,9 +238,7 @@ class BaseStream(Stream, ABC):
                             df["ticker"] = df["ticker"].astype(str)
                             all_dfs.append(df)
                         except Exception as e:
-                            self._tap.logger.warning(
-                                f"Could not download {segment}: {e}"
-                            )
+                            self._tap.logger.warning(f"Could not fetch {segment}: {e}")
                     if all_dfs:
                         all_tickers = pd.concat(all_dfs, ignore_index=True)
                         all_tickers = all_tickers.drop_duplicates(subset=["ticker"])
@@ -238,11 +259,12 @@ class BaseStream(Stream, ABC):
                 logging.info(
                     f"Using tickers from config for segment {segment}: {tickers}"
                 )
+                segment_list = [TickerFetcher._guess_segment(t) for t in tickers]
                 self.df_tickers = pd.DataFrame(
                     {
                         "ticker": tickers,
                         "name": [None] * len(tickers),
-                        "segment": [segment] * len(tickers),
+                        "segment": segment_list,
                     }
                 )
                 self._tap.ticker_cache[segment] = self.df_tickers
@@ -251,12 +273,12 @@ class BaseStream(Stream, ABC):
                     try:
                         logging.info(f"Pulling all tickers for segment {segment}...")
                         if segment == "stock_tickers":
-                            df = TickerDownloader.download_pts_tickers()
+                            df = TickerFetcher.fetch_pts_tickers()
                             df = df[["ticker", "name", "segment"]].drop_duplicates(
                                 subset=["ticker", "segment"]
                             )
                         else:
-                            df = TickerDownloader.download_yahoo_tickers(segment)
+                            df = TickerFetcher.fetch_yahoo_tickers(segment)
                             if "segment" not in df.columns:
                                 df["segment"] = segment
                             df = df[["ticker", "name", "segment"]].drop_duplicates()
@@ -264,7 +286,7 @@ class BaseStream(Stream, ABC):
                         df["ticker"] = df["ticker"].astype(str)
                         self._tap.ticker_cache[segment] = df
                     except Exception as e:
-                        self._tap.logger.warning(f"Could not download {segment}: {e}")
+                        self._tap.logger.warning(f"Could not fetch {segment}: {e}")
                         self._tap.ticker_cache[segment] = pd.DataFrame(
                             columns=["ticker", "name", "segment"]
                         )
@@ -292,16 +314,10 @@ class BasePriceStream(BaseStream):
     replication_method = "INCREMENTAL"
     is_timestamp_replication_key = True
     primary_keys = ["timestamp", "ticker"]
+    _valid_segments = None  # No filtering - all segments allowed
 
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-
-    @property
-    def partitions(self):
-        if getattr(self, "cached_tickers", None) is None:
-            self.fetch_and_cache_tickers()
-        active_tickers = self.get_active_tickers()
-        return [{"ticker": t} for t in active_tickers]
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         assert (
@@ -315,7 +331,6 @@ class BasePriceStream(BaseStream):
         self.fetch_and_cache_tickers()
 
         ticker = context["ticker"]
-        logging.info(f"\n\n\n*** Running ticker {ticker} *** \n\n\n")
         state = self.get_context_state(context)
 
         if state and "progress_markers" in state.keys():
@@ -334,7 +349,7 @@ class BasePriceStream(BaseStream):
             ticker=ticker,
         )
 
-        df = price_tap.download_price_history(ticker=ticker, yf_params=yf_params)
+        df = price_tap.fetch_price_history(ticker=ticker, yf_params=yf_params)
 
         if not self._tap._first_stream_processed:
             self.validate_ticker(ticker, df)
@@ -422,7 +437,7 @@ class PricesStreamWide(BaseStream):
         price_tap = PriceTap(schema=self.schema, config=self.config, name=self.name)
 
         active_tickers = self.get_active_tickers()
-        df = price_tap.download_price_history_wide(
+        df = price_tap.fetch_price_history_wide(
             tickers=active_tickers, yf_params=yf_params
         )
         df.sort_values(by="timestamp", inplace=True)
@@ -447,16 +462,16 @@ class PricesStreamWide(BaseStream):
 
 class FinancialStream(BaseStream):
     is_timestamp_replication_key = True
+    _valid_segments = [
+        "stock_tickers",
+        "pts_tickers",
+        "etf_tickers",
+        "mutual_fund_tickers",
+        "private_companies_tickers",
+    ]
 
     def __init__(self, tap: Tap) -> None:
         super().__init__(tap)
-
-    @property
-    def partitions(self):
-        if getattr(self, "cached_tickers", None) is None:
-            self.fetch_and_cache_tickers()
-        active_tickers = self.get_active_tickers()
-        return [{"ticker": t} for t in active_tickers]
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         assert (
@@ -465,7 +480,6 @@ class FinancialStream(BaseStream):
         self.fetch_and_cache_tickers()
         yf_params = self.config.get(self.name).get("yf_params")
         ticker = context["ticker"]
-        logging.info(f"\n\n\n*** Running ticker {ticker} *** \n\n\n")
         state = self.get_context_state(context)
 
         financial_tap = FinancialTap(
@@ -515,14 +529,14 @@ class AllTickersStream(TickerStream):
                 logging.info(f"Pulling {segment} tickers for {self.name} stream.")
                 try:
                     if segment == "pts_tickers":
-                        df = TickerDownloader.download_pts_tickers()
+                        df = TickerFetcher.fetch_pts_tickers()
                         if "ticker" not in df.columns and "yahoo_ticker" in df.columns:
                             df = df.rename(columns={"yahoo_ticker": "ticker"})
                         df = df[["ticker", "name", "segment"]].drop_duplicates(
                             subset=["ticker", "segment"]
                         )
                     else:
-                        df = TickerDownloader.download_yahoo_tickers(segment)
+                        df = TickerFetcher.fetch_yahoo_tickers(segment)
                         if "segment" not in df.columns:
                             df["segment"] = segment
                         df = df[["ticker", "name", "segment"]].drop_duplicates()
@@ -530,7 +544,7 @@ class AllTickersStream(TickerStream):
                     df["ticker"] = df["ticker"].astype(str)
                     all_dfs.append(df)
                 except Exception as e:
-                    self._tap.logger.warning(f"Could not download {segment}: {e}")
+                    self._tap.logger.warning(f"Could not fetch {segment}: {e}")
             if all_dfs:
                 all_tickers = pd.concat(all_dfs, ignore_index=True)
                 all_tickers = all_tickers.drop_duplicates(subset=["ticker"])

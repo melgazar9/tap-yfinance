@@ -340,7 +340,7 @@ plugins:
           tickers: [ "TWTR", "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
 
         sec_filings:
-          tickers: [ "TWTR", "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD" ]
+          tickers: [ "BTC-USD", "TWTR", "NAN", "0A1O.L", "AAPL", "NONE", "INF", "AGD", "ES=F" ]
           use_reduced_cached_tickers: false
 
         shares_full:
