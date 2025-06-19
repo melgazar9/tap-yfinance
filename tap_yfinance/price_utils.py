@@ -2,7 +2,7 @@ import hashlib
 import logging
 import threading
 from datetime import datetime
-
+import re
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -335,11 +335,63 @@ class TickerFetcher:
                 return "futures_tickers"
             elif "-" in ticker and ticker.endswith("USD"):
                 return "crypto_tickers"
-            elif ticker.startswith("^"):
+            elif (
+                    ticker.startswith("^")
+                    or any(
+                pattern in ticker.upper()
+                for pattern in [
+                    "S&P",
+                    "DOW ",
+                    "NASDAQ ",
+                    "FTSE ",
+                    "CAC ",
+                    "DAX ",
+                    "OMX ",
+                    "STOXX ",
+                    "IBEX ",
+                    "AEX ",
+                    "BEL ",
+                    "TECDAX ",
+                    "SDAX ",
+                    "CDAX ",
+                    "MDAX ",
+                    "MOEX ",
+                    "NIKKEI ",
+                    "HANG ",
+                    "KOSPI ",
+                    "SENSEX ",
+                    "NIFTY ",
+                ]
+            )
+                    or any(
+                ticker.endswith(suffix)
+                for suffix in [
+                    " 20",
+                    " 25",
+                    " 30",
+                    " 35",
+                    " 40",
+                    " 50",
+                    " 60",
+                    " 100",
+                    " 200",
+                    " 250",
+                    " 500",
+                    " 600",
+                    " 1000",
+                    " 2000",
+                ]
+            )
+            ):
                 return "world_indices_tickers"
+            elif (
+                    re.match(r'^[0-9][A-Z0-9]{9}\.F$', ticker)  # Frankfurt exchange
+                    or re.match(r'^[0-9][A-Z0-9]{9}$', ticker)  # European funds
+            ):
+                return "european_funds"
             elif ".PVT" in ticker:
                 return "private_companies_tickers"
-            elif '.' in ticker and not ticker.startswith('^'):
+            elif "." in ticker and not ticker.startswith("^"):
                 return "foreign_stock_tickers"
             elif ticker.isupper() and len(ticker) <= 5:
                 return "stock_tickers"
