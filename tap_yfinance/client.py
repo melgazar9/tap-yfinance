@@ -123,7 +123,7 @@ class BaseStream(Stream, ABC):
             )
             return self.reduced_cached_tickers
         else:
-            logging.info(f"Using full ticker list: {len(self.cached_tickers)} tickers")
+            logging.info(f"Not reducing cached tickers if first fetch fails. Total: {len(self.cached_tickers)} tickers")
             return self.cached_tickers
 
     def validate_ticker(self, ticker, df):
@@ -464,10 +464,9 @@ class FinancialStream(BaseStream):
     is_timestamp_replication_key = True
     _valid_segments = [
         "stock_tickers",
-        "pts_tickers",
-        "etf_tickers",
         "mutual_fund_tickers",
         "private_companies_tickers",
+        "european_funds",
     ]
 
     def __init__(self, tap: Tap) -> None:
@@ -513,6 +512,11 @@ class FinancialStream(BaseStream):
                 "Setting _first_stream_processed to True. ******"
             )
 
+class StockFinancialStream(FinancialStream):
+    _valid_segments = [
+        "stock_tickers",
+        "private_companies_tickers",
+    ]
 
 class AllTickersStream(TickerStream):
     """A stream that yields all tickers from all Yahoo Finance segments."""
