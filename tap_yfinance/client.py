@@ -115,7 +115,7 @@ class BaseStream(Stream, ABC):
     def get_active_tickers(self):
         """Returns the appropriate ticker list based on configuration."""
         if (
-            self.config.get(self.name).get("use_reduced_cached_tickers")
+            self.config.get(self.name, {}).get("use_reduced_cached_tickers")
             and self.reduced_cached_tickers
         ):
             logging.info(
@@ -131,7 +131,7 @@ class BaseStream(Stream, ABC):
         if df.empty:
             logging.warning(f"Ticker {ticker} has no data for stream {self.name}.")
 
-            if self.config.get(self.name).get("use_reduced_cached_tickers"):
+            if self.config.get(self.name, {}).get("use_reduced_cached_tickers"):
                 if self.reduced_cached_tickers:
                     # First failed ticker - create the reduced list
                     self.reduced_cached_tickers = [
