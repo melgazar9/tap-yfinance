@@ -1,37 +1,39 @@
-[tool.poetry]
+[project]
 name = "tap-yfinance"
 version = "0.0.1"
 description = "`tap-yfinance` is a Singer tap for YFinance, built with the Meltano Singer SDK."
 readme = "README.md"
-authors = ["Matt Elgazar <melgazar9@gmail.com>"]
+authors = [
+    { name = "Matt Elgazar", email = "melgazar9@gmail.com" }
+]
 keywords = [
     "ELT",
     "YFinance",
 ]
-license = "Apache-2.0"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.9,<4.0"
+dependencies = [
+    "singer-sdk~=0.32.0",
+    "requests~=2.31.0", 
+    "pandas>=2.1.5",
+    "yfinance[nospam,repair]==0.2.63",
+    "pytickersymbols>=1.13.0",
+    "requests-html>=0.10.0",
+    "scipy>=1.11.3",
+    "pandas-datareader>=0.10.0",
+    "black>=24.2.0",
+    "lxml>=5.2.1",
+    "lxml-html-clean>=0.1.1",
+    "requests-cache>=1.2.0",
+    "setuptools<81",
+    "fs>=2.4.16",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.9,<4.0"
-singer-sdk = { version="~=0.32.0" }
-requests = "~=2.31.0"
-pandas = "^2.1.5"
-yfinance = {extras = ["nospam", "repair"], version = "0.2.63"}
-pytickersymbols = "^1.13.0"
-requests-html = "^0.10.0"
-scipy = "^1.11.3"
-pandas-datareader = "^0.10.0"
-black = "^24.2.0"
-lxml = "^5.2.1"
-lxml-html-clean = "^0.1.1"
-requests-cache = "^1.2.0"
-setuptools = "<81"
-fs = ">=2.4.16"
-
-[tool.poetry.group.dev.dependencies]
-pytest = ">=7.4.0"
-singer-sdk = { version="~=0.32.0", extras = ["testing"] }
-
-[tool.poetry.extras]
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "singer-sdk[testing]~=0.32.0",
+]
 s3 = ["fs-s3fs"]
 
 [tool.mypy]
@@ -57,10 +59,10 @@ known-first-party = ["tap_yfinance"]
 [tool.ruff.pydocstyle]
 convention = "google"
 
-[build-system]
-requires = ["poetry-core>=1.0.8"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
+[project.scripts]
 # CLI declaration
 tap-yfinance = 'tap_yfinance.tap:TapYFinance.cli'
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
