@@ -278,6 +278,25 @@ def fix_empty_values(df, exclude_columns=None, to_value=None):
     return df.apply(replace_col)
 
 
+def sanitize_record(record):
+    """Sanitize a dict record so it is JSON-serializable.
+
+    Replaces float('nan'), float('inf'), float('-inf') with None.
+    These slip through fix_empty_values because pandas re-introduces
+    np.nan when converting None values in DataFrames via .to_dict().
+    """
+    def _clean(v):
+        if isinstance(v, float) and (v != v or v == float("inf") or v == float("-inf")):
+            return None
+        if isinstance(v, dict):
+            return {k: _clean(val) for k, val in v.items()}
+        if isinstance(v, (list, tuple)):
+            return [_clean(x) for x in v]
+        return v
+
+    return {k: _clean(v) for k, v in record.items()}
+
+
 def check_missing_columns(df, column_order, stream_name, ignore_cols=None):
     ignore_cols = set() if ignore_cols is None else ignore_cols
     df_columns = set(df.columns)

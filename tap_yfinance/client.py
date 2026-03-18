@@ -11,6 +11,7 @@ from singer_sdk.helpers._state import increment_state
 from singer_sdk.streams import Stream
 
 from tap_yfinance.financial_utils import *
+from tap_yfinance.helpers import sanitize_record
 from tap_yfinance.price_utils import *
 
 CUSTOM_JSON_SCHEMA = {
@@ -103,6 +104,8 @@ class BaseStream(Stream, ABC):
             return "mutual_fund_tickers"
         elif n.startswith("options"):
             return "options_tickers"
+        elif n.startswith("fund_"):
+            return "etf_tickers"
         elif n.startswith("etf"):
             return "etf_tickers"
         elif n.startswith("indices") or n == "world_indices_tickers":
@@ -238,7 +241,7 @@ class BaseStream(Stream, ABC):
                             df["ticker"] = df["ticker"].astype(str)
                             all_dfs.append(df)
                         except Exception as e:
-                            self._tap.logger.warning(f"Could not fetch {segment}: {e}")
+                            self._tap.logger.warning(f"Could not fetch {segment}: {str(e)[:200]}")
                     if all_dfs:
                         all_tickers = pd.concat(all_dfs, ignore_index=True)
                         all_tickers = all_tickers.drop_duplicates(subset=["ticker"])
@@ -286,7 +289,7 @@ class BaseStream(Stream, ABC):
                         df["ticker"] = df["ticker"].astype(str)
                         self._tap.ticker_cache[segment] = df
                     except Exception as e:
-                        self._tap.logger.warning(f"Could not fetch {segment}: {e}")
+                        self._tap.logger.warning(f"Could not fetch {segment}: {str(e)[:200]}")
                         self._tap.ticker_cache[segment] = pd.DataFrame(
                             columns=["ticker", "name", "segment"]
                         )
@@ -305,8 +308,9 @@ class TickerStream(BaseStream):
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
         self.fetch_and_cache_tickers()
-        for record in self.df_tickers.to_dict(orient="records"):
-            yield record
+        df = fix_empty_values(self.df_tickers, exclude_columns=["ticker"])
+        for record in df.to_dict(orient="records"):
+            yield sanitize_record(record)
 
 
 class BasePriceStream(BaseStream):
@@ -548,7 +552,7 @@ class AllTickersStream(TickerStream):
                     df["ticker"] = df["ticker"].astype(str)
                     all_dfs.append(df)
                 except Exception as e:
-                    self._tap.logger.warning(f"Could not fetch {segment}: {e}")
+                    self._tap.logger.warning(f"Could not fetch {segment}: {str(e)[:200]}")
             if all_dfs:
                 all_tickers = pd.concat(all_dfs, ignore_index=True)
                 all_tickers = all_tickers.drop_duplicates(subset=["ticker"])
@@ -562,8 +566,9 @@ class AllTickersStream(TickerStream):
 
     def get_records(self, context: dict | None) -> list[dict]:
         self.fetch_and_cache_tickers()
-        for record in self.df_tickers.to_dict(orient="records"):
-            yield record
+        df = fix_empty_values(self.df_tickers, exclude_columns=["ticker"])
+        for record in df.to_dict(orient="records"):
+            yield sanitize_record(record)
 
 
 class PriceStream(BasePriceStream):

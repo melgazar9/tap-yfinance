@@ -59,10 +59,15 @@ class SectorTickersStream(Stream):
     ).to_dict()
 
     def get_records(self, context: dict | None) -> Iterable[dict]:
+        import io
+
+        from tap_yfinance.price_utils import suppress_html_noise
+
         url = "https://finance.yahoo.com/sectors/"
         session = HTMLSession()
         resp = session.get(url)
-        tables = pd.read_html(resp.html.raw_html)
+        with suppress_html_noise():
+            tables = pd.read_html(io.StringIO(resp.html.html))
         session.close()
         if len(tables) == 1:
             df = tables[0]
@@ -698,8 +703,11 @@ class InfoStream(StockFinancialStream):
         th.Property("bid_size", th.NumberType),
         th.Property("ask_size", th.NumberType),
         th.Property("market_cap", th.NumberType),
+        th.Property("non_diluted_market_cap", th.NumberType),
         th.Property("fifty_two_week_low", th.NumberType),
         th.Property("fifty_two_week_high", th.NumberType),
+        th.Property("all_time_high", th.NumberType),
+        th.Property("all_time_low", th.NumberType),
         th.Property("price_to_sales_trailing12_months", th.NumberType),
         th.Property("fifty_day_average", th.NumberType),
         th.Property("two_hundred_day_average", th.NumberType),
@@ -822,7 +830,7 @@ class InfoStream(StockFinancialStream):
         th.Property("fifty_two_week_change_percent", th.NumberType),
         th.Property("short_name", th.StringType),
         th.Property("long_name", th.StringType),
-        th.Property("market_state", th.BooleanType),
+        th.Property("market_state", th.StringType),
         th.Property("display_name", th.StringType),
         th.Property("trailing_peg_ratio", th.NumberType),
         th.Property("ipo_expected_date", th.DateType),
@@ -1237,6 +1245,143 @@ class TtmIncomeStmtStream(StockFinancialStream):
     schema = INCOME_STMT_SCHEMA
 
 
+class FundOverviewStream(FinancialStream):
+    name = "fund_overview"
+    method_name = "get_fund_overview"
+    primary_keys = ["ticker"]
+    _valid_segments = [
+        "etf_tickers",
+        "mutual_fund_tickers",
+    ]
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("category_name", th.StringType),
+        th.Property("family", th.StringType),
+        th.Property("legal_type", th.StringType),
+    ).to_dict()
+
+
+class FundTopHoldingsStream(FinancialStream):
+    name = "fund_top_holdings"
+    method_name = "get_fund_top_holdings"
+    primary_keys = ["ticker", "holding_symbol"]
+    _valid_segments = [
+        "etf_tickers",
+        "mutual_fund_tickers",
+    ]
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("holding_symbol", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("holding_percent", th.NumberType),
+    ).to_dict()
+
+
+class FundSectorWeightingsStream(FinancialStream):
+    name = "fund_sector_weightings"
+    method_name = "get_fund_sector_weightings"
+    primary_keys = ["ticker", "sector"]
+    _valid_segments = [
+        "etf_tickers",
+        "mutual_fund_tickers",
+    ]
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("sector", th.StringType),
+        th.Property("weight", th.NumberType),
+    ).to_dict()
+
+
+class FundEquityHoldingsStream(FinancialStream):
+    name = "fund_equity_holdings"
+    method_name = "get_fund_equity_holdings"
+    primary_keys = ["ticker", "metric"]
+    _valid_segments = [
+        "etf_tickers",
+        "mutual_fund_tickers",
+    ]
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("metric", th.StringType),
+        th.Property("value", th.NumberType),
+        th.Property("category_average", th.NumberType),
+    ).to_dict()
+
+
+class FundAssetClassesStream(FinancialStream):
+    name = "fund_asset_classes"
+    method_name = "get_fund_asset_classes"
+    primary_keys = ["ticker"]
+    _valid_segments = [
+        "etf_tickers",
+        "mutual_fund_tickers",
+    ]
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("cash_position", th.NumberType),
+        th.Property("stock_position", th.NumberType),
+        th.Property("bond_position", th.NumberType),
+        th.Property("preferred_position", th.NumberType),
+        th.Property("convertible_position", th.NumberType),
+        th.Property("other_position", th.NumberType),
+    ).to_dict()
+
+
+class FundOperationsStream(FinancialStream):
+    name = "fund_operations"
+    method_name = "get_fund_operations"
+    primary_keys = ["ticker", "metric"]
+    _valid_segments = [
+        "etf_tickers",
+        "mutual_fund_tickers",
+    ]
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("metric", th.StringType),
+        th.Property("value", th.NumberType),
+        th.Property("category_average", th.NumberType),
+    ).to_dict()
+
+
+class FundBondHoldingsStream(FinancialStream):
+    name = "fund_bond_holdings"
+    method_name = "get_fund_bond_holdings"
+    primary_keys = ["ticker", "metric"]
+    _valid_segments = [
+        "etf_tickers",
+        "mutual_fund_tickers",
+    ]
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("metric", th.StringType),
+        th.Property("value", th.StringType),
+        th.Property("category_average", th.StringType),
+    ).to_dict()
+
+
+class FundBondRatingsStream(FinancialStream):
+    name = "fund_bond_ratings"
+    method_name = "get_fund_bond_ratings"
+    primary_keys = ["ticker", "rating"]
+    _valid_segments = [
+        "etf_tickers",
+        "mutual_fund_tickers",
+    ]
+    schema = th.PropertiesList(
+        th.Property("timestamp_extracted", th.DateTimeType, required=True),
+        th.Property("ticker", th.StringType),
+        th.Property("rating", th.StringType),
+        th.Property("weight", th.NumberType),
+    ).to_dict()
+
+
 class UpgradesDowngradesStream(StockFinancialStream):
     name = "upgrades_downgrades"
     method_name = "get_upgrades_downgrades"
@@ -1250,4 +1395,5 @@ class UpgradesDowngradesStream(StockFinancialStream):
         th.Property("action", th.StringType),
         th.Property("price_target_action", th.StringType),
         th.Property("current_price_target", th.NumberType),
+        th.Property("prior_price_target", th.NumberType),
     ).to_dict()

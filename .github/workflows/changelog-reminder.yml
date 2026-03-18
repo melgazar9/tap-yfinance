@@ -1,0 +1,65 @@
+name: Yahoo Finance API Changelog Reminder
+
+on:
+  schedule:
+    - cron: '0 9 1 * *' # Monthly, 1st day at 9 AM UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  reminder:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check for existing open reminder
+        id: existing
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'api-changelog-check',
+              state: 'open',
+              per_page: 1
+            });
+            core.setOutput('exists', issues.length > 0 ? 'true' : 'false');
+
+      - name: Create reminder issue
+        if: steps.existing.outputs.exists == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              `## Monthly Yahoo Finance API Check`,
+              ``,
+              `This is an automated reminder to check for Yahoo Finance API changes.`,
+              ``,
+              `### Resources to Check:`,
+              `- **yfinance GitHub**: https://github.com/ranaroussi/yfinance/releases`,
+              `- **yfinance PyPI**: https://pypi.org/project/yfinance/#history`,
+              `- **Yahoo Finance2 (npm)**: https://github.com/gadicc/yahoo-finance2/releases`,
+              ``,
+              `### What to Look For:`,
+              `- New data fields added to responses`,
+              `- Deprecated endpoints or fields`,
+              `- Breaking changes in data formats`,
+              `- New ticker types or markets`,
+              ``,
+              `### If Changes Found:`,
+              `1. Document the changes in a comment on this issue`,
+              `2. Comment \`/analyze-changes\` to trigger Claude AI analysis`,
+              `3. Review and merge the auto-generated PR`,
+              ``,
+              `**Note**: Yahoo Finance has no official API or changelog. This reminder helps track community library updates.`,
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Monthly Check] Yahoo Finance API Changes — ${new Date().toISOString().split('T')[0]}`,
+              body: body,
+              labels: ['api-changelog-check']
+            });

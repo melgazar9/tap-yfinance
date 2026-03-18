@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
-import singer_sdk.typing as th
-from singer_sdk import Tap
+import warnings
+
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+
+import singer_sdk.typing as th  # noqa: E402
+from singer_sdk import Tap  # noqa: E402
 
 from tap_yfinance.streams import (
     ActionsStream,
@@ -37,6 +41,14 @@ from tap_yfinance.streams import (
     ForexPrices5mStream,
     ForexPricesWide1mStream,
     ForexTickersStream,
+    FundAssetClassesStream,
+    FundBondHoldingsStream,
+    FundBondRatingsStream,
+    FundEquityHoldingsStream,
+    FundOperationsStream,
+    FundOverviewStream,
+    FundSectorWeightingsStream,
+    FundTopHoldingsStream,
     FuturesPrices1dStream,
     FuturesPrices1hStream,
     FuturesPrices1mStream,
@@ -182,6 +194,14 @@ STREAMS = [
     QuarterlyFinancialsStream,
     QuarterlyIncomeStmtStream,
     UpgradesDowngradesStream,
+    FundOverviewStream,
+    FundTopHoldingsStream,
+    FundSectorWeightingsStream,
+    FundEquityHoldingsStream,
+    FundAssetClassesStream,
+    FundOperationsStream,
+    FundBondHoldingsStream,
+    FundBondRatingsStream,
 ]
 
 

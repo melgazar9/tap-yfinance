@@ -1,7 +1,9 @@
 import hashlib
 import logging
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+
+UTC = timezone.utc
 
 import numpy as np
 import pandas as pd
@@ -2027,6 +2029,234 @@ class FinancialTap:
         method = get_method_name()
         logging.info(f"*** Running {method} for ticker {ticker}")
         return
+
+
+    @property
+    def _funds_data(self):
+        if not hasattr(self, "_cached_funds_data"):
+            self._cached_funds_data = self.yf_ticker_obj.get_funds_data()
+        return self._cached_funds_data
+
+    @yfinance_light_backoff
+    def get_fund_overview(self, ticker):
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
+        try:
+            fd = self._funds_data
+            data = fd.fund_overview
+            if isinstance(data, dict) and len(data):
+                df = pd.DataFrame.from_dict(data, orient="index").T
+                df["timestamp_extracted"] = datetime.now(UTC)
+                df["ticker"] = ticker
+                df.columns = clean_strings(df.columns)
+                df = fix_empty_values(df, exclude_columns=["ticker"])
+                return df
+            else:
+                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+        except YFRateLimitError as e:
+            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+    @yfinance_light_backoff
+    def get_fund_top_holdings(self, ticker):
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
+        try:
+            fd = self._funds_data
+            df = fd.top_holdings
+            if isinstance(df, pd.DataFrame) and df.shape[0]:
+                df = df.reset_index()
+                df = df.rename(columns={"Symbol": "holding_symbol"})
+                df["timestamp_extracted"] = datetime.now(UTC)
+                df["ticker"] = ticker
+                df.columns = clean_strings(df.columns)
+                df = fix_empty_values(df, exclude_columns=["ticker"])
+                return df
+            else:
+                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+        except YFRateLimitError as e:
+            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+    @yfinance_light_backoff
+    def get_fund_sector_weightings(self, ticker):
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
+        try:
+            fd = self._funds_data
+            data = fd.sector_weightings
+            if isinstance(data, dict) and len(data):
+                records = [{"sector": k, "weight": v} for k, v in data.items()]
+                df = pd.DataFrame(records)
+                df["timestamp_extracted"] = datetime.now(UTC)
+                df["ticker"] = ticker
+                df.columns = clean_strings(df.columns)
+                df = fix_empty_values(df, exclude_columns=["ticker"])
+                return df
+            else:
+                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+        except YFRateLimitError as e:
+            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+    @yfinance_light_backoff
+    def get_fund_equity_holdings(self, ticker):
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
+        try:
+            fd = self._funds_data
+            df = fd.equity_holdings
+            if isinstance(df, pd.DataFrame) and df.shape[0]:
+                df = df.reset_index()
+                # Columns are: index_name (metric), TICKER_SYMBOL, Category Average
+                # Rename to: metric, value, category_average
+                cols = list(df.columns)
+                rename_map = {cols[0]: "metric"}
+                for c in cols[1:]:
+                    if c.lower() == "category average":
+                        rename_map[c] = "category_average"
+                    else:
+                        rename_map[c] = "value"
+                df = df.rename(columns=rename_map)
+                df["timestamp_extracted"] = datetime.now(UTC)
+                df["ticker"] = ticker
+                df.columns = clean_strings(df.columns)
+                df = fix_empty_values(df, exclude_columns=["ticker"])
+                return df
+            else:
+                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+        except YFRateLimitError as e:
+            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+    @yfinance_light_backoff
+    def get_fund_asset_classes(self, ticker):
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
+        try:
+            fd = self._funds_data
+            data = fd.asset_classes
+            if isinstance(data, dict) and len(data):
+                df = pd.DataFrame.from_dict(data, orient="index").T
+                df["timestamp_extracted"] = datetime.now(UTC)
+                df["ticker"] = ticker
+                df.columns = clean_strings(df.columns)
+                df = fix_empty_values(df, exclude_columns=["ticker"])
+                return df
+            else:
+                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+        except YFRateLimitError as e:
+            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+    @yfinance_light_backoff
+    def get_fund_operations(self, ticker):
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
+        try:
+            fd = self._funds_data
+            df = fd.fund_operations
+            if isinstance(df, pd.DataFrame) and df.shape[0]:
+                df = df.reset_index()
+                cols = list(df.columns)
+                rename_map = {cols[0]: "metric"}
+                for c in cols[1:]:
+                    if c.lower() == "category average":
+                        rename_map[c] = "category_average"
+                    else:
+                        rename_map[c] = "value"
+                df = df.rename(columns=rename_map)
+                df["timestamp_extracted"] = datetime.now(UTC)
+                df["ticker"] = ticker
+                df.columns = clean_strings(df.columns)
+                df = fix_empty_values(df, exclude_columns=["ticker"])
+                return df
+            else:
+                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+        except YFRateLimitError as e:
+            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+    @yfinance_light_backoff
+    def get_fund_bond_holdings(self, ticker):
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
+        try:
+            fd = self._funds_data
+            df = fd.bond_holdings
+            if isinstance(df, pd.DataFrame) and df.shape[0]:
+                df = df.reset_index()
+                cols = list(df.columns)
+                rename_map = {cols[0]: "metric"}
+                for c in cols[1:]:
+                    if c.lower() == "category average":
+                        rename_map[c] = "category_average"
+                    else:
+                        rename_map[c] = "value"
+                df = df.rename(columns=rename_map)
+                df["timestamp_extracted"] = datetime.now(UTC)
+                df["ticker"] = ticker
+                df.columns = clean_strings(df.columns)
+                df = fix_empty_values(df, exclude_columns=["ticker"])
+                return df
+            else:
+                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+        except YFRateLimitError as e:
+            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+
+    @yfinance_light_backoff
+    def get_fund_bond_ratings(self, ticker):
+        method = get_method_name()
+        logging.info(f"*** Running {method} for ticker {ticker}")
+        try:
+            fd = self._funds_data
+            data = fd.bond_ratings
+            if isinstance(data, dict) and len(data):
+                records = [{"rating": k, "weight": v} for k, v in data.items()]
+                df = pd.DataFrame(records)
+                df["timestamp_extracted"] = datetime.now(UTC)
+                df["ticker"] = ticker
+                df.columns = clean_strings(df.columns)
+                df = fix_empty_values(df, exclude_columns=["ticker"])
+                return df
+            else:
+                logging.warning(f"No data found for method {method} and ticker {ticker}.")
+                return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
+        except YFRateLimitError as e:
+            logging.warning(f"Rate limit hit for {ticker}, will retry: {e}")
+            raise
+        except Exception as e:
+            logging.error(f"Error extracting data for method {method} and ticker {ticker}. Failed with error: {e}. Skipping...")
+            return pd.DataFrame(columns=["timestamp_extracted", "ticker"])
 
 
 def rename_days_ago(col):

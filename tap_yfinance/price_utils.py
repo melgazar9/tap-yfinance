@@ -1,13 +1,43 @@
 import hashlib
 import logging
+import io
+import os
 import re
+import sys
 import threading
+import warnings
+from contextlib import contextmanager
 from datetime import datetime
+
+
+@contextmanager
+def suppress_html_noise():
+    """Suppress all output from pd.read_html / lxml / libxml2.
+
+    Python's logging.disable only catches Python-level loggers.
+    lxml/libxml2 write directly to stderr via C code, so we
+    redirect the OS-level file descriptor to /dev/null.
+    """
+    warnings.simplefilter("ignore")
+    logging.disable(logging.CRITICAL)
+    old_stderr_fd = os.dup(2)
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull, 2)
+    old_stderr = sys.stderr
+    sys.stderr = open(os.devnull, "w")
+    try:
+        yield
+    finally:
+        sys.stderr.close()
+        sys.stderr = old_stderr
+        os.dup2(old_stderr_fd, 2)
+        os.close(old_stderr_fd)
+        os.close(devnull)
+        logging.disable(logging.NOTSET)
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from pandas_datareader import data as pdr
 from pytickersymbols import PyTickerSymbols
 from requests_html import HTMLSession
 from yfinance.exceptions import YFRateLimitError
@@ -216,10 +246,8 @@ class PriceTap:
                 interval=yf_params["interval"], start=yf_params["start"]
             )
 
-            yf.pdr_override()
-
             df = (
-                pdr.get_data_yahoo(tickers, progress=False, **yf_params)
+                yf.download(tickers, progress=False, **yf_params)
                 .rename_axis(index="timestamp")
                 .reset_index()
             )
@@ -285,7 +313,8 @@ class TickerFetcher:
                 df["ticker"] = df["ticker"].astype(str)
                 all_dfs.append(df)
             except Exception as e:
-                logging.warning(f"Could not fetch {segment}: {e}")
+                err_msg = str(e)[:200] if len(str(e)) > 200 else str(e)
+                logging.warning(f"Could not fetch {segment}: {err_msg}")
                 continue
 
         logging.info("Pulling pts_tickers for tickers stream.")
@@ -303,7 +332,8 @@ class TickerFetcher:
             df["ticker"] = df["ticker"].astype(str)
             all_dfs.append(df)
         except Exception as e:
-            logging.warning(f"Could not fetch pts_tickers: {e}")
+            err_msg = str(e)[:200] if len(str(e)) > 200 else str(e)
+            logging.warning(f"Could not fetch pts_tickers: {err_msg}")
 
         if all_dfs:
             df_all_tickers = pd.concat(all_dfs, ignore_index=True)
@@ -443,7 +473,8 @@ class TickerFetcher:
 
         if not paginate:
             resp = session.get(first_url)
-            tables = pd.read_html(resp.html.raw_html)
+            with suppress_html_noise():
+                tables = pd.read_html(io.StringIO(resp.html.html))
             if not tables:
                 session.close()
                 raise Exception(f"No tables found for {segment}")
@@ -478,8 +509,14 @@ class TickerFetcher:
         page = 0
         while page < max_pages:
             url = base_url.format(start=start, count=paginate_records)
-            resp = session.get(url)
-            tables = pd.read_html(resp.html.raw_html)
+            try:
+                resp = session.get(url)
+                with suppress_html_noise():
+                    tables = pd.read_html(io.StringIO(resp.html.html))
+            except Exception as e:
+                err_msg = str(e)[:200] if len(str(e)) > 200 else str(e)
+                logging.warning(f"Failed to fetch page {page} for {segment}: {err_msg}")
+                break
             if not tables:
                 break
             df = tables[0]
@@ -494,6 +531,7 @@ class TickerFetcher:
             all_dfs.append(df)
             # Add the tickers from this page to seen_tickers
             seen_tickers.update(df["symbol"].astype(str))
+            logging.info(f"Fetched {len(seen_tickers)} tickers for {segment} (page {page + 1})")
             # If the number of unique tickers on this page is less than paginate_records, stop (last page)
             if len(df) < paginate_records:
                 break
@@ -566,7 +604,7 @@ class TickerFetcher:
         all_tickers = all_tickers.replace([-np.inf, np.inf, np.nan], None)
         all_tickers.columns = ["yahoo_ticker", "google_ticker"]
 
-        all_stocks = pts.get_all_stocks()
+        all_stocks = [s for s in pts.get_all_stocks() if s.get("symbols")]
         df_all_stocks = pd.json_normalize(
             all_stocks,
             record_path=["symbols"],

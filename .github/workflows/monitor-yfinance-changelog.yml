@@ -1,0 +1,378 @@
+name: Monitor yfinance Changelog
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch and compare CHANGELOG.rst
+        id: check
+        run: |
+          # Fetch the CHANGELOG.rst from yfinance repo
+          curl -s "https://raw.githubusercontent.com/ranaroussi/yfinance/main/CHANGELOG.rst" > yfinance-changelog.rst
+
+          if [ ! -s yfinance-changelog.rst ]; then
+            echo "::error::Failed to fetch CHANGELOG.rst"
+            exit 1
+          fi
+
+          # Compute hash of the new changelog
+          NEW_HASH=$(sha256sum yfinance-changelog.rst | awk '{print $1}')
+
+          # Read the cached hash
+          CACHED_HASH=""
+          if [ -f .github/changelog-cache/yfinance-changelog-hash.txt ]; then
+            CACHED_HASH=$(cat .github/changelog-cache/yfinance-changelog-hash.txt | tr -d '[:space:]')
+          fi
+
+          echo "New hash: $NEW_HASH"
+          echo "Cached hash: $CACHED_HASH"
+
+          if [ "$NEW_HASH" = "$CACHED_HASH" ]; then
+            echo "has_new=false" >> "$GITHUB_OUTPUT"
+            echo "No changes detected in CHANGELOG.rst"
+          else
+            echo "has_new=true" >> "$GITHUB_OUTPUT"
+            echo "new_hash=$NEW_HASH" >> "$GITHUB_OUTPUT"
+            echo "Changes detected in CHANGELOG.rst"
+          fi
+
+      - name: Extract new changelog entries
+        if: steps.check.outputs.has_new == 'true'
+        run: |
+          # If we have a previously cached copy of the changelog, diff against it.
+          # Otherwise treat the entire file as new (but limit to first 500 lines
+          # to avoid sending a massive prompt on first run).
+          if [ -f .github/changelog-cache/yfinance-changelog-old.rst ]; then
+            # Use Python to extract only the lines that are new
+            python3 << 'PYTHON_SCRIPT'
+          import difflib
+
+          with open('.github/changelog-cache/yfinance-changelog-old.rst', 'r') as f:
+              old_lines = f.readlines()
+          with open('yfinance-changelog.rst', 'r') as f:
+              new_lines = f.readlines()
+
+          # Find lines added in the new version
+          diff = difflib.unified_diff(old_lines, new_lines, lineterm='')
+          added = []
+          for line in diff:
+              if line.startswith('+') and not line.startswith('+++'):
+                  added.append(line[1:])
+
+          with open('new-entries.txt', 'w') as f:
+              f.write(''.join(added))
+
+          count = len([l for l in added if l.strip()])
+          print(f"Extracted {count} new non-empty lines")
+          PYTHON_SCRIPT
+          else
+            # First run — take first 500 lines as context
+            head -500 yfinance-changelog.rst > new-entries.txt
+            echo "First run: using first 500 lines of CHANGELOG.rst"
+          fi
+
+          # Save full changelog for next comparison
+          cp yfinance-changelog.rst .github/changelog-cache/yfinance-changelog-old.rst
+
+      - name: Gather codebase context
+        if: steps.check.outputs.has_new == 'true'
+        run: |
+          # Include CLAUDE.md for project conventions
+          echo "## CLAUDE.md" > codebase-context.md
+          echo '```markdown' >> codebase-context.md
+          cat CLAUDE.md >> codebase-context.md
+          echo '```' >> codebase-context.md
+          echo "" >> codebase-context.md
+
+          # Collect all Python files from tap_yfinance/
+          echo "## Python Files in tap_yfinance/" >> codebase-context.md
+          echo "" >> codebase-context.md
+
+          for f in tap_yfinance/*.py; do
+            [ "$f" = "tap_yfinance/__init__.py" ] && continue
+            echo "### $f" >> codebase-context.md
+            echo '```python' >> codebase-context.md
+            cat "$f" >> codebase-context.md
+            echo '```' >> codebase-context.md
+            echo "" >> codebase-context.md
+          done
+
+      - name: Format changelog entries
+        if: steps.check.outputs.has_new == 'true'
+        run: |
+          python3 << 'PYTHON_SCRIPT'
+          with open('new-entries.txt', 'r') as f:
+              raw = f.read()
+
+          # Wrap in a readable markdown block
+          md = [
+              "## New yfinance CHANGELOG.rst Entries",
+              "",
+              "```rst",
+              raw.strip(),
+              "```",
+              "",
+          ]
+
+          with open('formatted-entries.md', 'w') as f:
+              f.write('\n'.join(md))
+          PYTHON_SCRIPT
+
+      - name: Call Claude API for analysis
+        if: steps.check.outputs.has_new == 'true'
+        id: claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          CHANGELOG=$(cat formatted-entries.md)
+          CODEBASE=$(cat codebase-context.md)
+
+          # Build the prompt
+          cat > prompt.txt << 'PROMPT_END'
+          You are updating a Singer tap for Yahoo Finance (tap-yfinance), built on the Meltano Singer SDK.
+          The upstream library is yfinance (https://github.com/ranaroussi/yfinance).
+
+          CRITICAL RULES:
+          - Read the CLAUDE.md file included in the codebase context below for full project conventions.
+          - Field names must be snake_case (the SDK auto-converts from camelCase).
+          - Use singer_sdk typing: th.StringType, th.IntegerType, th.BooleanType, th.NumberType, th.DateType, th.DateTimeType, th.ArrayType, th.ObjectType
+          - Only add new fields to existing schemas. Do NOT remove fields, rename classes, or change endpoints unless the changelog explicitly says to.
+          - All streams already have additionalProperties: True, so missing fields won't cause errors. But explicit schema fields are preferred for type validation.
+          - Follow the class hierarchy and code conventions described in CLAUDE.md.
+          - The tap_yfinance/ directory is flat (no streams subdirectory). Files include: client.py, streams.py, schema.py, expected_schema.py, tap.py, price_utils.py, financial_utils.py, helpers.py.
+          - Schema definitions live in schema.py and expected_schema.py.
+          - Stream classes are defined in streams.py and client.py.
+
+          Based on the yfinance CHANGELOG.rst entries below, identify which stream schemas or code need updates.
+          Focus on:
+          - New data fields added to yfinance Ticker attributes
+          - Changes to data format or structure
+          - New endpoints or data sources
+          - Deprecated or removed fields
+          - Breaking changes that require code updates
+
+          For each file that needs changes, output the COMPLETE updated file contents. Do not output partial files or diffs.
+
+          Output your response as a JSON object with this exact structure:
+          {
+            "analysis": "Human-readable summary of changes needed",
+            "no_changes_needed": false,
+            "files": [
+              {
+                "path": "tap_yfinance/schema.py",
+                "content": "...full file content...",
+                "description": "Added new_field field to SomeSchema"
+              }
+            ]
+          }
+
+          If no code changes are needed (e.g., all changes are internal/non-breaking), set "no_changes_needed": true and "files": [].
+
+          IMPORTANT: Output ONLY the JSON object. No markdown fences, no commentary before or after.
+          PROMPT_END
+
+          # Use jq to safely build the API request JSON
+          jq -n \
+            --arg prompt "$(cat prompt.txt)" \
+            --arg changelog "$CHANGELOG" \
+            --arg codebase "$CODEBASE" \
+            '{
+              model: "claude-sonnet-4-5-20250929",
+              max_tokens: 16000,
+              messages: [{
+                role: "user",
+                content: ($prompt + "\n\n## CHANGELOG ENTRIES\n\n" + $changelog + "\n\n## CURRENT CODEBASE\n\n" + $codebase)
+              }]
+            }' > api-request.json
+
+          # Call Claude API
+          HTTP_CODE=$(curl -s -o claude-response.json -w "%{http_code}" \
+            https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d @api-request.json)
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Claude API returned HTTP $HTTP_CODE"
+            cat claude-response.json
+            exit 1
+          fi
+
+          # Extract the text content from Claude's response
+          jq -r '.content[0].text' claude-response.json > claude-analysis-raw.txt
+
+          # Extract JSON object from Claude's response (handles embedded braces safely)
+          python3 << 'EXTRACT_JSON'
+          import json, sys
+
+          raw = open('claude-analysis-raw.txt').read()
+          try:
+              start = raw.index('{')
+              depth = 0
+              for i, c in enumerate(raw[start:], start):
+                  if c == '{': depth += 1
+                  elif c == '}': depth -= 1
+                  if depth == 0:
+                      obj = raw[start:i+1]
+                      json.loads(obj)  # validate
+                      open('claude-analysis.json', 'w').write(obj)
+                      sys.exit(0)
+              print("::error::Could not find complete JSON object")
+              sys.exit(1)
+          except (ValueError, json.JSONDecodeError) as e:
+              print(f"::error::Failed to extract JSON: {e}")
+              print("Raw response:")
+              print(raw[:500])
+              sys.exit(1)
+          EXTRACT_JSON
+
+          NO_CHANGES=$(jq -r '.no_changes_needed // false' claude-analysis.json)
+          echo "no_changes=$NO_CHANGES" >> "$GITHUB_OUTPUT"
+
+      - name: Apply file changes and create PR
+        if: steps.check.outputs.has_new == 'true' && steps.claude.outputs.no_changes != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const analysis = JSON.parse(fs.readFileSync('claude-analysis.json', 'utf8'));
+
+            // Create branch
+            const branchName = `yfinance-update-${new Date().toISOString().split('T')[0].replace(/-/g, '')}`;
+            const mainRef = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/main'
+            });
+
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/heads/${branchName}`,
+              sha: mainRef.data.object.sha
+            });
+
+            // Apply each file change as a commit
+            for (const file of analysis.files) {
+              let fileSha;
+              try {
+                const { data: existing } = await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: file.path,
+                  ref: branchName
+                });
+                fileSha = existing.sha;
+              } catch (e) {
+                fileSha = undefined;
+              }
+
+              await github.rest.repos.createOrUpdateFileContents({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: file.path,
+                message: `chore: ${file.description}`,
+                content: Buffer.from(file.content).toString('base64'),
+                branch: branchName,
+                ...(fileSha ? { sha: fileSha } : {})
+              });
+            }
+
+            // Build PR body
+            const changelog = fs.readFileSync('formatted-entries.md', 'utf8');
+            const fileList = analysis.files
+              .map(f => `- \`${f.path}\`: ${f.description}`)
+              .join('\n');
+
+            const prBody = [
+              `## yfinance Schema Updates`,
+              ``,
+              analysis.analysis,
+              ``,
+              `### Files Changed`,
+              ``,
+              fileList,
+              ``,
+              `### Changelog Entries`,
+              ``,
+              changelog,
+              ``,
+              `### Testing Checklist`,
+              ``,
+              `- [ ] \`./lint.sh\` passes`,
+              `- [ ] \`uv run pytest\` passes`,
+              `- [ ] Test affected streams with a config file`,
+              `- [ ] Review schema changes match yfinance source`,
+              ``,
+              `---`,
+              `Generated by Claude AI`,
+            ].join('\n');
+
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[yfinance] Schema updates — ${new Date().toISOString().split('T')[0]}`,
+              head: branchName,
+              base: 'main',
+              body: prBody
+            });
+
+      - name: Update cached hash
+        if: steps.check.outputs.has_new == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const newHash = '${{ steps.check.outputs.new_hash }}';
+            const branch = '${{ github.ref_name }}';
+
+            // Update hash file via API (works with branch protection)
+            const hashPath = '.github/changelog-cache/yfinance-changelog-hash.txt';
+            let hashSha;
+            try {
+              const { data: existing } = await github.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: hashPath,
+                ref: branch
+              });
+              hashSha = existing.sha;
+            } catch (e) {
+              hashSha = undefined;
+            }
+
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: hashPath,
+              message: 'chore: update yfinance changelog cache hash',
+              content: Buffer.from(newHash + '\n').toString('base64'),
+              branch: branch,
+              ...(hashSha ? { sha: hashSha } : {})
+            });
+
+      - name: Workflow summary
+        if: always()
+        run: |
+          if [ "${{ steps.check.outputs.has_new }}" != "true" ]; then
+            echo "### yfinance Changelog: No changes detected" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ steps.claude.outputs.no_changes }}" = "true" ]; then
+            echo "### yfinance Changelog: Changes detected in CHANGELOG.rst, no code changes needed" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### yfinance Changelog: Changes detected, PR created with schema updates" >> "$GITHUB_STEP_SUMMARY"
+          fi

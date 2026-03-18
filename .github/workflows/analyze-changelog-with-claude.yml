@@ -1,0 +1,231 @@
+name: Analyze API Changes with Claude
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  analyze:
+    if: |
+      (contains(github.event.issue.labels.*.name, 'api-changelog-check') || 
+       contains(github.event.issue.labels.*.name, 'api-changelog-check')) &&
+      contains(github.event.comment.body, '/analyze-changes')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: React to comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes'
+            });
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Gather stream files
+        run: |
+          echo "## Stream Files in tap_yfinance/streams" > codebase-context.md
+          echo "" >> codebase-context.md
+          for f in tap_yfinance/streams/*.py; do
+            [ "$f" = "tap_yfinance/streams/__init__.py" ] && continue
+            echo "### $f" >> codebase-context.md
+            echo '```python' >> codebase-context.md
+            cat "$f" >> codebase-context.md
+            echo '```' >> codebase-context.md
+            echo "" >> codebase-context.md
+          done
+
+      - name: Extract changelog
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            fs.writeFileSync('changelog.txt', context.payload.issue.body || '');
+
+      - name: Call Claude API
+        id: claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          CHANGELOG=$(cat changelog.txt)
+          CODEBASE=$(cat codebase-context.md)
+
+          cat > prompt.txt << 'PROMPT_END'
+          You are updating a Singer tap for Yahoo Finance (https://github.com/ranaroussi/yfinance).
+
+          RULES:
+          - Field names must be snake_case
+          - Use singer_sdk typing: th.StringType, th.IntegerType, th.BooleanType, th.NumberType, th.DateType, th.DateTimeType
+          - Only add new fields. Don't remove or rename unless changelog explicitly says to.
+          - All streams have additionalProperties: True
+
+          Identify which schemas need updates based on the changelog below.
+
+          Output ONLY valid JSON (no markdown):
+          {
+            "analysis": "Summary of changes needed",
+            "no_changes_needed": false,
+            "files": [{
+              "path": "tap_yfinance/streams/example.py",
+              "content": "...full file...",
+              "description": "What changed"
+            }]
+          }
+
+          If no changes needed, set "no_changes_needed": true and "files": [].
+          PROMPT_END
+
+          jq -n \
+            --arg prompt "$(cat prompt.txt)" \
+            --arg changelog "$CHANGELOG" \
+            --arg codebase "$CODEBASE" \
+            '{
+              model: "claude-sonnet-4-5-20250929",
+              max_tokens: 16000,
+              messages: [{
+                role: "user",
+                content: ($prompt + "\n\n## CHANGELOG\n\n" + $changelog + "\n\n## CODEBASE\n\n" + $codebase)
+              }]
+            }' > api-request.json
+
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
+            https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d @api-request.json)
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Claude API returned $HTTP_CODE"
+            cat response.json
+            exit 1
+          fi
+
+          jq -r '.content[0].text' response.json > raw.txt
+          sed -n '/^{/,/^}/p' raw.txt > analysis.json
+
+          if ! jq empty analysis.json 2>/dev/null; then
+            echo "fallback=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no_changes=$(jq -r '.no_changes_needed // false' analysis.json)" >> "$GITHUB_OUTPUT"
+            echo "fallback=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post fallback
+        if: steps.claude.outputs.fallback == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: `## Analysis (manual review needed)\n\n${fs.readFileSync('raw.txt', 'utf8')}`
+            });
+
+      - name: Create PR
+        if: steps.claude.outputs.fallback == 'false' && steps.claude.outputs.no_changes != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const analysis = JSON.parse(fs.readFileSync('analysis.json', 'utf8'));
+
+            const branch = `api-update-${new Date().toISOString().split('T')[0].replace(/-/g, '')}`;
+            const main = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/main'
+            });
+
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/heads/${branch}`,
+              sha: main.data.object.sha
+            });
+
+            for (const file of analysis.files) {
+              let sha;
+              try {
+                const { data: existing } = await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: file.path,
+                  ref: branch
+                });
+                sha = existing.sha;
+              } catch (e) {}
+
+              await github.rest.repos.createOrUpdateFileContents({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: file.path,
+                message: `chore: ${file.description}`,
+                content: Buffer.from(file.content).toString('base64'),
+                branch: branch,
+                ...(sha ? { sha } : {})
+              });
+            }
+
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[API] Schema updates — ${new Date().toISOString().split('T')[0]}`,
+              head: branch,
+              base: 'main',
+              body: [
+                `## API Schema Updates`,
+                ``,
+                analysis.analysis,
+                ``,
+                `### Files Changed`,
+                analysis.files.map(f => `- \`${f.path}\`: ${f.description}`).join('\n'),
+                ``,
+                `Source: #${context.payload.issue.number}`,
+              ].join('\n')
+            });
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: `PR created: ${pr.html_url}\n\n**Analysis:**\n${analysis.analysis}`
+            });
+
+      - name: Post no-changes
+        if: steps.claude.outputs.fallback == 'false' && steps.claude.outputs.no_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const analysis = JSON.parse(fs.readFileSync('analysis.json', 'utf8'));
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: `## No Code Changes Needed\n\n${analysis.analysis}`
+            });
+
+      - name: React
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: '${{ job.status }}' === 'success' ? 'rocket' : '-1'
+            });
